@@ -14,7 +14,7 @@ import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
-import { QrPlaceholder } from "@/components/ui/QrPlaceholder";
+import { WalletHandoff } from "@/components/ui/WalletHandoff";
 import { ScopeSummary } from "@/components/ui/ScopeSummary";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Icon } from "@/components/ui/icons";
@@ -354,19 +354,21 @@ export function ApprovalDetailView({ operationId }: { operationId: string }) {
         {!decided ? (
           signing ? (
             <Panel>
-              <div className="relative z-[4] flex flex-col items-center gap-3 py-2">
-                <QrPlaceholder value={operation.payloadHash} />
-                <div className="flex flex-col items-center gap-1 text-center">
-                  <p className="font-display text-[14px] font-semibold text-strong">
-                    Answer the request on your phone
-                  </p>
-                  <p className="max-w-[42ch] text-[12.5px] leading-[1.5] text-muted">
-                    Your wallet is being asked to confirm the fingerprint above.
-                    That is what turns this approval into evidence rather than a
-                    click.
-                  </p>
-                </div>
-              </div>
+              <WalletHandoff
+                value={operation.payloadHash}
+                title="Confirm this in your wallet"
+                purpose="Signing the operation's fingerprint from your own wallet is what turns this approval into evidence rather than a click."
+                sharing={[
+                  "That it was you who approved it, proved from your wallet",
+                  "A commitment to this exact operation and nothing else",
+                ]}
+                status="waiting"
+                onCancel={() => setSigning(false)}
+                onSkip={() => {
+                  approveOperation(operation.id, "wallet");
+                  setSigning(false);
+                }}
+              />
             </Panel>
           ) : (
             <div className="flex flex-col gap-2.5">

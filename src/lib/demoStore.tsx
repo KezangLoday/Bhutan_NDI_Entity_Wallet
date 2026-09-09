@@ -311,6 +311,13 @@ interface DemoActions {
    */
   runVerification: (input: VerificationRequestInput) => VerificationDecision;
 
+  /* ---- Appeals ---- */
+
+  /** The holder's submission against a withdrawal. */
+  submitAppeal: (id: string, submission: string) => void;
+  /** An owner's decision on one. Upholding reinstates the authority. */
+  decideAppeal: (id: string, outcome: "upheld_reinstated" | "rejected") => void;
+
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
      and the state switcher, which are what make the demo runnable by someone
@@ -1132,6 +1139,46 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, decisions: [decision, ...s.decisions] }));
         return decision;
       },
+
+      submitAppeal: (id, submission) =>
+        setState((s) => ({
+          ...s,
+          appeals: s.appeals.map((a) =>
+            a.id === id
+              ? { ...a, submittedAt: today(), submission, state: "under_review" }
+              : a,
+          ),
+        })),
+
+      decideAppeal: (id, outcome) =>
+        setState((s) => {
+          const appeal = s.appeals.find((a) => a.id === id);
+          if (!appeal) return s;
+          return {
+            ...s,
+            appeals: s.appeals.map((a) => (a.id === id ? { ...a, state: outcome } : a)),
+            /* Upholding an appeal reinstates what was withdrawn. An appeal
+               process that concluded in someone's favour and left the
+               authority revoked would be a complaints box, not a remedy. */
+            delegatedAuthorities:
+              outcome === "upheld_reinstated" && appeal.againstKind === "authority"
+                ? s.delegatedAuthorities.map((d) =>
+                    d.id === appeal.againstId
+                      ? { ...d, status: "ACTIVE", endedAt: null, endedReason: null }
+                      : d,
+                  )
+                : s.delegatedAuthorities,
+            auditEntries: appendAudit(s, {
+              operation: outcome === "upheld_reinstated" ? "appeal:uphold" : "appeal:reject",
+              summary:
+                outcome === "upheld_reinstated"
+                  ? `Upheld appeal ${appeal.reference} — ${appeal.againstTitle} reinstated`
+                  : `Rejected appeal ${appeal.reference}`,
+              actorId: s.harness.persona,
+              relationId: null,
+            }),
+          };
+        }),
 
       setPersona: (persona) =>
         setState((s) => ({ ...s, harness: { ...s.harness, persona } })),

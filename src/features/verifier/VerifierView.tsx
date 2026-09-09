@@ -8,7 +8,7 @@ import { AuthorityChain } from "@/components/ui/AuthorityChain";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { Panel } from "@/components/ui/Panel";
-import { QrPlaceholder } from "@/components/ui/QrPlaceholder";
+import { WalletHandoff } from "@/components/ui/WalletHandoff";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Icon } from "@/components/ui/icons";
 import { FIELD_BLOCK_CLASS, FIELD_CLASS, LABEL_CLASS } from "@/components/ui/formStyles";
@@ -238,27 +238,18 @@ export function VerifierView() {
                 {/* ---- Hand-off #4: the holder authorises this specific
                         transaction from their own phone ---- */}
                 {phase === "wallet" ? (
-                  <div className="flex flex-col items-center gap-3 rounded-[12px] border border-grid px-4 py-5">
-                    <QrPlaceholder value={`bnsw-${value}`} />
-                    <div className="flex flex-col items-center gap-1 text-center">
-                      <p className="font-display text-[13.5px] font-semibold text-strong">
-                        Waiting for {holder?.name.split(" ")[0]} to authorise
-                      </p>
-                      <p className="max-w-[38ch] text-[12.5px] leading-[1.5] text-muted">
-                        Their wallet is being asked to authorise{" "}
-                        <strong className="font-medium">this declaration</strong> —
-                        not to sign in, and not to authorise anything else.
-                      </p>
-                    </div>
-                    {skippable ? (
-                      <button
-                        type="button"
-                        onClick={skip}
-                        className="ndi-plainlink text-[12.5px] font-medium text-muted"
-                      >
-                        Skip the wait
-                      </button>
-                    ) : null}
+                  <div className="rounded-[12px] border border-grid px-4 py-4">
+                    <WalletHandoff
+                      value={`bnsw-${value}`}
+                      title={`Waiting for ${holder?.name.split(" ")[0] ?? "the agent"} to authorise`}
+                      purpose="Their wallet is being asked to authorise this declaration — not to sign in, and not to authorise anything else."
+                      sharing={[
+                        "That they hold an authority covering this declaration",
+                        "A commitment to this declaration's exact value and counterparty",
+                      ]}
+                      status="waiting"
+                      onSkip={skippable ? skip : undefined}
+                    />
                   </div>
                 ) : null}
 

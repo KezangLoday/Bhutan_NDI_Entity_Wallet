@@ -41,23 +41,115 @@ If you only get one idea across, that is the one.
 
 ## What is built right now
 
-The story is six acts. **Acts 2, 3, 4 and 5 are built** — the conceptual core,
-the daily loop and the pay-off. Acts 1 and 6 arrive in the last slice.
+**All six acts are built.** Nothing in the sidebar 404s. You can walk the whole
+story end to end, or show any act on its own.
 
-| Act | State | Where |
+| Act | What the audience learns | Roughly |
 |---|---|---|
-| 1 · The entity becomes real | not built | — |
-| **2 · Authority is granted, narrowly** | **built** | walkthrough below |
-| **3 · The Controller works, under approval** | **built** | walkthrough below |
-| **4 · Authority is delegated to a wallet** | **built** | walkthrough below |
-| **5 · Authority is checked at the point of use** | **built** | walkthrough below |
-| 6 · There is recourse | not built | — |
+| 1 · The entity becomes real | The platform never asserts the entity's identity — a register does | 4 min |
+| 2 · Authority is granted, narrowly | Authority is a scoped, accepted relation, not a role dropdown | 6 min |
+| 3 · The Controller works, under approval | Least disclosure, an approval gate, dual attribution | 6 min |
+| 4 · Authority is delegated to a wallet | Constraints that travel with the credential | 3 min |
+| 5 · Authority is checked at the point of use | PASS, then FAIL with the failing link named | 4 min |
+| 6 · There is recourse | Revocation carries a reason and an appeal | 3 min |
 
-Still **404**: **Appeals**, and **Controllership → Relations** (the register —
-the *new relation* screen inside it works fine). Everything else in the nav is
-live.
+**The full run is about 25 minutes.** If you have ten, show acts 2 and 5. If
+you have five, show act 5 alone.
 
-**Act buttons 1 and 6 land on 404s. Use 2, 3, 4 and 5.**
+---
+
+## The Act 1 walkthrough
+
+Act button **1**, as Rinzin. Four minutes, and it is the act that establishes
+the product is not self-certifying.
+
+### 1 · Find the organisation — `/onboarding/claim`
+
+Note the **kind of organisation** list: each type names *which register*
+confirms it, and civil society organisations are marked **not yet available**.
+
+> "Which register can vouch for you depends on what kind of thing you are.
+> That is a governance input still being decided, so it is a property of the
+> entity type rather than hard-coded — and where we have no register, that
+> kind of organisation simply cannot register here. Better to say so than to
+> run a search that fails for reasons nobody can see."
+
+Leave Norling selected, press **Continue to identity check**.
+
+### 2 · The register check — the honest wait
+
+Press **Start the identity check**.
+
+**This is the one wait in the demo that is not compressed.** Let it run.
+
+> "Every other wait here is about two seconds. This one is not, deliberately.
+> This is the moment the platform admits it cannot assert the company's
+> identity by itself and has to ask the Registrar of Companies. If that
+> resolved instantly, the most important architectural fact about the whole
+> product would slide straight past you."
+
+Point at the two named stages:
+
+> "Two different things, shown as two things. Rinzin proving who she is, from
+> her own wallet. Then an institution deciding whether she speaks for the
+> company. Only one of those can refuse her."
+
+Also point at the hand-off panel — **What you will share**, and the line
+saying the wallet never receives the organisation's keys.
+
+**Then show the refusal.** Reload and press **Show what happens if the
+register says no**.
+
+> "Her identity proved fine. The register just does not list her as a
+> representative. That is a matter of record, not a bug here — and we cannot
+> override it. An organisation whose representative we could not establish is
+> exactly the organisation nobody should be able to register."
+
+### 3 · The milestone — `/onboarding/foundational`
+
+Run it again to success and continue. Point at **Why this one is different**:
+
+> "Accepting a credential normally needs an authority saying you may. Nobody
+> has one yet — the company came into existence thirty seconds ago. So this
+> one acceptance happens under a bootstrap authority made for exactly this,
+> and nothing else can be accepted under it."
+
+Press **Accept the registration**.
+
+> "*Norling Logistics is verified.* And this credential is the thing act five
+> walks back up to. Remember it."
+
+---
+
+## The Act 6 walkthrough
+
+Three minutes, and it is the act that makes everything else defensible. Best
+shown **straight after act 5**, while the revocation is fresh.
+
+Switch to **Pema** and open **Appeals**.
+
+> "She has just lost her role. Here is the notice, with the reason Rinzin
+> actually typed, and a reference. She did not have to go looking for it."
+
+Type an answer in the box and press **Submit the appeal**.
+
+> "Ten working days to appeal, five for a decision. Those numbers are
+> provisional until the governance framework settles them, which is why they
+> are text on a screen rather than a graphic anyone has to redraw."
+
+Switch to **Rinzin** and open **Appeals** again.
+
+> "Same object, different actions. She can uphold or reject. Pema was never
+> shown an uphold button and Rinzin was never shown a submission form."
+
+Press **Uphold and reinstate**.
+
+> "That puts the role back exactly as it was. An appeal process that concluded
+> in someone's favour and left the authority revoked would be a complaints
+> box, not a remedy."
+
+**Then go back to `/verifier/bnsw` and submit the declaration again. It
+passes.** The chain is whole because the link was restored.
 
 ---
 
@@ -434,6 +526,11 @@ Worth showing:
 | `/wallet/offers/...` | **out_of_scope**, **requires_approval** | Both refusal shapes on any offer |
 | `/approvals/...` | **stale**, **expired**, **rejected** | The outcomes nobody demos |
 | `/controllership/audit` | **filtered_empty** | A filter finding nothing, trail still intact |
+| `/onboarding/claim` | **no_match**, **register_unavailable** | The register finding nothing, and being down |
+| `/onboarding/prove` | **not_a_representative**, **expired** | The refusal, and a lapsed proof request |
+| `/onboarding/foundational` | **issuance_failed** | Confirmed, but the credential did not issue |
+| `/controllership/entity` | **foundational_expired** | What lapses when the root lapses |
+| `/appeals` | **under_review**, **upheld**, **rejected** | Every stage of an appeal |
 | `/kitchen-sink` | — | Every component, both themes. Not part of the story |
 
 > "Denied, expired and suspended states get the same care as the happy path.
@@ -470,7 +567,7 @@ deciding approvals. That is read from his actual grant, not from a role list.
 | Problem | Fix |
 |---|---|
 | Screen looks stale or half-built | **Reset demo** in the demo controls |
-| A sidebar item 404s | Expected — not built yet. Navigate back |
+| A sidebar item 404s | Shouldn't happen now — tell me if one does |
 | A countdown says "Expired" | The fixtures are dated September 2026; see the note below |
 | Acceptance button is disabled | You are the wrong persona. Use **Continue as …** |
 | The verifier says no authority exists | Reset the demo, or issue one via act 4 |

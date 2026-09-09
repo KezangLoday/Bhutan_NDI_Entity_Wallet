@@ -78,6 +78,7 @@ const PRIMARY: NavItem[] = [
     personas: OWNER,
     children: [
       { label: "Relations", href: "/controllership/relations", icon: "link" },
+      { label: "Entity", href: "/controllership/entity", icon: "building" },
       { label: "Audit", href: "/controllership/audit", icon: "fileText" },
     ],
   },
