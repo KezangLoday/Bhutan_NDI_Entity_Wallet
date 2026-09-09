@@ -41,24 +41,25 @@ If you only get one idea across, that is the one.
 
 ## What is built right now
 
-The story is six acts. **Act 2 is built.** The rest arrives in later slices, so
-today you are showing the conceptual core rather than the whole arc.
+The story is six acts. **Acts 2, 4 and 5 are built** — the conceptual core and
+the pay-off. Acts 1, 3 and 6 arrive in later slices, so you are showing the
+argument rather than the full arc.
 
 | Act | State | Where |
 |---|---|---|
 | 1 · The entity becomes real | not built | — |
-| **2 · Authority is granted, narrowly** | **built** | the walkthrough below |
+| **2 · Authority is granted, narrowly** | **built** | walkthrough below |
 | 3 · The Controller works, under approval | not built | — |
-| 4 · Authority is delegated to a wallet | not built | — |
-| 5 · Authority is checked at the point of use | not built | — |
+| **4 · Authority is delegated to a wallet** | **built** | walkthrough below |
+| **5 · Authority is checked at the point of use** | **built** | walkthrough below |
 | 6 · There is recourse | not built | — |
 
-Anything else in the sidebar — Held credentials, Offers, Approvals, Audit,
-Delegated authority, Appeals — will **404**. Those rows are in the nav
-deliberately, so the shape of the product is legible, but do not click them in
-front of an audience. Stick to the path below.
+Still **404**: Held credentials, Offers, Verification requests, Approvals,
+Audit, Appeals, and the Controllership → Relations register. Those rows are in
+the nav deliberately, so the shape of the product is legible, but do not click
+them in front of an audience.
 
-The demo controls' act buttons 3–6 will also land on 404s. **Use act 2 only.**
+**Act buttons 1, 3 and 6 land on 404s. Use 2, 4 and 5.**
 
 ---
 
@@ -179,6 +180,116 @@ That is Act 2. Stop there.
 
 ---
 
+## The Acts 4 and 5 walkthrough
+
+About seven minutes, and the part worth rehearsing. **This is the strongest
+thing in the demo** — if you are short on time, cut Act 2 and show this.
+
+### 1 · Issue the authority — act button **4**
+
+You land on `/delegated-authority/new` as Rinzin. The form is prefilled with a
+sensible capability, so you can talk rather than type.
+
+Point at the right-hand panel — **What a counterparty reads**:
+
+> "Everything on the left ends up in that panel, and that panel is public.
+> Whoever Pema shows this credential to can read all of it and check it
+> themselves. They do not call us to ask."
+
+Two things to say while you are here:
+
+- **Change the cap** to something like `250000` and watch the panel update.
+  > "This is not a setting. It is a term written into a credential that
+  > strangers will enforce."
+- **Point at the expiry** — 90 days by default, and there is no
+  "never expires" option at all.
+  > "Expiry is what limits the damage when a withdrawal comes late or never
+  > happens. So it is short unless someone deliberately lengthens it."
+
+Press **Issue to Pema**. You get *awaiting acceptance*:
+
+> "Nothing has been granted yet. It is an offer sitting in her wallet.
+> Accepting it is her consent — until she does, she holds no authority and
+> nothing can be done in her name."
+
+Press **Simulate Pema accepting**, then **See it checked at a counterparty**.
+
+### 2 · The PASS — `/verifier/bnsw`
+
+**Stop and point out the chrome.** No sidebar, no NDI logo, different colours,
+and a line reading *Not part of NDI Studio*.
+
+> "We have left the product. This is the Single Window's own website. It is a
+> different organisation's system, and it is about to check Pema's authority
+> without asking Norling Logistics anything."
+
+Leave the value at `420000`. Press **Submit declaration**.
+
+You get a wallet hand-off — a QR and *waiting for Pema to authorise*. Say:
+
+> "She is authorising **this declaration**, on her own phone. Not signing in.
+> Not authorising everything. That specific transaction."
+
+(There is a **Skip the wait** link if you are pressed for time.)
+
+Then the decision: a green **PASS**, five checks each naming what it looked
+at, the four-link authority chain, and a signature.
+
+> "Five constraints, all checked by them, not us. And notice what the bank
+> learned about Pema: her name. Not her citizenship number, not her address,
+> not what else she is allowed to do."
+
+### 3 · The FAIL — the moment the demo exists for
+
+Switch to **Rinzin** in the demo controls, then go to **Delegated authority**
+and press **Withdraw** on **Customs broker** — the *role*, not the capability.
+
+**Do not rush the blast-radius panel.** It is computed from what actually
+depends on that role:
+
+> "It is telling her that Declaration authority — the thing she issued five
+> minutes ago — stops working too. Because it hangs off this. She is not
+> withdrawing one credential, she is withdrawing a branch."
+
+Type a reason. Point out that it is required:
+
+> "Pema gets told this, with a reference she can appeal against. Withdrawing
+> someone's authority without telling them why leaves them nothing to
+> challenge."
+
+Press **Revoke — final**, confirm, and you land back at the Single Window.
+
+**Submit the same declaration again.** Same value, same person, same
+counterparty.
+
+> "Nothing about Pema's credential changed. It is still in her wallet, still
+> valid, still unexpired."
+
+**FAIL.** The chain now shows *Customs broker* struck through as revoked — and
+the capability below it marked *valid in itself, but unreachable*.
+
+> "That is the whole system in one screen. Her capability is fine. What broke
+> is the authority above it. And this counterparty found that out by walking
+> the chain, in under a second, without anyone telling them to."
+
+### 4 · If someone asks about the service going down
+
+Press **Submit with the service unreachable**.
+
+> "Not verified — and treated as a failure. There is no spinner that eventually
+> shrugs and lets it through. If we cannot establish the authority, there is no
+> authority."
+
+### Other things you can show on the verifier
+
+| Try | What it demonstrates |
+|---|---|
+| Value `900000` | The cap refusing it, naming the cap |
+| The **fail** state in the switcher | The FAIL without having to revoke anything |
+| `/delegated-authority/da-cap-lapsed/revoke` | An authority that expired on its own |
+
+---
+
 ## Showing the states nobody can click to
 
 For a design or engineering audience, the state switcher is the interesting
@@ -194,6 +305,9 @@ Worth showing:
 | `/controllership/relations/.../scope` | **over_broad** | The advisory warnings, without having to build a bad scope |
 | `/controllership/relations/.../accept` | **declined** | The outcome nobody demos |
 | `/controllership/relations/new` | **person_not_verified** | Why an unconfirmed person is blocked |
+| `/verifier/bnsw` | **pass**, **fail**, **service_unreachable** | All three outcomes, no setup needed |
+| `/delegated-authority/.../revoke` | **suspended**, **revoked** | Reversible vs final |
+| `/delegated-authority` | **empty** | First-run, before anything is delegated |
 | `/kitchen-sink` | — | Every component, both themes. Not part of the story |
 
 > "Denied, expired and suspended states get the same care as the happy path.
@@ -233,6 +347,8 @@ deciding approvals. That is read from his actual grant, not from a role list.
 | A sidebar item 404s | Expected — not built yet. Navigate back |
 | A countdown says "Expired" | The fixtures are dated September 2026; see the note below |
 | Acceptance button is disabled | You are the wrong persona. Use **Continue as …** |
+| The verifier says no authority exists | Reset the demo, or issue one via act 4 |
+| A second FAIL when you wanted a PASS | The role is still revoked. **Reset demo** |
 | Everything is dark and you wanted light | Theme toggle, top right |
 
 **The fixture dates will rot.** Everything is dated around September 2026, so

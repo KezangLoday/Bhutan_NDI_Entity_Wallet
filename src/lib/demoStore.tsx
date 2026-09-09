@@ -6,25 +6,29 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
+import { verifyAuthority, type VerificationRequestInput } from "./avs";
 import {
   SEED,
   type Attribute,
+  type AuthorityKind,
   type BulkUpload,
   type Certificate,
   type Connection,
+  type ControllershipRelation,
   type CredDef,
   type Credential,
+  type DelegatedAuthority,
   type DemoState,
   type Did,
   type Ecosystem,
   type EcosystemInvitation,
   type Invitation,
   type LedgerKind,
-  type ControllershipRelation,
   type LegalBasis,
   type Member,
   type Organization,
@@ -32,7 +36,9 @@ import {
   type PersonaId,
   type Schema,
   type Scope,
+  type ScopeFilter,
   type Verification,
+  type VerificationDecision,
 } from "./demoData";
 
 const STORAGE_KEY = "ndi-studio-demo";
@@ -153,6 +159,40 @@ interface DemoActions {
   acceptRelation: (id: string) => void;
   declineRelation: (id: string, reason: string) => void;
 
+  /* ---- Delegated authority (Pattern B) ---- */
+
+  /** Issues a Role or Capability into a person's own wallet. Awaits their
+   *  acceptance — acceptance is the holder's consent and cannot be assumed. */
+  issueAuthority: (input: {
+    kind: AuthorityKind;
+    title: string;
+    recipientId: string;
+    parentId: string | null;
+    taskScopes: string[];
+    valueCap: { amount: number; currency: "BTN"; perTransaction: boolean } | null;
+    counterparties: ScopeFilter;
+    validFrom: string;
+    validUntil: string;
+  }) => DelegatedAuthority;
+  acceptAuthority: (id: string) => void;
+  /** Reversible. */
+  suspendAuthority: (id: string, reason: string) => void;
+  reactivateAuthority: (id: string) => void;
+  /**
+   * Final, and deliberately does NOT cascade a status onto its children —
+   * see the note at the implementation. Raises the holder's appeal notice.
+   */
+  revokeAuthority: (id: string, reason: string) => void;
+
+  /**
+   * Runs a verification and keeps the decision.
+   *
+   * The decision comes from the stand-in verification service in `avs.ts`,
+   * never from a component — see the long note in that file for why that
+   * boundary matters and where it would be a real network call.
+   */
+  runVerification: (input: VerificationRequestInput) => VerificationDecision;
+
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
      and the state switcher, which are what make the demo runnable by someone
@@ -196,6 +236,17 @@ const DemoContext = createContext<DemoContextValue | null>(null);
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DemoState>(SEED);
   const [hydrated, setHydrated] = useState(false);
+
+  /* The actions memo is deliberately state-free so its callbacks stay stable,
+     which leaves an action that has to *read* state with nowhere to read it
+     from. A ref updated on every render is that place.
+
+     Doing this inside a setState updater instead would be a real bug rather
+     than a style choice: reactStrictMode is on, React invokes updaters twice
+     in development, and a verification that derived its decision in there
+     would record two of them per run. */
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     try {
@@ -611,6 +662,175 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             r.id === id ? { ...r, state: "TERMINATED", endedReason: reason } : r,
           ),
         })),
+
+      issueAuthority: (input) => {
+        const authority: DelegatedAuthority = {
+          id: rid("da"),
+          kind: input.kind,
+          title: input.title,
+          recipientId: input.recipientId,
+          parentId: input.parentId,
+          /* Every Pattern B credential traces back to a controllership
+             relation. The owner's root authority is what these are issued
+             out of, so that is the relation recorded on them. */
+          relationId: SEED.relations.find((r) => r.isRootAuthority)?.id ?? "rel-root",
+          taskScopes: input.taskScopes,
+          valueCap: input.valueCap,
+          counterparties: input.counterparties,
+          validFrom: input.validFrom,
+          validUntil: input.validUntil,
+          status: "ACTIVE",
+          acceptance: "sent",
+          issuedAt: today(),
+          acceptedAt: null,
+        };
+        setState((s) => ({
+          ...s,
+          delegatedAuthorities: [authority, ...s.delegatedAuthorities],
+          auditEntries: appendAudit(s, {
+            operation: "authority:issue",
+            summary: `Issued ${input.title} to ${
+              s.people.find((p) => p.id === input.recipientId)?.name ?? "a recipient"
+            }`,
+            actorId: s.harness.persona,
+            relationId: authority.relationId,
+            scopeVersion: 1,
+          }),
+        }));
+        return authority;
+      },
+
+      acceptAuthority: (id) =>
+        setState((s) => {
+          const authority = s.delegatedAuthorities.find((a) => a.id === id);
+          if (!authority) return s;
+          return {
+            ...s,
+            delegatedAuthorities: s.delegatedAuthorities.map((a) =>
+              a.id === id ? { ...a, acceptance: "accepted", acceptedAt: today() } : a,
+            ),
+            auditEntries: appendAudit(s, {
+              operation: "authority:accept",
+              summary: `${
+                s.people.find((p) => p.id === authority.recipientId)?.name ?? "The holder"
+              } accepted ${authority.title}`,
+              actorId: authority.recipientId,
+              relationId: authority.relationId,
+            }),
+          };
+        }),
+
+      suspendAuthority: (id, reason) =>
+        setState((s) => {
+          const authority = s.delegatedAuthorities.find((a) => a.id === id);
+          if (!authority) return s;
+          return {
+            ...s,
+            delegatedAuthorities: s.delegatedAuthorities.map((a) =>
+              a.id === id
+                ? { ...a, status: "SUSPENDED", endedAt: today(), endedReason: reason }
+                : a,
+            ),
+            auditEntries: appendAudit(s, {
+              operation: "authority:suspend",
+              summary: `Suspended ${authority.title}`,
+              actorId: s.harness.persona,
+              relationId: authority.relationId,
+            }),
+          };
+        }),
+
+      reactivateAuthority: (id) =>
+        setState((s) => {
+          const authority = s.delegatedAuthorities.find((a) => a.id === id);
+          if (!authority) return s;
+          return {
+            ...s,
+            delegatedAuthorities: s.delegatedAuthorities.map((a) =>
+              a.id === id ? { ...a, status: "ACTIVE", endedAt: null, endedReason: null } : a,
+            ),
+            auditEntries: appendAudit(s, {
+              operation: "authority:reactivate",
+              summary: `Reinstated ${authority.title}`,
+              actorId: s.harness.persona,
+              relationId: authority.relationId,
+            }),
+          };
+        }),
+
+      revokeAuthority: (id, reason) =>
+        setState((s) => {
+          const authority = s.delegatedAuthorities.find((a) => a.id === id);
+          if (!authority) return s;
+
+          /* Revoking a role does NOT mark its children revoked, and that is
+             deliberate rather than an omission. A capability hanging off a
+             withdrawn role is still a valid credential in the holder's
+             wallet — what has changed is that the chain above it is broken,
+             which is what the verification service discovers when it walks
+             it. Cascading a status onto the children would hide the very
+             mechanism Act 5 exists to show, and would also be a lie about
+             what the holder's wallet contains. */
+          const reference = `AP-${new Date().getFullYear()}-${Math.floor(
+            1000 + Math.random() * 8999,
+          )}`;
+
+          return {
+            ...s,
+            delegatedAuthorities: s.delegatedAuthorities.map((a) =>
+              a.id === id
+                ? {
+                    ...a,
+                    status: "REVOKED",
+                    endedAt: today(),
+                    endedReason: reason,
+                    appealReference: reference,
+                  }
+                : a,
+            ),
+            /* The holder is notified with a reason and an appeal reference.
+               Withdrawal without a route to challenge it is the thing the
+               appeal right exists to prevent, so the notice is created here
+               rather than being something an operator remembers to send. */
+            appeals: [
+              {
+                id: rid("ap"),
+                reference,
+                subjectId: authority.recipientId,
+                againstKind: "authority" as const,
+                againstId: authority.id,
+                againstTitle: authority.title,
+                noticeReason: reason,
+                noticeIssuedAt: today(),
+                submittedAt: null,
+                submission: null,
+                state: "notice_issued" as const,
+                windowWorkingDays: 10,
+                decisionWorkingDays: 5,
+                evidence: [],
+              },
+              ...s.appeals,
+            ],
+            auditEntries: appendAudit(s, {
+              operation: "authority:revoke",
+              summary: `Revoked ${authority.title} held by ${
+                s.people.find((p) => p.id === authority.recipientId)?.name ?? "the holder"
+              }`,
+              actorId: s.harness.persona,
+              relationId: authority.relationId,
+            }),
+          };
+        }),
+
+      runVerification: (input) => {
+        /* Derived from state at the moment of asking, which is the whole
+           point of the act: revoking a role a second earlier changes the
+           answer. Derived outside the updater, so the same decision is both
+           returned and stored exactly once. */
+        const decision: VerificationDecision = verifyAuthority(stateRef.current, input);
+        setState((s) => ({ ...s, decisions: [decision, ...s.decisions] }));
+        return decision;
+      },
 
       setPersona: (persona) =>
         setState((s) => ({ ...s, harness: { ...s.harness, persona } })),
