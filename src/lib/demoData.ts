@@ -164,6 +164,377 @@ export interface ApiKey {
   status: "active" | "revoked";
 }
 
+/* ================================================================== */
+/* Entity Wallet                                                       */
+/*                                                                     */
+/* Everything below serves one story: Norling Logistics becomes real,  */
+/* grants Dorji a narrow authority, works under approval, delegates to */
+/* Pema's own wallet, has that authority checked at a counterparty —   */
+/* once passing, once failing — and leaves Pema a way to appeal.       */
+/*                                                                     */
+/* Two conventions worth stating once, because they run through all of */
+/* it:                                                                 */
+/*                                                                     */
+/* 1. Anything named `decision` or `outcome` is a value the server      */
+/*    would have returned. The UI renders it; the UI never computes it. */
+/*    Deriving "is this in scope?" on the client would be four lines    */
+/*    here and a lie about where authority lives — see CLAUDE.md.      */
+/*                                                                     */
+/* 2. A person is referenced by id, never by name, so that dual         */
+/*    attribution has one place to resolve names and cannot drift.     */
+/* ================================================================== */
+
+/**
+ * Everyone the entity knows about. A superset of the personas: the relations
+ * register has to show people the demo is never driven as, or it shows one
+ * row and teaches nothing about lifecycle.
+ */
+export type PersonId = string;
+
+/** The three people the demo can be *driven* as. */
+export type PersonaId = "rinzin" | "dorji" | "pema";
+
+export interface Person {
+  id: PersonId;
+  name: string;
+  /** Shown as a masked CID; a real one is never a display string. */
+  cid: string;
+  email: string;
+  /** What they are to the entity, in words the UI can print. */
+  title: string;
+  /** Whether the register has confirmed them. Gates C2's person selector. */
+  cidVerified: boolean;
+}
+
+/**
+ * The operations a scope can grant. These are the brief's operation names
+ * rather than friendlier ones, because they appear in audit rows and parked
+ * operations where matching the server's vocabulary matters more than reading
+ * nicely. `scopeModel.ts` is what turns them into English.
+ */
+export type ControllerOperation =
+  | "credential:receive"
+  | "credential:accept"
+  | "credential:list"
+  | "proof:present"
+  | "connection:create"
+  | "approval:decide";
+
+export type ApprovalPolicy = "AUTO" | "SINGLE_APPROVER" | "DUAL_CONTROL";
+
+export type LegalBasis = "entity_consent" | "court_order" | "governance_prescribed";
+
+export type RelationState =
+  | "DRAFT"
+  | "PENDING_ACCEPTANCE"
+  | "PENDING_REGISTRATION"
+  | "ACTIVE"
+  | "SUSPENDED"
+  | "TERMINATED"
+  | "EXPIRED";
+
+/**
+ * A dimension of a grant: either everything, or a named list.
+ *
+ * Modelled as a union rather than an empty array meaning "any", because the
+ * difference between "to any relying party" and "to nobody" is the difference
+ * between a broad grant and a useless one, and an empty array reads as both.
+ */
+export type ScopeFilter = { mode: "any" } | { mode: "list"; values: string[] };
+
+/**
+ * One operation, with its own filters and its own approval policy.
+ *
+ * The per-grant approval policy is the reason a relation renders as several
+ * sentences instead of one: writing the read-mode sentences by hand made it
+ * obvious that "everything he does needs an approver" is usually false —
+ * accepting offers is automatic while presenting proofs is not, and a single
+ * trailing clause can only tell that truth when every policy agrees.
+ */
+export interface ScopeGrant {
+  operation: ControllerOperation;
+  credentialTypes: ScopeFilter;
+  relyingParties: ScopeFilter;
+  approval: ApprovalPolicy;
+}
+
+export interface Scope {
+  /** Audit rows cite the version that was matched, so it has to be on here. */
+  version: number;
+  validFrom: string;
+  validUntil: string | null;
+  grants: ScopeGrant[];
+}
+
+/** The signed instrument behind a relation — stored as a hash and a reference. */
+export interface Instrument {
+  fileName: string;
+  hash: string;
+  reference: string;
+}
+
+export interface ControllershipRelation {
+  id: string;
+  personId: PersonId;
+  legalBasis: LegalBasis;
+  instrument: Instrument | null;
+  scope: Scope;
+  state: RelationState;
+  /** The Owner's own full-scope relation. Renders as a special case. */
+  isRootAuthority: boolean;
+  createdAt: string;
+  acceptedAt: string | null;
+  activatedAt: string | null;
+  suspendedAt?: string | null;
+  endedReason?: string | null;
+}
+
+/** An attribute as it actually arrived, value included. */
+export interface CredentialAttribute {
+  name: string;
+  value: string;
+}
+
+/** A credential the *entity* holds. Distinct from `Credential`, which the
+ *  entity issued to somebody else. */
+export interface HeldCredential {
+  id: string;
+  type: string;
+  issuer: string;
+  issuerDid: string;
+  issuerTrusted: boolean;
+  attributes: CredentialAttribute[];
+  /** The root everything else chains from. Gets its own treatment in B3. */
+  isFoundational: boolean;
+  receivedAt: string;
+  expiresAt: string | null;
+  status: "active" | "expired" | "revoked";
+}
+
+/**
+ * What the server said about an operation the Controller wants to run.
+ * Never computed here — see the header note.
+ */
+export type ScopeDecision = "allowed" | "out_of_scope" | "requires_approval";
+
+export interface CredentialOffer {
+  id: string;
+  type: string;
+  issuer: string;
+  issuerDid: string;
+  issuerTrusted: boolean;
+  /** Read from the offer payload, not from anything a user typed. */
+  attributes: CredentialAttribute[];
+  decision: ScopeDecision;
+  /** Populated when the decision is anything but `allowed`. */
+  decisionReason: string | null;
+  state: "pending" | "parked" | "accepted" | "declined" | "expired";
+  receivedAt: string;
+  expiresAt: string;
+}
+
+/**
+ * A relying party asking the entity for a presentation. It arrives as a task
+ * in the console — not a deep link — because the entity has no device.
+ */
+export interface VerificationRequestTask {
+  id: string;
+  relyingParty: string;
+  relyingPartyDid: string;
+  relyingPartyTrusted: boolean;
+  credentialType: string;
+  /** Everything asked for. */
+  requestedAttributes: string[];
+  /** The subset that is actually required — the least-disclosure default. */
+  requiredAttributes: string[];
+  requestsControllershipProof: boolean;
+  decision: ScopeDecision;
+  decisionReason: string | null;
+  state: "ready" | "parked" | "signing" | "presented" | "declined" | "expired";
+  receivedAt: string;
+  expiresAt: string;
+}
+
+export interface ApprovalSignature {
+  personId: PersonId;
+  at: string;
+  method: "web" | "wallet";
+}
+
+/**
+ * An operation held back by policy until somebody decides it.
+ *
+ * `stale` is the edge the brief calls out and the one most likely to be
+ * skipped: approved, then invalidated before it ran because the relation or
+ * scope changed underneath it. Worth designing precisely because a system
+ * that quietly executed it would be broken in a way nobody could see.
+ */
+export interface ParkedOperation {
+  id: string;
+  /** Issuing delegated authority parks like anything else, but it is an
+   *  Owner action rather than one of the Controller operations. */
+  operation: ControllerOperation | "authority:issue";
+  summary: string;
+  requestedBy: PersonId;
+  relationId: string;
+  scopeVersion: number;
+  targetRelyingParty: string | null;
+  /** What an approver's wallet signature actually commits to. */
+  payloadHash: string;
+  policy: ApprovalPolicy;
+  requiredSignatures: number;
+  signatures: ApprovalSignature[];
+  state: "parked" | "awaiting_signature" | "approved" | "rejected" | "expired" | "stale";
+  decisionReason: string | null;
+  createdAt: string;
+  /** Drives the TTL countdown. */
+  expiresAt: string;
+  /** Set when `stale` — why an approved operation stopped being valid. */
+  invalidatedReason?: string | null;
+}
+
+export type AuthorityKind = "role" | "capability";
+
+/**
+ * A Role or Capability credential the entity issued into a person's own
+ * wallet. The constraints are public: any verifier can read them, which is
+ * the whole point of Pattern B.
+ */
+export interface DelegatedAuthority {
+  id: string;
+  kind: AuthorityKind;
+  title: string;
+  recipientId: PersonId;
+  /** The Role this Capability hangs off, if any. Act 5 revokes the parent. */
+  parentId: string | null;
+  /** Every Pattern B credential traces back to a controllership relation. */
+  relationId: string;
+  taskScopes: string[];
+  valueCap: { amount: number; currency: "BTN"; perTransaction: boolean } | null;
+  counterparties: ScopeFilter;
+  validFrom: string;
+  validUntil: string;
+  status: "ACTIVE" | "SUSPENDED" | "REVOKED" | "EXPIRED";
+  acceptance: "sent" | "accepted" | "rejected" | "expired";
+  issuedAt: string;
+  acceptedAt: string | null;
+  endedAt?: string | null;
+  endedReason?: string | null;
+  appealReference?: string | null;
+}
+
+/** One link in the chain a verification walks. */
+export interface AuthorityChainLink {
+  id: string;
+  label: string;
+  kind: "foundational" | "relation" | "role" | "capability";
+  /** Who holds this link — the entity, or a person. */
+  heldBy: string;
+  status: "valid" | "revoked" | "suspended" | "expired";
+}
+
+export interface ConstraintCheck {
+  label: string;
+  detail: string;
+  outcome: "pass" | "fail";
+}
+
+/**
+ * The signed decision an external verifier renders (D5).
+ *
+ * `SERVICE_UNREACHABLE` is a FAIL, not a third outcome — it is separate here
+ * only so the UI can say honestly *why* it failed. Fail closed: an
+ * unreachable service never resolves to a hopeful spinner or a silent pass.
+ */
+export interface VerificationDecision {
+  id: string;
+  outcome: "PASS" | "FAIL" | "SERVICE_UNREACHABLE";
+  verifier: string;
+  /** Dual attribution, and nothing else about the person. */
+  entity: string;
+  actorId: PersonId;
+  authorityId: string;
+  declarationRef: string;
+  declarationHash: string;
+  declaredValue: { amount: number; currency: "BTN" };
+  chain: AuthorityChainLink[];
+  checks: ConstraintCheck[];
+  /** Present on a FAIL. Never leaks unrelated personal data. */
+  reasons: string[];
+  decidedAt: string;
+  signature: string;
+}
+
+/**
+ * An append-only audit row.
+ *
+ * `prevHash`/`rowHash` are fixture strings — this is an array in
+ * localStorage, not a hash chain, and the README says so out loud. They are
+ * here because the *integrity indicator* is part of what C6 has to show, and
+ * a row with nowhere to put a hash cannot show it.
+ */
+export interface AuditEntry {
+  id: string;
+  seq: number;
+  operation: string;
+  summary: string;
+  /** The principal. Always the entity, never the person. */
+  entity: string;
+  /** The person who acted. Both are shown, always. */
+  actorId: PersonId;
+  relationId: string | null;
+  scopeVersion: number | null;
+  approvedById: PersonId | null;
+  relyingPartyDid: string | null;
+  /** A digest of what was disclosed. Never the values themselves. */
+  disclosedDigest: string | null;
+  at: string;
+  prevHash: string;
+  rowHash: string;
+}
+
+export interface Appeal {
+  id: string;
+  /** The reference given to the holder in the revocation notice. */
+  reference: string;
+  subjectId: PersonId;
+  againstKind: "authority" | "relation";
+  againstId: string;
+  againstTitle: string;
+  /** The reason the Owner gave when revoking. */
+  noticeReason: string;
+  noticeIssuedAt: string;
+  submittedAt: string | null;
+  submission: string | null;
+  state:
+    | "notice_issued"
+    | "open"
+    | "under_review"
+    | "upheld_reinstated"
+    | "rejected"
+    | "window_closed";
+  /** Provisional, pending the Governance Framework. Copy, never a graphic. */
+  windowWorkingDays: number;
+  decisionWorkingDays: number;
+  evidence: string[];
+}
+
+/** Where the demo currently is in the story. */
+export interface HarnessState {
+  /** Who the console is being driven as. Decides what is *absent*. */
+  persona: PersonaId;
+  /** 1–6, matching the acts. 0 means nobody has started the story. */
+  act: number;
+  /** Whether the story runner overlay is showing. */
+  runnerOpen: boolean;
+  /**
+   * Per-screen state overrides, for review rather than for the demo: a screen
+   * asks for its own key and renders that state instead of its real one. A
+   * state you cannot reach is a state you cannot review.
+   */
+  stateOverrides: Record<string, string>;
+}
+
 export interface DemoState {
   /** Which organization the workspace is currently showing. */
   activeOrgId: string;
@@ -184,13 +555,27 @@ export interface DemoState {
   bulkRecords: BulkRecord[];
   apiKeys: ApiKey[];
   activity: { id: string; text: string; at: string }[];
+
+  /* ---- Entity wallet ---- */
+  people: Person[];
+  relations: ControllershipRelation[];
+  heldCredentials: HeldCredential[];
+  offers: CredentialOffer[];
+  verificationRequests: VerificationRequestTask[];
+  parkedOperations: ParkedOperation[];
+  delegatedAuthorities: DelegatedAuthority[];
+  /** Act 5 keeps both decisions so PASS and FAIL can sit side by side. */
+  decisions: VerificationDecision[];
+  auditEntries: AuditEntry[];
+  appeals: Appeal[];
+  harness: HarnessState;
 }
 
 const ISSUER_DID = "did:indy:bhutan:8XkT4vQmR2sLpNbW9dHyZa";
 
 /** Dates are fixed strings, not computed: a demo should look the same twice. */
 export const SEED: DemoState = {
-  activeOrgId: "org-ndi",
+  activeOrgId: "org-norling",
   schemas: [
     {
       id: "schema:bhutan:2:CitizenshipID:1.2",
@@ -329,6 +714,18 @@ export const SEED: DemoState = {
     },
   ],
   organizations: [
+    {
+      /* The entity the whole Entity Wallet story is about. */
+      id: "org-norling",
+      name: "Norling Logistics Pvt. Ltd.",
+      description: "Freight forwarding and customs clearance. CRA-2019-04477.",
+      role: "Owner",
+      members: 5,
+      createdAt: "2026-05-20",
+      website: "https://www.norlinglogistics.bt",
+      location: "Babesa, Thimphu, Bhutan",
+      visibility: "private",
+    },
     {
       id: "org-ndi",
       name: "Bhutan NDI",
@@ -505,4 +902,872 @@ export const SEED: DemoState = {
     { id: "a-3", text: "Bulk upload graduates-2026-batch-2.csv completed", at: "2026-08-06" },
     { id: "a-4", text: "Deki Yangzom invited as Verifier", at: "2026-08-05" },
   ],
+
+  /* ================================================================ */
+  /* Entity wallet — the six acts, as data                            */
+  /* ================================================================ */
+
+  people: [
+    {
+      id: "rinzin",
+      name: "Rinzin Dema",
+      cid: "•••• •••• 4821",
+      email: "rinzin.dema@norlinglogistics.bt",
+      title: "Managing director · registered representative",
+      cidVerified: true,
+    },
+    {
+      id: "dorji",
+      name: "Dorji Wangchuk",
+      cid: "•••• •••• 7134",
+      email: "dorji.wangchuk@norlinglogistics.bt",
+      title: "Operations manager",
+      cidVerified: true,
+    },
+    {
+      id: "pema",
+      name: "Pema Choden",
+      cid: "•••• •••• 2960",
+      email: "pema.choden@druksharpa.bt",
+      title: "Clearing agent · Druk Sharpa Freight",
+      cidVerified: true,
+    },
+    {
+      id: "sonam",
+      name: "Sonam Yeshey",
+      cid: "•••• •••• 5573",
+      email: "sonam.yeshey@norlinglogistics.bt",
+      title: "Finance officer",
+      cidVerified: true,
+    },
+    {
+      id: "karma",
+      name: "Karma Wangmo",
+      cid: "•••• •••• 1208",
+      email: "karma.wangmo@norlinglogistics.bt",
+      title: "Finance officer (left the company)",
+      cidVerified: true,
+    },
+    {
+      /* C2 needs a person the register has not confirmed, or its
+         "person not CID-verified" state is unreachable. */
+      id: "tenzin",
+      name: "Tenzin Norbu",
+      cid: "—",
+      email: "tenzin.norbu@norlinglogistics.bt",
+      title: "Warehouse supervisor",
+      cidVerified: false,
+    },
+  ],
+
+  relations: [
+    {
+      /* The Owner's own relation. Full scope, no expiry — the root everything
+         else is granted out of, and the reason the scope grammar needs a
+         special case rather than a sentence listing every operation. */
+      id: "rel-root",
+      personId: "rinzin",
+      legalBasis: "entity_consent",
+      instrument: {
+        fileName: "board-resolution-2026-05-18.pdf",
+        hash: "sha256:4f1c9e2a7b83d05e6c41a9fb2d7e08c3915b6ad4e2f70c81",
+        reference: "NL/BR/2026/011",
+      },
+      scope: {
+        version: 1,
+        validFrom: "2026-05-20",
+        validUntil: null,
+        grants: [
+          { operation: "credential:receive", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "credential:accept", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "proof:present", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "connection:create", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "approval:decide", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+        ],
+      },
+      state: "ACTIVE",
+      isRootAuthority: true,
+      createdAt: "2026-05-20",
+      acceptedAt: "2026-05-20",
+      activatedAt: "2026-05-20",
+    },
+    {
+      /* Act 2's grant. Deliberately narrow, and narrow in a way you can see:
+         he may accept two kinds of credential and present exactly one, to two
+         named counterparties, and only presenting needs an approver. */
+      id: "rel-dorji",
+      personId: "dorji",
+      legalBasis: "entity_consent",
+      instrument: {
+        fileName: "board-resolution-2026-05-28.pdf",
+        hash: "sha256:9a7d40be15c2f386071e4dab8c93520fe6b1748ad03c95e2",
+        reference: "NL/BR/2026/014",
+      },
+      scope: {
+        version: 3,
+        validFrom: "2026-06-01",
+        validUntil: "2026-12-31",
+        grants: [
+          { operation: "credential:receive", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          {
+            operation: "credential:accept",
+            credentialTypes: { mode: "list", values: ["Business Registration", "Customs Broker Licence"] },
+            relyingParties: { mode: "any" },
+            approval: "AUTO",
+          },
+          { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          {
+            operation: "proof:present",
+            credentialTypes: { mode: "list", values: ["Business Registration"] },
+            relyingParties: { mode: "list", values: ["Bhutan National Single Window", "Bank of Bhutan"] },
+            approval: "SINGLE_APPROVER",
+          },
+          { operation: "connection:create", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+        ],
+      },
+      state: "ACTIVE",
+      isRootAuthority: false,
+      createdAt: "2026-05-28",
+      acceptedAt: "2026-05-30",
+      activatedAt: "2026-05-30",
+    },
+    {
+      /* Waiting on its Controller. The register has to show this state, and
+         C4 needs a relation that has not been accepted yet. */
+      id: "rel-sonam",
+      personId: "sonam",
+      legalBasis: "entity_consent",
+      instrument: {
+        fileName: "board-resolution-2026-09-01.pdf",
+        hash: "sha256:2e58ac91d7f4630b85c2019eab7d43f6c80915e7b24da6f3",
+        reference: "NL/BR/2026/019",
+      },
+      scope: {
+        version: 1,
+        validFrom: "2026-09-08",
+        validUntil: "2027-03-31",
+        grants: [
+          { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "approval:decide", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+        ],
+      },
+      state: "PENDING_ACCEPTANCE",
+      isRootAuthority: false,
+      createdAt: "2026-09-01",
+      acceptedAt: null,
+      activatedAt: null,
+    },
+    {
+      /* The departing-officer fear from the personas, already resolved. */
+      id: "rel-karma",
+      personId: "karma",
+      legalBasis: "entity_consent",
+      instrument: {
+        fileName: "board-resolution-2026-03-04.pdf",
+        hash: "sha256:71b3ec4a09d8526f1c74b0ade39f2851dc6047ba9e13f582",
+        reference: "NL/BR/2026/006",
+      },
+      scope: {
+        version: 2,
+        validFrom: "2026-03-06",
+        validUntil: "2026-12-31",
+        grants: [
+          { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          {
+            operation: "proof:present",
+            credentialTypes: { mode: "list", values: ["Tax Clearance Certificate"] },
+            relyingParties: { mode: "list", values: ["Bank of Bhutan"] },
+            approval: "DUAL_CONTROL",
+          },
+        ],
+      },
+      state: "TERMINATED",
+      isRootAuthority: false,
+      createdAt: "2026-03-04",
+      acceptedAt: "2026-03-06",
+      activatedAt: "2026-03-06",
+      endedReason: "Left the company. Terminated on her last working day.",
+    },
+  ],
+
+  heldCredentials: [
+    {
+      /* Act 1's milestone, and the root of every chain in Act 5. */
+      id: "hc-foundational",
+      type: "Business Registration",
+      issuer: "Registrar of Companies",
+      issuerDid: "did:indy:bhutan:RoC4mT8pWq2vZx7nKdB5sY",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "registration_number", value: "CRA-2019-04477" },
+        { name: "entity_type", value: "Private limited company" },
+        { name: "registered_address", value: "Babesa, Thimphu, Bhutan" },
+        { name: "incorporation_date", value: "2019-08-14" },
+        { name: "status", value: "Active" },
+      ],
+      isFoundational: true,
+      receivedAt: "2026-05-20",
+      expiresAt: null,
+      status: "active",
+    },
+    {
+      id: "hc-tax",
+      type: "Tax Clearance Certificate",
+      issuer: "Department of Revenue & Customs",
+      issuerDid: "did:indy:bhutan:DRC9kL3wN6tR8vQm2xY7pZ",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "tpn", value: "TPN-114-8830" },
+        { name: "assessment_year", value: "2025" },
+        { name: "cleared_on", value: "2026-04-01" },
+      ],
+      isFoundational: false,
+      receivedAt: "2026-04-01",
+      expiresAt: "2026-08-31",
+      status: "expired",
+    },
+    {
+      id: "hc-freight",
+      type: "Freight Forwarder Permit",
+      issuer: "Road Safety & Transport Authority",
+      issuerDid: "did:indy:bhutan:RSTA5nQ7xK2mV9wB4tL6pD",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "permit_number", value: "RSTA-FF-2024-0912" },
+        { name: "vehicle_classes", value: "Heavy goods, container" },
+      ],
+      isFoundational: false,
+      receivedAt: "2026-02-11",
+      expiresAt: "2027-02-10",
+      status: "revoked",
+    },
+  ],
+
+  offers: [
+    {
+      /* Act 3's offer. In scope and automatic — accepting it is the whole
+         interaction, and the type is read from this payload, not typed. */
+      id: "offer-customs",
+      type: "Customs Broker Licence",
+      issuer: "Department of Revenue & Customs",
+      issuerDid: "did:indy:bhutan:DRC9kL3wN6tR8vQm2xY7pZ",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "licence_number", value: "DRC-CB-2026-0331" },
+        { name: "broker_class", value: "Class A" },
+        { name: "valid_until", value: "2027-09-02" },
+      ],
+      decision: "allowed",
+      decisionReason: null,
+      state: "pending",
+      receivedAt: "2026-09-02",
+      expiresAt: "2026-09-16",
+    },
+    {
+      /* The denied state. The reason is specific and the next step routes to
+         the Owner — never to a self-edit. */
+      id: "offer-insurance",
+      type: "Fleet Insurance Certificate",
+      issuer: "Royal Insurance Corporation of Bhutan",
+      issuerDid: "did:indy:bhutan:RICB2vT8mQ5wK9xN3pL7dB",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "policy_number", value: "RICB-MV-2026-77412" },
+        { name: "sum_insured", value: "BTN 4,200,000" },
+      ],
+      decision: "out_of_scope",
+      decisionReason:
+        "Your authority covers Business Registration and Customs Broker Licence credentials. Accepting insurance credentials was not granted.",
+      state: "pending",
+      receivedAt: "2026-09-05",
+      expiresAt: "2026-09-19",
+    },
+    {
+      id: "offer-warehouse",
+      type: "Bonded Warehouse Authorisation",
+      issuer: "Department of Revenue & Customs",
+      issuerDid: "did:indy:bhutan:DRC9kL3wN6tR8vQm2xY7pZ",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "facility_code", value: "BW-PHU-0043" },
+        { name: "bonded_capacity", value: "1,800 m³" },
+      ],
+      decision: "requires_approval",
+      decisionReason: "Accepting an authorisation of this kind needs one approver.",
+      state: "parked",
+      receivedAt: "2026-09-06",
+      expiresAt: "2026-09-20",
+    },
+    {
+      id: "offer-lapsed",
+      type: "Warehouse Safety Certificate",
+      issuer: "Department of Labour",
+      issuerDid: "did:indy:bhutan:DoL7mK4tQ9vX2wN6pB3sZL",
+      issuerTrusted: true,
+      attributes: [{ name: "registered_name", value: "Norling Logistics Pvt. Ltd." }],
+      decision: "allowed",
+      decisionReason: null,
+      state: "expired",
+      receivedAt: "2026-08-04",
+      expiresAt: "2026-08-18",
+    },
+  ],
+
+  verificationRequests: [
+    {
+      /* Act 3's portal task. Five attributes asked for, two actually
+         required — least disclosure has something to defend here. */
+      id: "vr-bob",
+      relyingParty: "Bank of Bhutan",
+      relyingPartyDid: "did:indy:bhutan:BoB3nQ8mT5wK2xV7pL9dY",
+      relyingPartyTrusted: true,
+      credentialType: "Business Registration",
+      requestedAttributes: [
+        "registered_name",
+        "registration_number",
+        "entity_type",
+        "registered_address",
+        "incorporation_date",
+      ],
+      requiredAttributes: ["registered_name", "registration_number"],
+      requestsControllershipProof: true,
+      decision: "requires_approval",
+      decisionReason: "Presenting to Bank of Bhutan is in scope and needs one approver.",
+      state: "ready",
+      receivedAt: "2026-09-04",
+      expiresAt: "2026-09-11",
+    },
+    {
+      /* The relying-party filter doing its job — in scope by credential
+         type, denied by counterparty. */
+      id: "vr-druk",
+      relyingParty: "Druk Trading House",
+      relyingPartyDid: "did:indy:bhutan:DTH9kV2mQ7wN4xT6pB8sL",
+      relyingPartyTrusted: false,
+      credentialType: "Business Registration",
+      requestedAttributes: ["registered_name", "registration_number", "registered_address"],
+      requiredAttributes: ["registered_name"],
+      requestsControllershipProof: false,
+      decision: "out_of_scope",
+      decisionReason:
+        "Your authority allows presentations to Bhutan National Single Window and Bank of Bhutan. Druk Trading House is not among them.",
+      state: "ready",
+      receivedAt: "2026-09-07",
+      expiresAt: "2026-09-14",
+    },
+    {
+      id: "vr-bnsw-done",
+      relyingParty: "Bhutan National Single Window",
+      relyingPartyDid: "did:indy:bhutan:BNSW6tL9nK3mQ8wV2xP5dB",
+      relyingPartyTrusted: true,
+      credentialType: "Business Registration",
+      requestedAttributes: ["registered_name", "registration_number"],
+      requiredAttributes: ["registered_name", "registration_number"],
+      requestsControllershipProof: true,
+      decision: "requires_approval",
+      decisionReason: null,
+      state: "presented",
+      receivedAt: "2026-08-26",
+      expiresAt: "2026-09-02",
+    },
+    {
+      id: "vr-lapsed",
+      relyingParty: "Bank of Bhutan",
+      relyingPartyDid: "did:indy:bhutan:BoB3nQ8mT5wK2xV7pL9dY",
+      relyingPartyTrusted: true,
+      credentialType: "Tax Clearance Certificate",
+      requestedAttributes: ["registered_name", "tpn", "assessment_year"],
+      requiredAttributes: ["registered_name", "tpn"],
+      requestsControllershipProof: false,
+      decision: "requires_approval",
+      decisionReason: null,
+      state: "expired",
+      receivedAt: "2026-08-10",
+      expiresAt: "2026-08-17",
+    },
+  ],
+
+  parkedOperations: [
+    {
+      /* Waiting on Rinzin. The payload hash is what her wallet signature
+         would actually commit to — B7 shows it for that reason. */
+      id: "park-present-bob",
+      operation: "proof:present",
+      summary: "Present Business Registration to Bank of Bhutan",
+      requestedBy: "dorji",
+      relationId: "rel-dorji",
+      scopeVersion: 3,
+      targetRelyingParty: "Bank of Bhutan",
+      payloadHash: "sha256:c0a71e94b83f2d6508a1c47fe9b230da75146c8be03f9a27",
+      policy: "SINGLE_APPROVER",
+      requiredSignatures: 1,
+      signatures: [],
+      state: "parked",
+      decisionReason: null,
+      createdAt: "2026-09-08",
+      expiresAt: "2026-09-11",
+    },
+    {
+      id: "park-accept-warehouse",
+      operation: "credential:accept",
+      summary: "Accept Bonded Warehouse Authorisation from Department of Revenue & Customs",
+      requestedBy: "dorji",
+      relationId: "rel-dorji",
+      scopeVersion: 3,
+      targetRelyingParty: null,
+      payloadHash: "sha256:38f5b2ce7a41d09628e5c3ba147f60d92b8074ae5c13f6d8",
+      policy: "SINGLE_APPROVER",
+      requiredSignatures: 1,
+      signatures: [],
+      state: "parked",
+      decisionReason: null,
+      createdAt: "2026-09-06",
+      expiresAt: "2026-09-13",
+    },
+    {
+      /* Dual control, half collected. The plan folds multi-sig into B7 as a
+         variant rather than building D3, and this is that variant. */
+      id: "park-issue-highvalue",
+      operation: "authority:issue",
+      summary: "Issue Declaration authority to Pema Choden — cap Nu. 1,200,000",
+      requestedBy: "rinzin",
+      relationId: "rel-root",
+      scopeVersion: 1,
+      targetRelyingParty: "Bhutan National Single Window",
+      payloadHash: "sha256:7d19a4fe0c38b5217e9c460da3f8b12a4e07c1685bd93fa2",
+      policy: "DUAL_CONTROL",
+      requiredSignatures: 2,
+      signatures: [{ personId: "rinzin", at: "2026-09-08", method: "wallet" }],
+      state: "parked",
+      decisionReason: null,
+      createdAt: "2026-09-08",
+      expiresAt: "2026-09-12",
+    },
+    {
+      /* Approved, then invalidated before it ran. The edge the brief calls
+         out in 8.4 and the one a system would be broken to execute. */
+      id: "park-stale",
+      operation: "proof:present",
+      summary: "Present Tax Clearance Certificate to Bank of Bhutan",
+      requestedBy: "karma",
+      relationId: "rel-karma",
+      scopeVersion: 2,
+      targetRelyingParty: "Bank of Bhutan",
+      payloadHash: "sha256:b61f7c05e298a4d3706b1cfe45a9d823017e5b9c4af26d10",
+      policy: "DUAL_CONTROL",
+      requiredSignatures: 2,
+      signatures: [
+        { personId: "rinzin", at: "2026-09-01", method: "wallet" },
+        { personId: "sonam", at: "2026-09-01", method: "web" },
+      ],
+      state: "stale",
+      decisionReason: null,
+      invalidatedReason:
+        "Karma Wangmo's controllership was terminated after this was approved, so it was never run.",
+      createdAt: "2026-08-31",
+      expiresAt: "2026-09-07",
+    },
+    {
+      id: "park-expired",
+      operation: "credential:accept",
+      summary: "Accept Warehouse Safety Certificate from Department of Labour",
+      requestedBy: "dorji",
+      relationId: "rel-dorji",
+      scopeVersion: 3,
+      targetRelyingParty: null,
+      payloadHash: "sha256:4a8e13d705b9c2f6481ade37f0b5924c6d81073be5a2fc94",
+      policy: "SINGLE_APPROVER",
+      requiredSignatures: 1,
+      signatures: [],
+      state: "expired",
+      decisionReason: "Nobody decided this before it expired.",
+      createdAt: "2026-08-05",
+      expiresAt: "2026-08-12",
+    },
+    {
+      id: "park-approved-bnsw",
+      operation: "proof:present",
+      summary: "Present Business Registration to Bhutan National Single Window",
+      requestedBy: "dorji",
+      relationId: "rel-dorji",
+      scopeVersion: 3,
+      targetRelyingParty: "Bhutan National Single Window",
+      payloadHash: "sha256:e572b0491ac8d36f7be24051c9da8317064fb2e85d1a7c63",
+      policy: "SINGLE_APPROVER",
+      requiredSignatures: 1,
+      signatures: [{ personId: "rinzin", at: "2026-08-26", method: "wallet" }],
+      state: "approved",
+      decisionReason: null,
+      createdAt: "2026-08-26",
+      expiresAt: "2026-09-02",
+    },
+  ],
+
+  delegatedAuthorities: [
+    {
+      /* The Role Act 5 revokes. Everything below it fails when it goes. */
+      id: "da-role-broker",
+      kind: "role",
+      title: "Customs broker",
+      recipientId: "pema",
+      parentId: null,
+      relationId: "rel-root",
+      taskScopes: ["customs:declaration", "customs:amendment"],
+      valueCap: null,
+      counterparties: { mode: "list", values: ["Bhutan National Single Window"] },
+      validFrom: "2026-06-15",
+      validUntil: "2027-06-14",
+      status: "ACTIVE",
+      acceptance: "accepted",
+      issuedAt: "2026-06-15",
+      acceptedAt: "2026-06-15",
+    },
+    {
+      /* Act 4's capability. Short-lived by design — expiry is the first line
+         of defence, so 90 days, not a year. */
+      id: "da-cap-declaration",
+      kind: "capability",
+      title: "Declaration authority",
+      recipientId: "pema",
+      parentId: "da-role-broker",
+      relationId: "rel-root",
+      taskScopes: ["customs:declaration"],
+      valueCap: { amount: 500000, currency: "BTN", perTransaction: true },
+      counterparties: { mode: "list", values: ["Bhutan National Single Window"] },
+      validFrom: "2026-09-07",
+      validUntil: "2026-12-06",
+      status: "ACTIVE",
+      acceptance: "accepted",
+      issuedAt: "2026-09-07",
+      acceptedAt: "2026-09-08",
+    },
+    {
+      /* The console's "sent, awaiting acceptance" state — acceptance is the
+         holder's consent and cannot be assumed. */
+      id: "da-cap-payments",
+      kind: "capability",
+      title: "Payment release authority",
+      recipientId: "sonam",
+      parentId: null,
+      relationId: "rel-root",
+      taskScopes: ["payments:release"],
+      valueCap: { amount: 250000, currency: "BTN", perTransaction: true },
+      counterparties: { mode: "list", values: ["Bank of Bhutan"] },
+      validFrom: "2026-09-08",
+      validUntil: "2026-11-07",
+      status: "ACTIVE",
+      acceptance: "sent",
+      issuedAt: "2026-09-08",
+      acceptedAt: null,
+    },
+    {
+      id: "da-cap-lapsed",
+      kind: "capability",
+      title: "Declaration authority (Q2)",
+      recipientId: "pema",
+      parentId: "da-role-broker",
+      relationId: "rel-root",
+      taskScopes: ["customs:declaration"],
+      valueCap: { amount: 500000, currency: "BTN", perTransaction: true },
+      counterparties: { mode: "list", values: ["Bhutan National Single Window"] },
+      validFrom: "2026-04-01",
+      validUntil: "2026-06-30",
+      status: "EXPIRED",
+      acceptance: "accepted",
+      issuedAt: "2026-04-01",
+      acceptedAt: "2026-04-01",
+    },
+    {
+      id: "da-role-warehouse",
+      kind: "role",
+      title: "Warehouse supervisor",
+      recipientId: "karma",
+      parentId: null,
+      relationId: "rel-root",
+      taskScopes: ["warehouse:receipt"],
+      valueCap: null,
+      counterparties: { mode: "any" },
+      validFrom: "2026-03-06",
+      validUntil: "2026-12-31",
+      status: "REVOKED",
+      acceptance: "accepted",
+      issuedAt: "2026-03-06",
+      acceptedAt: "2026-03-07",
+      endedAt: "2026-07-31",
+      endedReason: "Left the company.",
+      appealReference: "AP-2026-0288",
+    },
+  ],
+
+  decisions: [
+    {
+      /* Act 5, first run. Every check passes and the chain is whole. */
+      id: "dec-84120",
+      outcome: "PASS",
+      verifier: "Bhutan National Single Window",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "pema",
+      authorityId: "da-cap-declaration",
+      declarationRef: "BNSW-DEC-2026-84120",
+      declarationHash: "sha256:1f6b90c4a7e2d3850b94cf17e6a02d5b83741ce90b2d6f45",
+      declaredValue: { amount: 420000, currency: "BTN" },
+      chain: [
+        { id: "hc-foundational", label: "Business Registration", kind: "foundational", heldBy: "Norling Logistics Pvt. Ltd.", status: "valid" },
+        { id: "rel-root", label: "Root authority", kind: "relation", heldBy: "Rinzin Dema", status: "valid" },
+        { id: "da-role-broker", label: "Customs broker", kind: "role", heldBy: "Pema Choden", status: "valid" },
+        { id: "da-cap-declaration", label: "Declaration authority", kind: "capability", heldBy: "Pema Choden", status: "valid" },
+      ],
+      checks: [
+        { label: "Task in scope", detail: "customs:declaration is one of the granted tasks", outcome: "pass" },
+        { label: "Value within cap", detail: "Nu. 420,000 declared against a Nu. 500,000 per-transaction cap", outcome: "pass" },
+        { label: "Counterparty bound", detail: "Bhutan National Single Window matches the bound counterparty", outcome: "pass" },
+        { label: "Within validity window", detail: "Valid 7 Sep 2026 – 6 Dec 2026", outcome: "pass" },
+        { label: "Authority chain intact", detail: "All four links live at the time of decision", outcome: "pass" },
+      ],
+      reasons: [],
+      decidedAt: "2026-09-08",
+      signature: "z3Kf8Qa2NmVpT7wLxB4dRc9sYhE6uJn1PkG5tZoW",
+    },
+    {
+      /* The same capability, the same person, the same counterparty — and a
+         FAIL, because a link above it was withdrawn. This pair is the demo. */
+      id: "dec-84137",
+      outcome: "FAIL",
+      verifier: "Bhutan National Single Window",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "pema",
+      authorityId: "da-cap-declaration",
+      declarationRef: "BNSW-DEC-2026-84137",
+      declarationHash: "sha256:8c04e71ab5d2f39607be4a1c8d5079f2361ba0e75c8d4f19",
+      declaredValue: { amount: 380000, currency: "BTN" },
+      chain: [
+        { id: "hc-foundational", label: "Business Registration", kind: "foundational", heldBy: "Norling Logistics Pvt. Ltd.", status: "valid" },
+        { id: "rel-root", label: "Root authority", kind: "relation", heldBy: "Rinzin Dema", status: "valid" },
+        { id: "da-role-broker", label: "Customs broker", kind: "role", heldBy: "Pema Choden", status: "revoked" },
+        { id: "da-cap-declaration", label: "Declaration authority", kind: "capability", heldBy: "Pema Choden", status: "valid" },
+      ],
+      checks: [
+        { label: "Task in scope", detail: "customs:declaration is one of the granted tasks", outcome: "pass" },
+        { label: "Value within cap", detail: "Nu. 380,000 declared against a Nu. 500,000 per-transaction cap", outcome: "pass" },
+        { label: "Counterparty bound", detail: "Bhutan National Single Window matches the bound counterparty", outcome: "pass" },
+        { label: "Within validity window", detail: "Valid 7 Sep 2026 – 6 Dec 2026", outcome: "pass" },
+        { label: "Authority chain intact", detail: "Customs broker was revoked on 9 Sep 2026", outcome: "fail" },
+      ],
+      reasons: [
+        "The Customs broker role this authority depends on was withdrawn on 9 September 2026.",
+        "An authority cannot be relied on while any authority above it has been withdrawn.",
+      ],
+      decidedAt: "2026-09-09",
+      signature: "z7Ln2Vx9BqTm4pKdW8sRc3aYhU5eJf1GoZ6tNwPi",
+    },
+    {
+      /* Fail closed, and say so. Seeded rather than only reachable through a
+         thrown error, because a state you cannot reach cannot be reviewed. */
+      id: "dec-unreachable",
+      outcome: "SERVICE_UNREACHABLE",
+      verifier: "Bhutan National Single Window",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "pema",
+      authorityId: "da-cap-declaration",
+      declarationRef: "BNSW-DEC-2026-84141",
+      declarationHash: "sha256:5b93d0e6c1a47f28903e5bd7a4c61f80257ed3b9418c6a02",
+      declaredValue: { amount: 96000, currency: "BTN" },
+      chain: [],
+      checks: [],
+      reasons: [
+        "The authority verification service could not be reached, so nothing could be checked.",
+        "An unverifiable authority is treated as no authority.",
+      ],
+      decidedAt: "2026-09-09",
+      signature: "",
+    },
+  ],
+
+  auditEntries: [
+    {
+      id: "au-8",
+      seq: 8,
+      operation: "authority:revoke",
+      summary: "Revoked Customs broker role held by Pema Choden",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-root",
+      scopeVersion: 1,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-09-09T09:14:00+06:00",
+      prevHash: "sha256:0d47b1e9",
+      rowHash: "sha256:6ca39f02",
+    },
+    {
+      id: "au-7",
+      seq: 7,
+      operation: "authority:accept",
+      summary: "Pema Choden accepted Declaration authority",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "pema",
+      relationId: "rel-root",
+      scopeVersion: 1,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-09-08T15:41:00+06:00",
+      prevHash: "sha256:93e28ac5",
+      rowHash: "sha256:0d47b1e9",
+    },
+    {
+      id: "au-6",
+      seq: 6,
+      operation: "authority:issue",
+      summary: "Issued Declaration authority to Pema Choden — cap Nu. 500,000 per declaration",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-root",
+      scopeVersion: 1,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-09-07T11:02:00+06:00",
+      prevHash: "sha256:41fb7d60",
+      rowHash: "sha256:93e28ac5",
+    },
+    {
+      /* The row that carries the whole dual-attribution point: the entity
+         presented, Dorji acted, Rinzin approved, and only a digest of what
+         was disclosed is kept. */
+      id: "au-5",
+      seq: 5,
+      operation: "proof:present",
+      summary: "Presented Business Registration to Bhutan National Single Window",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "dorji",
+      relationId: "rel-dorji",
+      scopeVersion: 3,
+      approvedById: "rinzin",
+      relyingPartyDid: "did:indy:bhutan:BNSW6tL9nK3mQ8wV2xP5dB",
+      disclosedDigest: "sha256:a7f3c9e1",
+      at: "2026-08-26T14:23:00+06:00",
+      prevHash: "sha256:c85a0b34",
+      rowHash: "sha256:41fb7d60",
+    },
+    {
+      id: "au-4",
+      seq: 4,
+      operation: "relation:terminate",
+      summary: "Terminated the controllership of Karma Wangmo",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-karma",
+      scopeVersion: 2,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-07-31T17:05:00+06:00",
+      prevHash: "sha256:2b6e91df",
+      rowHash: "sha256:c85a0b34",
+    },
+    {
+      id: "au-3",
+      seq: 3,
+      operation: "relation:accept",
+      summary: "Dorji Wangchuk accepted the duties of a controller",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "dorji",
+      relationId: "rel-dorji",
+      scopeVersion: 3,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-05-30T10:12:00+06:00",
+      prevHash: "sha256:74d0af28",
+      rowHash: "sha256:2b6e91df",
+    },
+    {
+      id: "au-2",
+      seq: 2,
+      operation: "relation:create",
+      summary: "Created a controllership relation for Dorji Wangchuk",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-dorji",
+      scopeVersion: 1,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-05-28T09:47:00+06:00",
+      prevHash: "sha256:1a05c7be",
+      rowHash: "sha256:74d0af28",
+    },
+    {
+      id: "au-1",
+      seq: 1,
+      operation: "credential:accept",
+      summary: "Accepted the entity's Business Registration from the Registrar of Companies",
+      entity: "Norling Logistics Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-root",
+      scopeVersion: 1,
+      approvedById: null,
+      relyingPartyDid: null,
+      disclosedDigest: null,
+      at: "2026-05-20T13:30:00+06:00",
+      prevHash: "sha256:00000000",
+      rowHash: "sha256:1a05c7be",
+    },
+  ],
+
+  appeals: [
+    {
+      /* Act 6. Notice issued, nothing submitted yet — the state the demo
+         opens on, so the audience sees the recourse exists. */
+      id: "ap-pema",
+      reference: "AP-2026-0417",
+      subjectId: "pema",
+      againstKind: "authority",
+      againstId: "da-role-broker",
+      againstTitle: "Customs broker",
+      noticeReason:
+        "Withdrawn pending an internal review of declaration values submitted in August.",
+      noticeIssuedAt: "2026-09-09",
+      submittedAt: null,
+      submission: null,
+      state: "notice_issued",
+      windowWorkingDays: 10,
+      decisionWorkingDays: 5,
+      evidence: [],
+    },
+    {
+      /* An appeal that worked, so the upheld outcome is not hypothetical. */
+      id: "ap-karma",
+      reference: "AP-2026-0288",
+      subjectId: "karma",
+      againstKind: "authority",
+      againstId: "da-role-warehouse",
+      againstTitle: "Warehouse supervisor",
+      noticeReason: "Withdrawn on departure from the company.",
+      noticeIssuedAt: "2026-07-31",
+      submittedAt: "2026-08-04",
+      submission:
+        "My last working day was 8 August, not 31 July. I had four warehouse receipts outstanding on the date the role was withdrawn.",
+      state: "rejected",
+      windowWorkingDays: 10,
+      decisionWorkingDays: 5,
+      evidence: ["handover-note-2026-08-08.pdf"],
+    },
+  ],
+
+  harness: {
+    persona: "rinzin",
+    act: 0,
+    runnerOpen: false,
+    stateOverrides: {},
+  },
 };
