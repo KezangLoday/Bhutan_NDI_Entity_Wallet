@@ -26,6 +26,8 @@ import {
   type LedgerKind,
   type Member,
   type Organization,
+  type Person,
+  type PersonaId,
   type Schema,
   type Verification,
 } from "./demoData";
@@ -79,12 +81,35 @@ interface DemoActions {
   addBulkUpload: (input: { fileName: string; records: number }) => BulkUpload;
   addApiKey: (label: string) => void;
   revokeApiKey: (id: string) => void;
+
+  /* ---- Demo harness ----
+     Not product surface. These drive the persona switcher, the story runner
+     and the state switcher, which are what make the demo runnable by someone
+     who is not the person who built it. */
+
+  /** Switch who the console is being driven as. */
+  setPersona: (persona: PersonaId) => void;
+  /** Jump the story to an act. 0 means "not started". */
+  setAct: (act: number) => void;
+  setRunnerOpen: (open: boolean) => void;
+  /** Force one screen into one of its states, for review. */
+  setStateOverride: (screen: string, state: string | null) => void;
+  clearStateOverrides: () => void;
+
   resetDemo: () => void;
   /** False until the persisted state has been read, so lists can hold still. */
   hydrated: boolean;
 }
 
-type DemoContextValue = DemoState & DemoActions;
+/** Read-only lookups computed from state rather than stored in it. */
+interface DemoDerived {
+  /** The person the console is currently being driven as. */
+  currentPerson: Person;
+  /** Resolves an id to a person for dual attribution. Never fails. */
+  personById: (id: string) => Person;
+}
+
+type DemoContextValue = DemoState & DemoActions & DemoDerived;
 
 const DemoContext = createContext<DemoContextValue | null>(null);
 
@@ -424,6 +449,27 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           apiKeys: s.apiKeys.map((k) => (k.id === id ? { ...k, status: "revoked" } : k)),
         })),
 
+      setPersona: (persona) =>
+        setState((s) => ({ ...s, harness: { ...s.harness, persona } })),
+
+      setAct: (act) => setState((s) => ({ ...s, harness: { ...s.harness, act } })),
+
+      setRunnerOpen: (runnerOpen) =>
+        setState((s) => ({ ...s, harness: { ...s.harness, runnerOpen } })),
+
+      setStateOverride: (screen, override) =>
+        setState((s) => {
+          const next = { ...s.harness.stateOverrides };
+          /* null removes the key rather than storing it, so "no override"
+             and "overridden to nothing" cannot be confused downstream. */
+          if (override === null) delete next[screen];
+          else next[screen] = override;
+          return { ...s, harness: { ...s.harness, stateOverrides: next } };
+        }),
+
+      clearStateOverrides: () =>
+        setState((s) => ({ ...s, harness: { ...s.harness, stateOverrides: {} } })),
+
       resetDemo: () => {
         setState(SEED);
         try {
@@ -436,7 +482,33 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     [hydrated, log],
   );
 
-  const value = useMemo<DemoContextValue>(() => ({ ...state, ...actions }), [state, actions]);
+  /**
+   * People lookups are derived from state, so they live here rather than in
+   * the actions memo — that one is deliberately state-free so callbacks stay
+   * stable across renders.
+   *
+   * `personById` returns a placeholder rather than undefined for an unknown
+   * id. Dual attribution appears on every audit row and approval record, and
+   * a missing name there should read as a data problem in one row, not throw
+   * and take the whole trail down.
+   */
+  const derived = useMemo<DemoDerived>(() => {
+    const find = (id: string): Person =>
+      state.people.find((p) => p.id === id) ?? {
+        id,
+        name: "Unknown person",
+        cid: "—",
+        email: "—",
+        title: "No longer on record",
+        cidVerified: false,
+      };
+    return { currentPerson: find(state.harness.persona), personById: find };
+  }, [state.people, state.harness.persona]);
+
+  const value = useMemo<DemoContextValue>(
+    () => ({ ...state, ...actions, ...derived }),
+    [state, actions, derived],
+  );
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }

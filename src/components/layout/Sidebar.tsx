@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icons";
+import { useDemo } from "@/lib/demoStore";
+import type { PersonaId } from "@/lib/demoData";
 
 interface NavChild {
   label: string;
@@ -12,6 +14,17 @@ interface NavChild {
   icon: IconName;
 }
 
+/**
+ * `personas` is who may see the item at all.
+ *
+ * Absent, not disabled. The brief is firm about this and it is the right
+ * call: a Controller who can see a Controllership group they may not open has
+ * been told that administering their own authority is a thing they might do,
+ * which is the one idea the product most needs them not to have. A disabled
+ * row teaches the wrong model more effectively than no row at all.
+ *
+ * Omitting `personas` means everyone sees it.
+ */
 interface NavItem {
   label: string;
   icon: IconName;
@@ -20,7 +33,11 @@ interface NavItem {
   children?: NavChild[];
   /** Off-app destinations, which get the external-link treatment. */
   external?: boolean;
+  personas?: PersonaId[];
 }
+
+const OWNER: PersonaId[] = ["rinzin"];
+const OPERATES: PersonaId[] = ["rinzin", "dorji"];
 
 const PRIMARY: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
@@ -40,50 +57,59 @@ const PRIMARY: NavItem[] = [
   {
     label: "Wallet",
     icon: "wallet",
+    personas: OPERATES,
     children: [
       { label: "Held credentials", href: "/wallet/credentials", icon: "credentials" },
       { label: "Offers", href: "/wallet/offers", icon: "download" },
       { label: "Verification requests", href: "/wallet/verification-requests", icon: "verify" },
     ],
   },
+  /* Approvals is the one item whose visibility comes from the scope rather
+     than the persona list: it belongs to whoever holds approval:decide, and
+     hard-coding that here would duplicate a fact the relation already
+     states. Filtered below. */
   { label: "Approvals", icon: "userCheck", href: "/approvals" },
   {
     label: "Controllership",
     icon: "lockRounded",
+    personas: OWNER,
     children: [
       { label: "Relations", href: "/controllership/relations", icon: "link" },
       { label: "Audit", href: "/controllership/audit", icon: "fileText" },
     ],
   },
-  { label: "Delegated authority", icon: "send", href: "/delegated-authority" },
+  { label: "Delegated authority", icon: "send", href: "/delegated-authority", personas: OWNER },
+  /* Pema's only reason to open the console at all. */
   { label: "Appeals", icon: "shieldAlert", href: "/appeals" },
 
   /* ---- The existing issuer / verifier product -------------------------- */
-  { label: "Organizations", icon: "building", href: "/organizations" },
-  { label: "Users", icon: "users", href: "/users" },
-  { label: "Connections", icon: "connections", href: "/connections" },
+  { label: "Organizations", icon: "building", href: "/organizations", personas: OWNER },
+  { label: "Users", icon: "users", href: "/users", personas: OWNER },
+  { label: "Connections", icon: "connections", href: "/connections", personas: OWNER },
   {
     label: "Credentials",
     icon: "credentials",
+    personas: OWNER,
     children: [
       { label: "All credentials", href: "/credentials", icon: "credentials" },
       { label: "Issue", href: "/credentials/issue", icon: "issue" },
       { label: "Verify", href: "/verification", icon: "verify" },
     ],
   },
-  { label: "Schemas", icon: "layers", href: "/schemas" },
+  { label: "Schemas", icon: "layers", href: "/schemas", personas: OWNER },
   {
     /* DIDs and x509 are both answers to "what does a relying party trust
        here", so they group rather than sitting as two loose rows. */
     label: "Trust",
     icon: "shieldCheck",
+    personas: OWNER,
     children: [
       { label: "DIDs", href: "/did-details", icon: "fingerprint" },
       { label: "x509", href: "/x509-certificate", icon: "certificate" },
     ],
   },
-  { label: "Ecosystems", icon: "ecosystems", href: "/ecosystems" },
-  { label: "Billing", icon: "creditCard", href: "/organizations/billing" },
+  { label: "Ecosystems", icon: "ecosystems", href: "/ecosystems", personas: OWNER },
+  { label: "Billing", icon: "creditCard", href: "/organizations/billing", personas: OWNER },
 ];
 
 /**
@@ -95,8 +121,8 @@ const PRIMARY: NavItem[] = [
  * to work.
  */
 const ACCOUNT: NavItem[] = [
-  { label: "Invitations", icon: "mail", href: "/invitations" },
-  { label: "Developer settings", icon: "key", href: "/developers-setting" },
+  { label: "Invitations", icon: "mail", href: "/invitations", personas: OWNER },
+  { label: "Developer settings", icon: "key", href: "/developers-setting", personas: OWNER },
 ];
 
 const SECONDARY: NavItem[] = [
@@ -112,6 +138,25 @@ interface SidebarProps {
 
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { harness, relations } = useDemo();
+  const persona = harness.persona;
+
+  /* Whether this person's active relation grants approval:decide. Read from
+     the relation, not decided here — the scope is the fixture the server
+     would have returned, and duplicating the answer in a persona list is how
+     the nav and the authority viewer end up disagreeing. */
+  const canDecideApprovals = relations.some(
+    (r) =>
+      r.personId === persona &&
+      r.state === "ACTIVE" &&
+      r.scope.grants.some((g) => g.operation === "approval:decide"),
+  );
+
+  const visible = (items: NavItem[]) =>
+    items.filter((item) => {
+      if (item.label === "Approvals") return canDecideApprovals;
+      return !item.personas || item.personas.includes(persona);
+    });
 
   const groupHoldsPath = (item: NavItem) =>
     Boolean(item.children?.some((child) => pathname.startsWith(child.href)));
@@ -149,7 +194,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         style={{ transform: open ? "translateX(0)" : undefined }}
       >
         <nav className="flex flex-col gap-0.5">
-          {PRIMARY.map((item) => {
+          {visible(PRIMARY).map((item) => {
             if (item.children) {
               const isOpen = expanded === item.label;
               const holdsCurrent = groupHoldsPath(item);
@@ -213,10 +258,12 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
           })}
         </nav>
 
-        <div className="my-4 h-px bg-[var(--border-subtle)]" />
+        {visible(ACCOUNT).length > 0 ? (
+          <div className="my-4 h-px bg-[var(--border-subtle)]" />
+        ) : null}
 
         <nav aria-label="Account" className="flex flex-col gap-0.5">
-          {ACCOUNT.map((item) => {
+          {visible(ACCOUNT).map((item) => {
             const href = item.href ?? "#";
             return (
               <Link
