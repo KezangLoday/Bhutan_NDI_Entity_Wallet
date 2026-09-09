@@ -24,15 +24,68 @@ import {
   type EcosystemInvitation,
   type Invitation,
   type LedgerKind,
+  type ControllershipRelation,
+  type LegalBasis,
   type Member,
   type Organization,
   type Person,
   type PersonaId,
   type Schema,
+  type Scope,
   type Verification,
 } from "./demoData";
 
 const STORAGE_KEY = "ndi-studio-demo";
+
+/**
+ * Appends one audit row, carrying the hash chain forward.
+ *
+ * Newest first, matching how the trail is read. The hashes are fixtures — this
+ * is an array in localStorage, not a hash-chained store — but the *shape* has
+ * to be right, because the integrity indicator is part of what the audit
+ * screen has to show and a row with nowhere to put a hash cannot show it.
+ *
+ * Dual attribution is not optional here: every row takes an entity and an
+ * acting person, so there is no way to write a row that records only one.
+ */
+function appendAudit(
+  state: DemoState,
+  entry: {
+    operation: string;
+    summary: string;
+    actorId: string;
+    relationId?: string | null;
+    scopeVersion?: number | null;
+    approvedById?: string | null;
+    relyingPartyDid?: string | null;
+    disclosedDigest?: string | null;
+  },
+): DemoState["auditEntries"] {
+  const previous = state.auditEntries[0];
+  const rowHash = `sha256:${Math.random().toString(16).slice(2, 10)}`;
+  const entity =
+    state.organizations.find((o) => o.id === state.activeOrgId)?.name ?? "The entity";
+
+  return [
+    {
+      id: rid("au"),
+      seq: (previous?.seq ?? 0) + 1,
+      operation: entry.operation,
+      summary: entry.summary,
+      entity,
+      actorId: entry.actorId,
+      relationId: entry.relationId ?? null,
+      scopeVersion: entry.scopeVersion ?? null,
+      approvedById: entry.approvedById ?? null,
+      relyingPartyDid: entry.relyingPartyDid ?? null,
+      disclosedDigest: entry.disclosedDigest ?? null,
+      at: new Date().toISOString(),
+      prevHash: previous?.rowHash ?? "sha256:00000000",
+      rowHash,
+    },
+    ...state.auditEntries,
+  ];
+}
 
 /** Today, as the seed writes dates. Anything created in a demo is dated now. */
 const today = () => new Date().toISOString().slice(0, 10);
@@ -81,6 +134,24 @@ interface DemoActions {
   addBulkUpload: (input: { fileName: string; records: number }) => BulkUpload;
   addApiKey: (label: string) => void;
   revokeApiKey: (id: string) => void;
+
+  /* ---- Controllership ----
+     The relation lifecycle, as an Owner and a Controller move a grant through
+     it: DRAFT -> PENDING_ACCEPTANCE -> ACTIVE. */
+
+  /** Creates a relation in DRAFT with an empty scope, ready for the builder. */
+  addRelation: (input: {
+    personId: string;
+    legalBasis: LegalBasis;
+    instrumentFileName?: string;
+    instrumentReference?: string;
+  }) => ControllershipRelation;
+  /** Replaces a draft's scope. Bumps the version, which audit rows cite. */
+  updateRelationScope: (id: string, scope: Scope) => void;
+  sendRelationForAcceptance: (id: string) => void;
+  /** The Controller's own acceptance. Only this makes a relation ACTIVE. */
+  acceptRelation: (id: string) => void;
+  declineRelation: (id: string, reason: string) => void;
 
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
@@ -447,6 +518,98 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           apiKeys: s.apiKeys.map((k) => (k.id === id ? { ...k, status: "revoked" } : k)),
+        })),
+
+      addRelation: ({ personId, legalBasis, instrumentFileName, instrumentReference }) => {
+        const relation: ControllershipRelation = {
+          id: rid("rel"),
+          personId,
+          legalBasis,
+          instrument: instrumentFileName
+            ? {
+                fileName: instrumentFileName,
+                /* The instrument itself is never stored — only a hash and a
+                   reference to wherever the signed original lives. In a demo
+                   the hash is decorative, but the shape has to be right or
+                   the screen teaches the wrong model. */
+                hash: `sha256:${Math.random().toString(16).slice(2, 10)}${Math.random()
+                  .toString(16)
+                  .slice(2, 10)}`,
+                reference: instrumentReference || "—",
+              }
+            : null,
+          scope: {
+            version: 1,
+            validFrom: today(),
+            validUntil: null,
+            grants: [],
+          },
+          state: "DRAFT",
+          isRootAuthority: false,
+          createdAt: today(),
+          acceptedAt: null,
+          activatedAt: null,
+        };
+        setState((s) => ({ ...s, relations: [relation, ...s.relations] }));
+        return relation;
+      },
+
+      updateRelationScope: (id, scope) =>
+        setState((s) => ({
+          ...s,
+          relations: s.relations.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  /* A new version on every save, because an audit row cites
+                     the version it matched and two different scopes sharing a
+                     number would make the trail unreadable. */
+                  scope: { ...scope, version: r.scope.version + 1 },
+                }
+              : r,
+          ),
+        })),
+
+      sendRelationForAcceptance: (id) =>
+        setState((s) => ({
+          ...s,
+          relations: s.relations.map((r) =>
+            r.id === id ? { ...r, state: "PENDING_ACCEPTANCE" } : r,
+          ),
+        })),
+
+      acceptRelation: (id) =>
+        setState((s) => {
+          const relation = s.relations.find((r) => r.id === id);
+          if (!relation) return s;
+          const person = s.people.find((p) => p.id === relation.personId);
+          return {
+            ...s,
+            relations: s.relations.map((r) =>
+              r.id === id
+                ? { ...r, state: "ACTIVE", acceptedAt: today(), activatedAt: today() }
+                : r,
+            ),
+            auditEntries: appendAudit(s, {
+              operation: "relation:accept",
+              summary: `${person?.name ?? "A controller"} accepted the duties of a controller`,
+              actorId: relation.personId,
+              relationId: relation.id,
+              scopeVersion: relation.scope.version,
+            }),
+          };
+        }),
+
+      declineRelation: (id, reason) =>
+        setState((s) => ({
+          ...s,
+          /* Declining ends the relation rather than parking it. There is no
+             DECLINED state in the lifecycle and inventing one would be wrong:
+             a relation the proposed controller refused is over, and the Owner
+             starts a new one. The reason is what makes that legible. */
+          relations: s.relations.map((r) =>
+            r.id === id ? { ...r, state: "TERMINATED", endedReason: reason } : r,
+          ),
         })),
 
       setPersona: (persona) =>

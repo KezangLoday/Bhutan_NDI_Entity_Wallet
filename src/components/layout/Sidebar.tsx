@@ -59,6 +59,9 @@ const PRIMARY: NavItem[] = [
     icon: "wallet",
     personas: OPERATES,
     children: [
+      /* First, deliberately: a Controller's first question on signing in is
+         what they are allowed to do, not what the entity happens to hold. */
+      { label: "My authority", href: "/wallet/authority", icon: "lockRounded" },
       { label: "Held credentials", href: "/wallet/credentials", icon: "credentials" },
       { label: "Offers", href: "/wallet/offers", icon: "download" },
       { label: "Verification requests", href: "/wallet/verification-requests", icon: "verify" },

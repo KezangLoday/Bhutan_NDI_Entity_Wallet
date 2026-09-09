@@ -60,6 +60,7 @@
 import type {
   ApprovalPolicy,
   ControllerOperation,
+  LegalBasis,
   Scope,
   ScopeGrant,
 } from "@/lib/demoData";
@@ -166,6 +167,61 @@ const OPERATIONS: Record<
 
 export function operationLabel(operation: ControllerOperation): string {
   return OPERATIONS[operation].label;
+}
+
+/** Every operation, in the order the builder lists them. */
+export const ALL_OPERATIONS = Object.keys(OPERATIONS) as ControllerOperation[];
+
+/** What granting an operation actually lets someone do, for the checklist. */
+export function operationDescription(operation: ControllerOperation): string {
+  const op = OPERATIONS[operation];
+  /* Built from the same verb the sentence uses, so the checklist and the
+     preview cannot describe the same grant two different ways. */
+  return `They may ${op.verb}.`;
+}
+
+/** Whether the credential-type filter means anything for this operation. */
+export function takesCredentialTypes(operation: ControllerOperation): boolean {
+  return OPERATIONS[operation].typeList !== null;
+}
+
+/** Whether the relying-party filter means anything for this operation. */
+export function takesRelyingParties(operation: ControllerOperation): boolean {
+  return OPERATIONS[operation].partyList !== null;
+}
+
+/** Whether an approval policy can meaningfully hold this operation back. */
+export function isGateable(operation: ControllerOperation): boolean {
+  return OPERATIONS[operation].gateable;
+}
+
+/**
+ * The legal ground a relation stands on, in words rather than enum values.
+ *
+ * No statute numbers in the label. The Act is what makes these three the
+ * options, but a person reading "Entity consent (s.111(2)(a))" learns nothing
+ * they can act on — they need to know whether a board resolution counts.
+ */
+export function legalBasisLabel(basis: LegalBasis): string {
+  switch (basis) {
+    case "entity_consent":
+      return "Entity consent";
+    case "court_order":
+      return "Court order";
+    case "governance_prescribed":
+      return "Prescribed by the governance framework";
+  }
+}
+
+export function legalBasisHint(basis: LegalBasis): string {
+  switch (basis) {
+    case "entity_consent":
+      return "The entity decided this itself — usually a board resolution naming the person and what they may do.";
+    case "court_order":
+      return "A court directed that this person may act for the entity.";
+    case "governance_prescribed":
+      return "The governance framework requires this role to exist for an entity of this kind.";
+  }
 }
 
 /** How many signatures a policy collects. Used for "1 of 2" progress. */
