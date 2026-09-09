@@ -24,6 +24,41 @@ interface NavItem {
 
 const PRIMARY: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
+
+  /* ---- Entity wallet ---------------------------------------------------
+     The entity-wallet groups sit directly under Dashboard, above the
+     issuer/verifier items below, because they are what someone signing in as
+     a Controller came here to do. The brief's IA splits the console into
+     "operate" (a Controller's day-to-day) and "govern" (an Owner's
+     administration); that split is expressed by which of these a persona can
+     see at all, not by two nav sections — a Controller who can see a
+     Controllership group they may not use has been told the wrong thing.
+
+     Held credentials live under /wallet, not /credentials: the /credentials
+     tree is the issuer flow, and what the entity *holds* is a different idea
+     that would be actively confusing sharing a path with it. */
+  {
+    label: "Wallet",
+    icon: "wallet",
+    children: [
+      { label: "Held credentials", href: "/wallet/credentials", icon: "credentials" },
+      { label: "Offers", href: "/wallet/offers", icon: "download" },
+      { label: "Verification requests", href: "/wallet/verification-requests", icon: "verify" },
+    ],
+  },
+  { label: "Approvals", icon: "userCheck", href: "/approvals" },
+  {
+    label: "Controllership",
+    icon: "lockRounded",
+    children: [
+      { label: "Relations", href: "/controllership/relations", icon: "link" },
+      { label: "Audit", href: "/controllership/audit", icon: "fileText" },
+    ],
+  },
+  { label: "Delegated authority", icon: "send", href: "/delegated-authority" },
+  { label: "Appeals", icon: "shieldAlert", href: "/appeals" },
+
+  /* ---- The existing issuer / verifier product -------------------------- */
   { label: "Organizations", icon: "building", href: "/organizations" },
   { label: "Users", icon: "users", href: "/users" },
   { label: "Connections", icon: "connections", href: "/connections" },
