@@ -350,6 +350,13 @@ export interface VerificationRequestTask {
   requestsControllershipProof: boolean;
   decision: ScopeDecision;
   decisionReason: string | null;
+  /**
+   * What the Controller chose to disclose. Recorded so an approver decides on
+   * the actual disclosure rather than on the request — approving "a
+   * presentation to Bank of Bhutan" without knowing which attributes it
+   * carries is not an approval of anything.
+   */
+  disclosing?: string[];
   state: "ready" | "parked" | "signing" | "presented" | "declined" | "expired";
   receivedAt: string;
   expiresAt: string;
@@ -378,6 +385,15 @@ export interface ParkedOperation {
   requestedBy: PersonId;
   relationId: string;
   scopeVersion: number;
+  /**
+   * The offer or verification request this is holding back.
+   *
+   * Without it an approval is a state change and nothing else — the whole
+   * point of the queue is that deciding it lets the held operation run, and
+   * "approved" with nothing to apply it to is a dead end that looks like a
+   * feature.
+   */
+  targetId: string | null;
   targetRelyingParty: string | null;
   /** What an approver's wallet signature actually commits to. */
   payloadHash: string;
@@ -1245,6 +1261,27 @@ export const SEED: DemoState = {
       expiresAt: "2026-09-11",
     },
     {
+      /* Already sent for approval, so the queue has something in it before
+         the story is walked. Deliberately a *different* request from vr-bob:
+         a parked operation and a request that still says "ready" would
+         contradict each other, and the screen would show one of them as
+         wrong. */
+      id: "vr-bob-earlier",
+      relyingParty: "Bank of Bhutan",
+      relyingPartyDid: "did:indy:bhutan:BoB3nQ8mT5wK2xV7pL9dY",
+      relyingPartyTrusted: true,
+      credentialType: "Business Registration",
+      requestedAttributes: ["registered_name", "registration_number", "entity_type"],
+      requiredAttributes: ["registered_name", "registration_number"],
+      requestsControllershipProof: false,
+      decision: "requires_approval",
+      decisionReason: "Presenting to Bank of Bhutan is in scope and needs one approver.",
+      disclosing: ["registered_name", "registration_number"],
+      state: "parked",
+      receivedAt: "2026-09-06",
+      expiresAt: "2026-09-13",
+    },
+    {
       /* The relying-party filter doing its job — in scope by credential
          type, denied by counterparty. */
       id: "vr-druk",
@@ -1304,6 +1341,7 @@ export const SEED: DemoState = {
       requestedBy: "dorji",
       relationId: "rel-dorji",
       scopeVersion: 3,
+      targetId: "vr-bob-earlier",
       targetRelyingParty: "Bank of Bhutan",
       payloadHash: "sha256:c0a71e94b83f2d6508a1c47fe9b230da75146c8be03f9a27",
       policy: "SINGLE_APPROVER",
@@ -1321,6 +1359,7 @@ export const SEED: DemoState = {
       requestedBy: "dorji",
       relationId: "rel-dorji",
       scopeVersion: 3,
+      targetId: "offer-warehouse",
       targetRelyingParty: null,
       payloadHash: "sha256:38f5b2ce7a41d09628e5c3ba147f60d92b8074ae5c13f6d8",
       policy: "SINGLE_APPROVER",
@@ -1340,6 +1379,7 @@ export const SEED: DemoState = {
       requestedBy: "rinzin",
       relationId: "rel-root",
       scopeVersion: 1,
+      targetId: null,
       targetRelyingParty: "Bhutan National Single Window",
       payloadHash: "sha256:7d19a4fe0c38b5217e9c460da3f8b12a4e07c1685bd93fa2",
       policy: "DUAL_CONTROL",
@@ -1359,6 +1399,7 @@ export const SEED: DemoState = {
       requestedBy: "karma",
       relationId: "rel-karma",
       scopeVersion: 2,
+      targetId: "vr-lapsed",
       targetRelyingParty: "Bank of Bhutan",
       payloadHash: "sha256:b61f7c05e298a4d3706b1cfe45a9d823017e5b9c4af26d10",
       policy: "DUAL_CONTROL",
@@ -1381,6 +1422,7 @@ export const SEED: DemoState = {
       requestedBy: "dorji",
       relationId: "rel-dorji",
       scopeVersion: 3,
+      targetId: "offer-lapsed",
       targetRelyingParty: null,
       payloadHash: "sha256:4a8e13d705b9c2f6481ade37f0b5924c6d81073be5a2fc94",
       policy: "SINGLE_APPROVER",
@@ -1398,6 +1440,7 @@ export const SEED: DemoState = {
       requestedBy: "dorji",
       relationId: "rel-dorji",
       scopeVersion: 3,
+      targetId: "vr-bnsw-done",
       targetRelyingParty: "Bhutan National Single Window",
       payloadHash: "sha256:e572b0491ac8d36f7be24051c9da8317064fb2e85d1a7c63",
       policy: "SINGLE_APPROVER",

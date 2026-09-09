@@ -93,6 +93,99 @@ function appendAudit(
   ];
 }
 
+/**
+ * Accepting an offer, whether directly or because an approver released it.
+ *
+ * Shared rather than duplicated because the two paths must produce the same
+ * result: the same credential in the wallet, the same audit row, differing
+ * only in whether an approver is named on it. Two copies of this drift, and
+ * the drift shows up as an audit trail that records approved operations
+ * differently from automatic ones.
+ */
+function applyOfferAcceptance(
+  state: DemoState,
+  offerId: string,
+  approverId: string | null,
+): DemoState {
+  const offer = state.offers.find((o) => o.id === offerId);
+  if (!offer) return state;
+
+  const relation = state.relations.find(
+    (r) => r.personId === state.harness.persona && r.state === "ACTIVE",
+  );
+
+  return {
+    ...state,
+    offers: state.offers.map((o) => (o.id === offerId ? { ...o, state: "accepted" } : o)),
+    heldCredentials: [
+      {
+        id: rid("hc"),
+        type: offer.type,
+        issuer: offer.issuer,
+        issuerDid: offer.issuerDid,
+        issuerTrusted: offer.issuerTrusted,
+        /* Straight from the offer payload. The credential type and its
+           attributes are what was actually offered, never anything a user
+           typed — see the note at the top of demoData.ts. */
+        attributes: offer.attributes,
+        isFoundational: false,
+        receivedAt: today(),
+        expiresAt: offer.attributes.find((a) => a.name === "valid_until")?.value ?? null,
+        status: "active",
+      },
+      ...state.heldCredentials,
+    ],
+    auditEntries: appendAudit(state, {
+      operation: "credential:accept",
+      summary: `Accepted ${offer.type} from ${offer.issuer}`,
+      actorId: relation?.personId ?? state.harness.persona,
+      relationId: relation?.id ?? null,
+      scopeVersion: relation?.scope.version ?? null,
+      approvedById: approverId,
+    }),
+  };
+}
+
+/**
+ * Sending a presentation, whether directly or on approval.
+ *
+ * The audit row keeps a digest of what was disclosed and never the values.
+ * That is the whole discipline of the trail: it has to prove what happened
+ * without becoming a second copy of the data it was protecting.
+ */
+function applyPresentation(
+  state: DemoState,
+  requestId: string,
+  attributes: string[],
+  approverId: string | null,
+): DemoState {
+  const request = state.verificationRequests.find((v) => v.id === requestId);
+  if (!request) return state;
+
+  const relation = state.relations.find(
+    (r) => r.personId === state.harness.persona && r.state === "ACTIVE",
+  );
+
+  return {
+    ...state,
+    verificationRequests: state.verificationRequests.map((v) =>
+      v.id === requestId ? { ...v, state: "presented", disclosing: attributes } : v,
+    ),
+    auditEntries: appendAudit(state, {
+      operation: "proof:present",
+      summary: `Presented ${request.credentialType} to ${request.relyingParty} — ${
+        attributes.length
+      } ${attributes.length === 1 ? "attribute" : "attributes"} disclosed`,
+      actorId: relation?.personId ?? state.harness.persona,
+      relationId: relation?.id ?? null,
+      scopeVersion: relation?.scope.version ?? null,
+      approvedById: approverId,
+      relyingPartyDid: request.relyingPartyDid,
+      disclosedDigest: `sha256:${Math.random().toString(16).slice(2, 10)}`,
+    }),
+  };
+}
+
 /** Today, as the seed writes dates. Anything created in a demo is dated now. */
 const today = () => new Date().toISOString().slice(0, 10);
 const rid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
@@ -158,6 +251,31 @@ interface DemoActions {
   /** The Controller's own acceptance. Only this makes a relation ACTIVE. */
   acceptRelation: (id: string) => void;
   declineRelation: (id: string, reason: string) => void;
+
+  /* ---- The holder's daily loop (Pattern A) ----
+     Accepting what the entity is offered, presenting what it is asked for,
+     and the approval gate that sits between the two. */
+
+  /** Takes an offered credential into the entity's wallet. */
+  acceptOffer: (id: string) => void;
+  declineOffer: (id: string) => void;
+  /** Sends an offer to the approval queue instead of accepting it outright. */
+  parkOffer: (id: string) => void;
+
+  /** Sends a presentation, disclosing exactly these attributes. */
+  presentProof: (requestId: string, attributes: string[]) => void;
+  /** Parks a presentation, recording what it would disclose. */
+  parkPresentation: (requestId: string, attributes: string[]) => void;
+  declineVerificationRequest: (requestId: string) => void;
+
+  /**
+   * Records one approver's decision.
+   *
+   * When the last required signature lands, the held operation actually runs
+   * — that is what makes this a gate rather than a status field.
+   */
+  approveOperation: (id: string, method: "web" | "wallet") => void;
+  rejectOperation: (id: string, reason: string) => void;
 
   /* ---- Delegated authority (Pattern B) ---- */
 
@@ -662,6 +780,189 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             r.id === id ? { ...r, state: "TERMINATED", endedReason: reason } : r,
           ),
         })),
+
+      acceptOffer: (id) =>
+        setState((s) => applyOfferAcceptance(s, id, null)),
+
+      declineOffer: (id) =>
+        setState((s) => ({
+          ...s,
+          offers: s.offers.map((o) => (o.id === id ? { ...o, state: "declined" } : o)),
+        })),
+
+      parkOffer: (id) =>
+        setState((s) => {
+          const offer = s.offers.find((o) => o.id === id);
+          if (!offer) return s;
+          const relation = s.relations.find(
+            (r) => r.personId === s.harness.persona && r.state === "ACTIVE",
+          );
+          return {
+            ...s,
+            offers: s.offers.map((o) => (o.id === id ? { ...o, state: "parked" } : o)),
+            parkedOperations: [
+              {
+                id: rid("park"),
+                operation: "credential:accept" as const,
+                summary: `Accept ${offer.type} from ${offer.issuer}`,
+                requestedBy: s.harness.persona,
+                relationId: relation?.id ?? "rel-dorji",
+                scopeVersion: relation?.scope.version ?? 1,
+                targetId: offer.id,
+                targetRelyingParty: null,
+                payloadHash: `sha256:${Math.random().toString(16).slice(2, 10)}${Math.random()
+                  .toString(16)
+                  .slice(2, 10)}`,
+                policy: "SINGLE_APPROVER" as const,
+                requiredSignatures: 1,
+                signatures: [],
+                state: "parked" as const,
+                decisionReason: null,
+                createdAt: today(),
+                expiresAt: offer.expiresAt,
+              },
+              ...s.parkedOperations,
+            ],
+          };
+        }),
+
+      presentProof: (requestId, attributes) =>
+        setState((s) => applyPresentation(s, requestId, attributes, null)),
+
+      parkPresentation: (requestId, attributes) =>
+        setState((s) => {
+          const request = s.verificationRequests.find((v) => v.id === requestId);
+          if (!request) return s;
+          const relation = s.relations.find(
+            (r) => r.personId === s.harness.persona && r.state === "ACTIVE",
+          );
+          return {
+            ...s,
+            verificationRequests: s.verificationRequests.map((v) =>
+              v.id === requestId ? { ...v, state: "parked", disclosing: attributes } : v,
+            ),
+            parkedOperations: [
+              {
+                id: rid("park"),
+                operation: "proof:present" as const,
+                summary: `Present ${request.credentialType} to ${request.relyingParty}`,
+                requestedBy: s.harness.persona,
+                relationId: relation?.id ?? "rel-dorji",
+                scopeVersion: relation?.scope.version ?? 1,
+                targetId: request.id,
+                targetRelyingParty: request.relyingParty,
+                payloadHash: `sha256:${Math.random().toString(16).slice(2, 10)}${Math.random()
+                  .toString(16)
+                  .slice(2, 10)}`,
+                policy: "SINGLE_APPROVER" as const,
+                requiredSignatures: 1,
+                signatures: [],
+                state: "parked" as const,
+                decisionReason: null,
+                createdAt: today(),
+                expiresAt: request.expiresAt,
+              },
+              ...s.parkedOperations,
+            ],
+          };
+        }),
+
+      declineVerificationRequest: (requestId) =>
+        setState((s) => ({
+          ...s,
+          verificationRequests: s.verificationRequests.map((v) =>
+            v.id === requestId ? { ...v, state: "declined" } : v,
+          ),
+        })),
+
+      approveOperation: (id, method) =>
+        setState((s) => {
+          const operation = s.parkedOperations.find((p) => p.id === id);
+          if (!operation) return s;
+
+          const signatures = [
+            ...operation.signatures,
+            { personId: s.harness.persona, at: today(), method },
+          ];
+          const satisfied = signatures.length >= operation.requiredSignatures;
+
+          let next: DemoState = {
+            ...s,
+            parkedOperations: s.parkedOperations.map((p) =>
+              p.id === id
+                ? { ...p, signatures, state: satisfied ? "approved" : "parked" }
+                : p,
+            ),
+          };
+
+          /* Not satisfied yet: dual control means the next signature comes
+             from somebody else, and nothing runs in the meantime. */
+          if (!satisfied) return next;
+
+          /* Re-validated at execution time rather than trusting the approval.
+             A relation terminated or a scope changed between the approval and
+             now must stop the operation — the brief calls this the
+             "approved but no longer valid" edge, and a system that quietly
+             ran it anyway would be broken in a way nobody could see. */
+          const relation = next.relations.find((r) => r.id === operation.relationId);
+          if (!relation || relation.state !== "ACTIVE") {
+            return {
+              ...next,
+              parkedOperations: next.parkedOperations.map((p) =>
+                p.id === id
+                  ? {
+                      ...p,
+                      state: "stale",
+                      invalidatedReason:
+                        "The authority behind this operation is no longer active, so it was not run.",
+                    }
+                  : p,
+              ),
+            };
+          }
+
+          const approver = s.harness.persona;
+          if (operation.operation === "credential:accept" && operation.targetId) {
+            next = applyOfferAcceptance(next, operation.targetId, approver);
+          } else if (operation.operation === "proof:present" && operation.targetId) {
+            const request = next.verificationRequests.find(
+              (v) => v.id === operation.targetId,
+            );
+            next = applyPresentation(
+              next,
+              operation.targetId,
+              request?.disclosing ?? request?.requiredAttributes ?? [],
+              approver,
+            );
+          }
+
+          return next;
+        }),
+
+      rejectOperation: (id, reason) =>
+        setState((s) => {
+          const operation = s.parkedOperations.find((p) => p.id === id);
+          if (!operation) return s;
+          return {
+            ...s,
+            parkedOperations: s.parkedOperations.map((p) =>
+              p.id === id ? { ...p, state: "rejected", decisionReason: reason } : p,
+            ),
+            /* The held thing goes back to being undecided rather than
+               vanishing: a rejected approval is the approver's answer, not
+               the end of the relying party's request. */
+            offers: s.offers.map((o) =>
+              o.id === operation.targetId && o.state === "parked"
+                ? { ...o, state: "pending" }
+                : o,
+            ),
+            verificationRequests: s.verificationRequests.map((v) =>
+              v.id === operation.targetId && v.state === "parked"
+                ? { ...v, state: "ready" }
+                : v,
+            ),
+          };
+        }),
 
       issueAuthority: (input) => {
         const authority: DelegatedAuthority = {
