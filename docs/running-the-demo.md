@@ -41,25 +41,23 @@ If you only get one idea across, that is the one.
 
 ## What is built right now
 
-The story is six acts. **Acts 2, 4 and 5 are built** — the conceptual core and
-the pay-off. Acts 1, 3 and 6 arrive in later slices, so you are showing the
-argument rather than the full arc.
+The story is six acts. **Acts 2, 3, 4 and 5 are built** — the conceptual core,
+the daily loop and the pay-off. Acts 1 and 6 arrive in the last slice.
 
 | Act | State | Where |
 |---|---|---|
 | 1 · The entity becomes real | not built | — |
 | **2 · Authority is granted, narrowly** | **built** | walkthrough below |
-| 3 · The Controller works, under approval | not built | — |
+| **3 · The Controller works, under approval** | **built** | walkthrough below |
 | **4 · Authority is delegated to a wallet** | **built** | walkthrough below |
 | **5 · Authority is checked at the point of use** | **built** | walkthrough below |
 | 6 · There is recourse | not built | — |
 
-Still **404**: Held credentials, Offers, Verification requests, Approvals,
-Audit, Appeals, and the Controllership → Relations register. Those rows are in
-the nav deliberately, so the shape of the product is legible, but do not click
-them in front of an audience.
+Still **404**: **Appeals**, and **Controllership → Relations** (the register —
+the *new relation* screen inside it works fine). Everything else in the nav is
+live.
 
-**Act buttons 1, 3 and 6 land on 404s. Use 2, 4 and 5.**
+**Act buttons 1 and 6 land on 404s. Use 2, 3, 4 and 5.**
 
 ---
 
@@ -177,6 +175,130 @@ Scroll to **What I have done**.
 > Never one without the other."
 
 That is Act 2. Stop there.
+
+---
+
+## The Act 3 walkthrough
+
+About six minutes, as **Dorji**. The story: an ordinary working day, and the
+approval gate doing its job.
+
+### 1 · The landing screen — act button **3**
+
+You arrive at `/dashboard` as Dorji.
+
+> "This is what a controller sees on signing in. Not a chart — a list of what
+> is waiting. And on the right, a reminder of exactly what he is allowed to
+> do, every single time, so he never has to discover his own limits from a
+> refusal."
+
+Point at the ordering:
+
+> "Approvals first, because somebody else is blocked until they are decided.
+> Then relying parties who are waiting. Then offers, which nobody is waiting
+> on. Sorted by expiry, a lapsing offer would sit above a colleague."
+
+Note that **Dorji has no Approvals item in the sidebar** — his authority does
+not include deciding approvals.
+
+### 2 · Accept an offer — the holder inbox
+
+Click the **Customs Broker Licence** offer.
+
+> "Here is the thing the studio could never do before. Norling Logistics is
+> the *holder*. Somebody has offered the company a credential."
+
+Two things to point at:
+
+- **Every attribute in full**, before any button.
+  > "He is accepting these values. A screen that said 'Customs Broker Licence,
+  > 4 attributes' would be asking him to accept something he had not seen. And
+  > this is read from the offer itself, not from anything anyone typed."
+- **The issuer's trust-registry status.**
+
+Press **Accept**. Then follow **See what we hold** — note the **Root of trust**
+panel, held apart from the table:
+
+> "The Business Registration is not one credential among several. It is the
+> root everything else chains back to, including everything the company has
+> delegated. Burying it in a row between a tax certificate and an insurance
+> policy would misstate what it is."
+
+### 3 · The refusal — worth showing deliberately
+
+Go to **Offers** and open **Fleet Insurance Certificate**.
+
+> "This is a normal event, not an error. His authority covers Business
+> Registration and Customs Broker Licence. Insurance was not granted."
+
+Point at the only action available:
+
+> "One next step, and it routes to the owner. There is deliberately no way for
+> him to widen his own authority from here — this is exactly the moment
+> somebody would reach for that, and it must not exist."
+
+### 4 · Least disclosure — `Bank of Bhutan is asking for a proof`
+
+Back to the dashboard, open the **Bank of Bhutan** request.
+
+**This is the screen to slow down on.** The bank asked for five attributes.
+Two are ticked.
+
+> "The bank asked for five. Only two are actually needed, and those are the
+> only two ticked. Least disclosure is not a warning here — it is the state
+> the screen opens in. He has to consciously add anything else."
+
+Tick **registered_address**. A note appears saying he is going beyond what is
+needed.
+
+> "Worth having a reason you could give out loud."
+
+Untick it. Point at the counter — **Disclosing 2 of 5 requested** — then press
+**Send for approval**.
+
+> "His authority lets him present to the bank, but not without an approver.
+> So nothing goes out."
+
+### 5 · The approval — switch to Rinzin
+
+Switch persona to **Rinzin Dema** and open **Approvals**.
+
+> "Now the gate. Note that Dorji never saw this queue — he cannot approve his
+> own work."
+
+Open the presentation. Three things to show:
+
+- **The attributes, struck through where withheld.**
+  > "She is approving the disclosure, not the request. If she only saw 'present
+  > to Bank of Bhutan' she would not know what was going out."
+- **The fingerprint** — "what you would sign".
+  > "That covers this exact operation. Signing it from her phone commits her to
+  > this and nothing else. If any detail changed, the fingerprint changes."
+- **The authority it was done under**, with the scope version.
+
+Press **Approve and sign from wallet**. After the hand-off, the presentation
+goes out.
+
+### 6 · The record — `Controllership → Audit`
+
+> "Norling Logistics, acted by Dorji Wangchuk, approved by Rinzin Dema. Three
+> questions an investigation actually asks — on whose behalf, by whose hand, on
+> whose authority — and no single-name log can answer any of them."
+
+Point at the disclosed line:
+
+> "A fingerprint of what went out. Not the values. An audit trail that stored
+> what it was protecting would be a second copy of the company's data with a
+> longer retention period than the original."
+
+### Other things on this loop worth a look
+
+| Where | What it shows |
+|---|---|
+| `/approvals/park-stale` | Approved, then invalidated before it ran |
+| `/approvals` → the dual-control card | 1 of 2 signatures, needing a different person |
+| `/wallet/verification-requests/vr-druk` | In scope by credential type, refused by counterparty |
+| `/dashboard` → **access_suspended** state | A controller whose authority was pulled mid-session |
 
 ---
 
@@ -308,6 +430,10 @@ Worth showing:
 | `/verifier/bnsw` | **pass**, **fail**, **service_unreachable** | All three outcomes, no setup needed |
 | `/delegated-authority/.../revoke` | **suspended**, **revoked** | Reversible vs final |
 | `/delegated-authority` | **empty** | First-run, before anything is delegated |
+| `/dashboard` | **all_clear**, **access_suspended** | An empty queue, and a pulled authority |
+| `/wallet/offers/...` | **out_of_scope**, **requires_approval** | Both refusal shapes on any offer |
+| `/approvals/...` | **stale**, **expired**, **rejected** | The outcomes nobody demos |
+| `/controllership/audit` | **filtered_empty** | A filter finding nothing, trail still intact |
 | `/kitchen-sink` | — | Every component, both themes. Not part of the story |
 
 > "Denied, expired and suspended states get the same care as the happy path.
