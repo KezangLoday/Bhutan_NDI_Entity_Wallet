@@ -113,8 +113,15 @@ trust argument.
 The sidebar is hard-coded in `src/components/layout/Sidebar.tsx` (there is no
 `constants/data.ts` here). The entity-wallet groups — Wallet, Approvals,
 Controllership, Delegated authority, Appeals — sit directly under Dashboard,
-above the existing issuer/verifier items, and are being built out slice by
-slice, so some rows land ahead of their routes.
+above the existing issuer/verifier items.
+
+Which rows exist depends on who the demo is being driven as: they are
+**absent** for a persona who may not use them, never disabled. A Controller
+who can see a Controllership group they cannot open has been told that
+administering their own authority is something they might do, which is the one
+idea the product most needs them not to have. Approvals is filtered by the
+persona's actual scope rather than a role list, so the nav and the authority
+viewer cannot drift apart.
 
 Held credentials live under `/wallet/*` rather than `/credentials/*`: the
 existing `/credentials` tree is the **issuer** flow, and the entity's *held*
@@ -181,7 +188,7 @@ before any walkthrough:
 | A government register confirming a representative | Fixture plus an authored delay. No register integration exists. |
 | Approval-as-signature from a personal wallet | Fixture. The QR is a deliberate non-scannable stand-in (`QrPlaceholder`). |
 | Revocation propagating to a verifier | Fixture. Nothing propagates anywhere. |
-| A signed PASS / FAIL verification decision | Fixture. No authority verification service exists. |
+| A signed PASS / FAIL verification decision | Derived live by `src/lib/avs.ts`, a named stand-in for the verification service. It walks the real chain and fails closed, but there is no service behind it. |
 | An immutable, hash-chained audit trail | An array in `localStorage`. Clearing site data clears it. |
 | Scope and approval enforcement | Rendered from fixtures. Enforcement belongs on the server and is not built. |
 
