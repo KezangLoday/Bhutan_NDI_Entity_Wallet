@@ -63,6 +63,10 @@ holding delegated authority; counterparties are Bank of Bhutan and BNSW.
 Act 5 is the centre of the demo: a PASS beside a FAIL-with-a-reason on the same
 chain explains delegated authority better than any diagram.
 
+**Presenting it? Read [`docs/running-the-demo.md`](docs/running-the-demo.md)** —
+what is built, the act-by-act script, and what to say when someone asks whether
+any of it is real.
+
 Full spine, per-screen build depth and slice order: **[`docs/demo-plan.md`](docs/demo-plan.md)**.
 Standing engineering rules: **[`CLAUDE.md`](CLAUDE.md)**.
 
