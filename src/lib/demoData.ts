@@ -191,8 +191,23 @@ export interface ApiKey {
  */
 export type PersonId = string;
 
-/** The three people the demo can be *driven* as. */
-export type PersonaId = "rinzin" | "dorji" | "pema";
+/**
+ * The people the demo can be *driven* as.
+ *
+ * Four rather than three, and the fourth exists for a reason worth recording.
+ * Act 2 is a grant being created from nothing, which means it needs somebody
+ * who does not already hold a controllership — and everyone else does, or
+ * shouldn't. Dorji's relation is seeded active so act 3 can be shown on its
+ * own; Pema is a Pattern B delegate and giving her a controllership would
+ * teach the wrong model; Karma has left. Without Ugyen, act 2's person
+ * selector offers only people it then refuses, and the act cannot be
+ * completed at all.
+ */
+export type PersonaId = "rinzin" | "dorji" | "pema" | "ugyen";
+
+/** The drivable personas, in story order. One list, so the harness, the nav
+ *  and the acceptance screen cannot disagree about who exists. */
+export const PERSONAS: PersonaId[] = ["rinzin", "dorji", "pema", "ugyen"];
 
 export interface Person {
   id: PersonId;
@@ -589,6 +604,41 @@ export interface DemoState {
 
 const ISSUER_DID = "did:indy:bhutan:8XkT4vQmR2sLpNbW9dHyZa";
 
+/* ================================================================== */
+/* Dates that do not rot                                               */
+/*                                                                     */
+/* The entity-wallet fixtures used to be literal dates around          */
+/* September 2026, which read correctly for about a fortnight and then */
+/* started lying: countdowns said "Expired", capabilities fell outside  */
+/* their validity window, and the verification service began failing    */
+/* the one check the demo most needs to pass. A demo that decays is a   */
+/* demo somebody eventually runs broken in front of an audience.        */
+/*                                                                     */
+/* So story dates are offsets from today. `day(-7)` is a week ago and   */
+/* always will be.                                                      */
+/*                                                                     */
+/* Computed in UTC on purpose: the server and the client both evaluate  */
+/* this module, and a local-time calculation would disagree between     */
+/* them for anyone west of Greenwich — a hydration mismatch on every    */
+/* screen showing a date. The one residual case is a dev server left    */
+/* running across UTC midnight, which a restart fixes.                  */
+/*                                                                     */
+/* The issuer/verifier fixtures above keep their literal dates. They    */
+/* are background rather than story, nothing computes against them, and */
+/* an organisation whose schemas were created months ago is right.      */
+/* ================================================================== */
+
+const NOW = new Date();
+
+/** A date this many days from today, as YYYY-MM-DD. */
+const day = (offset: number): string =>
+  new Date(Date.UTC(NOW.getUTCFullYear(), NOW.getUTCMonth(), NOW.getUTCDate() + offset))
+    .toISOString()
+    .slice(0, 10);
+
+/** A timestamp, for audit rows that show a time as well as a date. */
+const at = (offset: number, time: string): string => `${day(offset)}T${time}:00+06:00`;
+
 /** Dates are fixed strings, not computed: a demo should look the same twice. */
 export const SEED: DemoState = {
   activeOrgId: "org-norling",
@@ -949,6 +999,16 @@ export const SEED: DemoState = {
       cidVerified: true,
     },
     {
+      /* Act 2's recipient: verified, and deliberately holding nothing. He is
+         who the audience watches an authority being built for. */
+      id: "ugyen",
+      name: "Ugyen Phuntsho",
+      cid: "•••• •••• 8306",
+      email: "ugyen.phuntsho@norlinglogistics.bt",
+      title: "Warehouse manager",
+      cidVerified: true,
+    },
+    {
       id: "sonam",
       name: "Sonam Yeshey",
       cid: "•••• •••• 5573",
@@ -991,7 +1051,7 @@ export const SEED: DemoState = {
       },
       scope: {
         version: 1,
-        validFrom: "2026-05-20",
+        validFrom: day(-112),
         validUntil: null,
         grants: [
           { operation: "credential:receive", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
@@ -1004,9 +1064,9 @@ export const SEED: DemoState = {
       },
       state: "ACTIVE",
       isRootAuthority: true,
-      createdAt: "2026-05-20",
-      acceptedAt: "2026-05-20",
-      activatedAt: "2026-05-20",
+      createdAt: day(-112),
+      acceptedAt: day(-112),
+      activatedAt: day(-112),
     },
     {
       /* Act 2's grant. Deliberately narrow, and narrow in a way you can see:
@@ -1022,8 +1082,8 @@ export const SEED: DemoState = {
       },
       scope: {
         version: 3,
-        validFrom: "2026-06-01",
-        validUntil: "2026-12-31",
+        validFrom: day(-100),
+        validUntil: day(113),
         grants: [
           { operation: "credential:receive", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
           {
@@ -1044,9 +1104,9 @@ export const SEED: DemoState = {
       },
       state: "ACTIVE",
       isRootAuthority: false,
-      createdAt: "2026-05-28",
-      acceptedAt: "2026-05-30",
-      activatedAt: "2026-05-30",
+      createdAt: day(-104),
+      acceptedAt: day(-102),
+      activatedAt: day(-102),
     },
     {
       /* Waiting on its Controller. The register has to show this state, and
@@ -1061,8 +1121,8 @@ export const SEED: DemoState = {
       },
       scope: {
         version: 1,
-        validFrom: "2026-09-08",
-        validUntil: "2027-03-31",
+        validFrom: day(-1),
+        validUntil: day(203),
         grants: [
           { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
           { operation: "approval:decide", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
@@ -1070,7 +1130,7 @@ export const SEED: DemoState = {
       },
       state: "PENDING_ACCEPTANCE",
       isRootAuthority: false,
-      createdAt: "2026-09-01",
+      createdAt: day(-8),
       acceptedAt: null,
       activatedAt: null,
     },
@@ -1086,8 +1146,8 @@ export const SEED: DemoState = {
       },
       scope: {
         version: 2,
-        validFrom: "2026-03-06",
-        validUntil: "2026-12-31",
+        validFrom: day(-187),
+        validUntil: day(113),
         grants: [
           { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
           {
@@ -1100,9 +1160,9 @@ export const SEED: DemoState = {
       },
       state: "TERMINATED",
       isRootAuthority: false,
-      createdAt: "2026-03-04",
-      acceptedAt: "2026-03-06",
-      activatedAt: "2026-03-06",
+      createdAt: day(-189),
+      acceptedAt: day(-187),
+      activatedAt: day(-187),
       endedReason: "Left the company. Terminated on her last working day.",
     },
   ],
@@ -1120,11 +1180,11 @@ export const SEED: DemoState = {
         { name: "registration_number", value: "CRA-2019-04477" },
         { name: "entity_type", value: "Private limited company" },
         { name: "registered_address", value: "Babesa, Thimphu, Bhutan" },
-        { name: "incorporation_date", value: "2019-08-14" },
+        { name: "incorporation_date", value: day(-2583) },
         { name: "status", value: "Active" },
       ],
       isFoundational: true,
-      receivedAt: "2026-05-20",
+      receivedAt: day(-112),
       expiresAt: null,
       status: "active",
     },
@@ -1138,11 +1198,11 @@ export const SEED: DemoState = {
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
         { name: "tpn", value: "TPN-114-8830" },
         { name: "assessment_year", value: "2025" },
-        { name: "cleared_on", value: "2026-04-01" },
+        { name: "cleared_on", value: day(-161) },
       ],
       isFoundational: false,
-      receivedAt: "2026-04-01",
-      expiresAt: "2026-08-31",
+      receivedAt: day(-161),
+      expiresAt: day(-9),
       status: "expired",
     },
     {
@@ -1157,8 +1217,8 @@ export const SEED: DemoState = {
         { name: "vehicle_classes", value: "Heavy goods, container" },
       ],
       isFoundational: false,
-      receivedAt: "2026-02-11",
-      expiresAt: "2027-02-10",
+      receivedAt: day(-210),
+      expiresAt: day(154),
       status: "revoked",
     },
   ],
@@ -1176,13 +1236,13 @@ export const SEED: DemoState = {
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
         { name: "licence_number", value: "DRC-CB-2026-0331" },
         { name: "broker_class", value: "Class A" },
-        { name: "valid_until", value: "2027-09-02" },
+        { name: "valid_until", value: day(358) },
       ],
       decision: "allowed",
       decisionReason: null,
       state: "pending",
-      receivedAt: "2026-09-02",
-      expiresAt: "2026-09-16",
+      receivedAt: day(-7),
+      expiresAt: day(7),
     },
     {
       /* The denied state. The reason is specific and the next step routes to
@@ -1201,8 +1261,8 @@ export const SEED: DemoState = {
       decisionReason:
         "Your authority covers Business Registration and Customs Broker Licence credentials. Accepting insurance credentials was not granted.",
       state: "pending",
-      receivedAt: "2026-09-05",
-      expiresAt: "2026-09-19",
+      receivedAt: day(-4),
+      expiresAt: day(10),
     },
     {
       id: "offer-warehouse",
@@ -1218,8 +1278,8 @@ export const SEED: DemoState = {
       decision: "requires_approval",
       decisionReason: "Accepting an authorisation of this kind needs one approver.",
       state: "parked",
-      receivedAt: "2026-09-06",
-      expiresAt: "2026-09-20",
+      receivedAt: day(-3),
+      expiresAt: day(11),
     },
     {
       id: "offer-lapsed",
@@ -1231,8 +1291,8 @@ export const SEED: DemoState = {
       decision: "allowed",
       decisionReason: null,
       state: "expired",
-      receivedAt: "2026-08-04",
-      expiresAt: "2026-08-18",
+      receivedAt: day(-36),
+      expiresAt: day(-22),
     },
   ],
 
@@ -1257,8 +1317,8 @@ export const SEED: DemoState = {
       decision: "requires_approval",
       decisionReason: "Presenting to Bank of Bhutan is in scope and needs one approver.",
       state: "ready",
-      receivedAt: "2026-09-04",
-      expiresAt: "2026-09-11",
+      receivedAt: day(-5),
+      expiresAt: day(2),
     },
     {
       /* Already sent for approval, so the queue has something in it before
@@ -1278,8 +1338,8 @@ export const SEED: DemoState = {
       decisionReason: "Presenting to Bank of Bhutan is in scope and needs one approver.",
       disclosing: ["registered_name", "registration_number"],
       state: "parked",
-      receivedAt: "2026-09-06",
-      expiresAt: "2026-09-13",
+      receivedAt: day(-3),
+      expiresAt: day(4),
     },
     {
       /* The relying-party filter doing its job — in scope by credential
@@ -1296,8 +1356,8 @@ export const SEED: DemoState = {
       decisionReason:
         "Your authority allows presentations to Bhutan National Single Window and Bank of Bhutan. Druk Trading House is not among them.",
       state: "ready",
-      receivedAt: "2026-09-07",
-      expiresAt: "2026-09-14",
+      receivedAt: day(-2),
+      expiresAt: day(5),
     },
     {
       id: "vr-bnsw-done",
@@ -1311,8 +1371,8 @@ export const SEED: DemoState = {
       decision: "requires_approval",
       decisionReason: null,
       state: "presented",
-      receivedAt: "2026-08-26",
-      expiresAt: "2026-09-02",
+      receivedAt: day(-14),
+      expiresAt: day(-7),
     },
     {
       id: "vr-lapsed",
@@ -1326,8 +1386,8 @@ export const SEED: DemoState = {
       decision: "requires_approval",
       decisionReason: null,
       state: "expired",
-      receivedAt: "2026-08-10",
-      expiresAt: "2026-08-17",
+      receivedAt: day(-30),
+      expiresAt: day(-23),
     },
   ],
 
@@ -1349,8 +1409,8 @@ export const SEED: DemoState = {
       signatures: [],
       state: "parked",
       decisionReason: null,
-      createdAt: "2026-09-08",
-      expiresAt: "2026-09-11",
+      createdAt: day(-1),
+      expiresAt: day(2),
     },
     {
       id: "park-accept-warehouse",
@@ -1367,8 +1427,8 @@ export const SEED: DemoState = {
       signatures: [],
       state: "parked",
       decisionReason: null,
-      createdAt: "2026-09-06",
-      expiresAt: "2026-09-13",
+      createdAt: day(-3),
+      expiresAt: day(4),
     },
     {
       /* Dual control, half collected. The plan folds multi-sig into B7 as a
@@ -1384,11 +1444,11 @@ export const SEED: DemoState = {
       payloadHash: "sha256:7d19a4fe0c38b5217e9c460da3f8b12a4e07c1685bd93fa2",
       policy: "DUAL_CONTROL",
       requiredSignatures: 2,
-      signatures: [{ personId: "rinzin", at: "2026-09-08", method: "wallet" }],
+      signatures: [{ personId: "rinzin", at: day(-1), method: "wallet" }],
       state: "parked",
       decisionReason: null,
-      createdAt: "2026-09-08",
-      expiresAt: "2026-09-12",
+      createdAt: day(-1),
+      expiresAt: day(3),
     },
     {
       /* Approved, then invalidated before it ran. The edge the brief calls
@@ -1405,15 +1465,15 @@ export const SEED: DemoState = {
       policy: "DUAL_CONTROL",
       requiredSignatures: 2,
       signatures: [
-        { personId: "rinzin", at: "2026-09-01", method: "wallet" },
-        { personId: "sonam", at: "2026-09-01", method: "web" },
+        { personId: "rinzin", at: day(-8), method: "wallet" },
+        { personId: "sonam", at: day(-8), method: "web" },
       ],
       state: "stale",
       decisionReason: null,
       invalidatedReason:
         "Karma Wangmo's controllership was terminated after this was approved, so it was never run.",
-      createdAt: "2026-08-31",
-      expiresAt: "2026-09-07",
+      createdAt: day(-9),
+      expiresAt: day(-2),
     },
     {
       id: "park-expired",
@@ -1430,8 +1490,8 @@ export const SEED: DemoState = {
       signatures: [],
       state: "expired",
       decisionReason: "Nobody decided this before it expired.",
-      createdAt: "2026-08-05",
-      expiresAt: "2026-08-12",
+      createdAt: day(-35),
+      expiresAt: day(-28),
     },
     {
       id: "park-approved-bnsw",
@@ -1445,11 +1505,11 @@ export const SEED: DemoState = {
       payloadHash: "sha256:e572b0491ac8d36f7be24051c9da8317064fb2e85d1a7c63",
       policy: "SINGLE_APPROVER",
       requiredSignatures: 1,
-      signatures: [{ personId: "rinzin", at: "2026-08-26", method: "wallet" }],
+      signatures: [{ personId: "rinzin", at: day(-14), method: "wallet" }],
       state: "approved",
       decisionReason: null,
-      createdAt: "2026-08-26",
-      expiresAt: "2026-09-02",
+      createdAt: day(-14),
+      expiresAt: day(-7),
     },
   ],
 
@@ -1465,12 +1525,12 @@ export const SEED: DemoState = {
       taskScopes: ["customs:declaration", "customs:amendment"],
       valueCap: null,
       counterparties: { mode: "list", values: ["Bhutan National Single Window"] },
-      validFrom: "2026-06-15",
-      validUntil: "2027-06-14",
+      validFrom: day(-86),
+      validUntil: day(278),
       status: "ACTIVE",
       acceptance: "accepted",
-      issuedAt: "2026-06-15",
-      acceptedAt: "2026-06-15",
+      issuedAt: day(-86),
+      acceptedAt: day(-86),
     },
     {
       /* Act 4's capability. Short-lived by design — expiry is the first line
@@ -1484,12 +1544,12 @@ export const SEED: DemoState = {
       taskScopes: ["customs:declaration"],
       valueCap: { amount: 500000, currency: "BTN", perTransaction: true },
       counterparties: { mode: "list", values: ["Bhutan National Single Window"] },
-      validFrom: "2026-09-07",
-      validUntil: "2026-12-06",
+      validFrom: day(-2),
+      validUntil: day(88),
       status: "ACTIVE",
       acceptance: "accepted",
-      issuedAt: "2026-09-07",
-      acceptedAt: "2026-09-08",
+      issuedAt: day(-2),
+      acceptedAt: day(-1),
     },
     {
       /* The console's "sent, awaiting acceptance" state — acceptance is the
@@ -1503,11 +1563,11 @@ export const SEED: DemoState = {
       taskScopes: ["payments:release"],
       valueCap: { amount: 250000, currency: "BTN", perTransaction: true },
       counterparties: { mode: "list", values: ["Bank of Bhutan"] },
-      validFrom: "2026-09-08",
-      validUntil: "2026-11-07",
+      validFrom: day(-1),
+      validUntil: day(59),
       status: "ACTIVE",
       acceptance: "sent",
-      issuedAt: "2026-09-08",
+      issuedAt: day(-1),
       acceptedAt: null,
     },
     {
@@ -1520,12 +1580,12 @@ export const SEED: DemoState = {
       taskScopes: ["customs:declaration"],
       valueCap: { amount: 500000, currency: "BTN", perTransaction: true },
       counterparties: { mode: "list", values: ["Bhutan National Single Window"] },
-      validFrom: "2026-04-01",
-      validUntil: "2026-06-30",
+      validFrom: day(-161),
+      validUntil: day(-71),
       status: "EXPIRED",
       acceptance: "accepted",
-      issuedAt: "2026-04-01",
-      acceptedAt: "2026-04-01",
+      issuedAt: day(-161),
+      acceptedAt: day(-161),
     },
     {
       id: "da-role-warehouse",
@@ -1537,13 +1597,13 @@ export const SEED: DemoState = {
       taskScopes: ["warehouse:receipt"],
       valueCap: null,
       counterparties: { mode: "any" },
-      validFrom: "2026-03-06",
-      validUntil: "2026-12-31",
+      validFrom: day(-187),
+      validUntil: day(113),
       status: "REVOKED",
       acceptance: "accepted",
-      issuedAt: "2026-03-06",
-      acceptedAt: "2026-03-07",
-      endedAt: "2026-07-31",
+      issuedAt: day(-187),
+      acceptedAt: day(-186),
+      endedAt: day(-40),
       endedReason: "Left the company.",
       appealReference: "AP-2026-0288",
     },
@@ -1575,7 +1635,7 @@ export const SEED: DemoState = {
         { label: "Authority chain intact", detail: "All four links live at the time of decision", outcome: "pass" },
       ],
       reasons: [],
-      decidedAt: "2026-09-08",
+      decidedAt: day(-1),
       signature: "z3Kf8Qa2NmVpT7wLxB4dRc9sYhE6uJn1PkG5tZoW",
     },
     {
@@ -1607,7 +1667,7 @@ export const SEED: DemoState = {
         "The Customs broker role this authority depends on was withdrawn on 9 September 2026.",
         "An authority cannot be relied on while any authority above it has been withdrawn.",
       ],
-      decidedAt: "2026-09-09",
+      decidedAt: day(0),
       signature: "z7Ln2Vx9BqTm4pKdW8sRc3aYhU5eJf1GoZ6tNwPi",
     },
     {
@@ -1628,7 +1688,7 @@ export const SEED: DemoState = {
         "The authority verification service could not be reached, so nothing could be checked.",
         "An unverifiable authority is treated as no authority.",
       ],
-      decidedAt: "2026-09-09",
+      decidedAt: day(0),
       signature: "",
     },
   ],
@@ -1646,7 +1706,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-09-09T09:14:00+06:00",
+      at: at(0, "09:14"),
       prevHash: "sha256:0d47b1e9",
       rowHash: "sha256:6ca39f02",
     },
@@ -1662,7 +1722,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-09-08T15:41:00+06:00",
+      at: at(-1, "15:41"),
       prevHash: "sha256:93e28ac5",
       rowHash: "sha256:0d47b1e9",
     },
@@ -1678,7 +1738,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-09-07T11:02:00+06:00",
+      at: at(-2, "11:02"),
       prevHash: "sha256:41fb7d60",
       rowHash: "sha256:93e28ac5",
     },
@@ -1697,7 +1757,7 @@ export const SEED: DemoState = {
       approvedById: "rinzin",
       relyingPartyDid: "did:indy:bhutan:BNSW6tL9nK3mQ8wV2xP5dB",
       disclosedDigest: "sha256:a7f3c9e1",
-      at: "2026-08-26T14:23:00+06:00",
+      at: at(-14, "14:23"),
       prevHash: "sha256:c85a0b34",
       rowHash: "sha256:41fb7d60",
     },
@@ -1713,7 +1773,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-07-31T17:05:00+06:00",
+      at: at(-40, "17:05"),
       prevHash: "sha256:2b6e91df",
       rowHash: "sha256:c85a0b34",
     },
@@ -1729,7 +1789,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-05-30T10:12:00+06:00",
+      at: at(-102, "10:12"),
       prevHash: "sha256:74d0af28",
       rowHash: "sha256:2b6e91df",
     },
@@ -1745,7 +1805,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-05-28T09:47:00+06:00",
+      at: at(-104, "09:47"),
       prevHash: "sha256:1a05c7be",
       rowHash: "sha256:74d0af28",
     },
@@ -1761,7 +1821,7 @@ export const SEED: DemoState = {
       approvedById: null,
       relyingPartyDid: null,
       disclosedDigest: null,
-      at: "2026-05-20T13:30:00+06:00",
+      at: at(-112, "13:30"),
       prevHash: "sha256:00000000",
       rowHash: "sha256:1a05c7be",
     },
@@ -1779,7 +1839,7 @@ export const SEED: DemoState = {
       againstTitle: "Customs broker",
       noticeReason:
         "Withdrawn pending an internal review of declaration values submitted in August.",
-      noticeIssuedAt: "2026-09-09",
+      noticeIssuedAt: day(0),
       submittedAt: null,
       submission: null,
       state: "notice_issued",
@@ -1796,8 +1856,8 @@ export const SEED: DemoState = {
       againstId: "da-role-warehouse",
       againstTitle: "Warehouse supervisor",
       noticeReason: "Withdrawn on departure from the company.",
-      noticeIssuedAt: "2026-07-31",
-      submittedAt: "2026-08-04",
+      noticeIssuedAt: day(-40),
+      submittedAt: day(-36),
       submission:
         "My last working day was 8 August, not 31 July. I had four warehouse receipts outstanding on the date the role was withdrawn.",
       state: "rejected",

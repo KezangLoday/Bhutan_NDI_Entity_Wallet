@@ -15,6 +15,7 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { DetailList } from "@/components/ui/DetailList";
 import { Icon } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
+import { PERSONAS } from "@/lib/demoData";
 
 import { formatDate, legalBasisLabel } from "./scopeModel";
 
@@ -108,12 +109,10 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
   const isAddressee = harness.persona === relation.personId;
   const viewer = personById(harness.persona);
 
-  /* Only the three drivable personas can be switched to. A relation proposed
-     to someone the demo is never driven as (Sonam, say) still shows the
-     mismatch notice, just without an offer to become them. */
-  const switchable = (["rinzin", "dorji", "pema"] as const).find(
-    (id) => id === relation.personId,
-  );
+  /* Only a drivable persona can be switched to. A relation proposed to
+     someone the demo is never driven as (Sonam, say) still shows the mismatch
+     notice, just without an offer to become them. */
+  const switchable = PERSONAS.find((id) => id === relation.personId);
 
   /* The screen's own state wins over the stored one, so the switcher can show
      the accepted and declined faces without the demo having to be walked into

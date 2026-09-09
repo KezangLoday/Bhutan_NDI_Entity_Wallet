@@ -20,10 +20,13 @@ Two things to do in the room before you say anything:
 2. **Press Reset demo** if anyone has touched it before you. The demo persists
    to browser storage, so it remembers whatever the last person did.
 
-**Leave the prototype chip visible.** It is the one thing standing between this
-demo and somebody believing the government register integration is built. If
-anyone asks what is real, the answer is in `README.md` under *What's real vs
-simulated* — worth reading once before you present.
+**Leave the prototype chip visible, and know that it is a link.** It goes to
+**/whats-real**, a page listing exactly which parts are simulated and what
+would have to be built for each. That chip is the one thing standing between
+this demo and somebody concluding the register integration exists. Read the
+page once before you present, and send people the link afterwards rather than
+paraphrasing it — the question usually arrives by email, from somebody who was
+not in the room.
 
 ---
 
@@ -165,13 +168,20 @@ Demo controls → act button **2**. That puts you on
 `/controllership/relations/new` as **Rinzin Dema**, the managing director.
 
 > "Rinzin runs Norling Logistics, a freight and customs clearance company.
-> She needs her operations manager to be able to deal with the bank and
-> customs on the company's behalf. Not to *be* the company — to act for it."
+> She has just hired a warehouse manager, and he needs to be able to accept
+> credentials on the company's behalf. Not to *be* the company — to act for
+> it."
 
 ### 2 · Establish the controllership — `/controllership/relations/new`
 
-Pick **Dorji Wangchuk**. Choose **Entity consent**. Attach any file (the
-filename is all that is kept) and type a reference like `NL/BR/2026/014`.
+Pick **Ugyen Phuntsho**, the warehouse manager — he holds nothing yet, which
+is why he is the one to watch an authority being built for. Choose **Entity
+consent**. Attach any file (the filename is all that is kept) and type a
+reference like `NL/BR/2026/014`.
+
+> Dorji is not in this list, deliberately: he already holds a controllership,
+> and a second one for the same person would leave two answers to "what may he
+> do". His is seeded active so act 3 can be shown on its own.
 
 Two things worth pointing at here:
 
@@ -194,19 +204,19 @@ This is the one to slow down on. Everything is off. Say so:
 
 Now build the grant, narrating as the right-hand panel rewrites itself:
 
-1. Check **Accept offers** → choose **Only these** → pick **Business
-   Registration** and **Customs Broker Licence**. Leave approval on
+1. Check **Accept offers** → choose **Only these** → pick **Bonded Warehouse
+   Authorisation** and **Warehouse Safety Certificate**. Leave approval on
    **Automatic**.
 2. Check **Present proofs** → **Only these** credential types → **Business
    Registration**. Then relying parties → **Only these** → **Bank of Bhutan**
    and **Bhutan National Single Window**. Leave approval on **One approver**.
-3. Set an end date — **31 December 2026**.
+3. Set an end date about a year out.
 
 **The point of the screen is the right-hand panel.** Read one of its sentences
 out loud:
 
-> "Dorji Wangchuk may present proofs using Business Registration credentials to
-> Bank of Bhutan and Bhutan National Single Window only, until 31 Dec 2026.
+> "Ugyen Phuntsho may present proofs using Business Registration credentials
+> to Bank of Bhutan and Bhutan National Single Window only, until 31 Dec 2027.
 > Every presentation needs one approver."
 
 > "That sentence is the product. Everything else here is a way of writing it.
@@ -229,12 +239,12 @@ You will land on a panel saying it has gone to Dorji. Click **Open what Dorji
 will see**.
 
 **You will see a notice saying you are still signed in as Rinzin, and that only
-Dorji can accept.** Do not skip past this — it is the moment the story turns:
+Ugyen can accept.** Do not skip past this — it is the moment the story turns:
 
 > "Rinzin cannot accept on his behalf. If she could, the acceptance record
 > would be worth nothing, and that record is the whole point."
 
-Click **Continue as Dorji**. Everything on the page switches to the second
+Click **Continue as Ugyen**. Everything on the page switches to the second
 person.
 
 Now walk the acceptance screen top to bottom:
@@ -257,7 +267,7 @@ Press **Accept these duties**.
 
 Click **See what I may do**.
 
-> "This is Dorji's own view. Same sentences. And notice what is not here —
+> "This is Ugyen's own view. Same sentences. And notice what is not here —
 > there is no edit button, not even a disabled one. He can see his authority
 > and he can ask for it to be changed. He can never change it himself."
 
@@ -419,6 +429,11 @@ Two things to say while you are here:
   "never expires" option at all.
   > "Expiry is what limits the damage when a withdrawal comes late or never
   > happens. So it is short unless someone deliberately lengthens it."
+- **Leave "Hangs off" on Customs broker.** It defaults there, and it is what
+  makes act 5 work — the capability depends on the role, so withdrawing the
+  role withdraws this too.
+  > "This is where the chain comes from. A capability almost always derives
+  > from a role, and that dependency is the thing act five is about."
 
 Press **Issue to Pema**. You get *awaiting acceptance*:
 
@@ -568,16 +583,20 @@ deciding approvals. That is read from his actual grant, not from a role list.
 |---|---|
 | Screen looks stale or half-built | **Reset demo** in the demo controls |
 | A sidebar item 404s | Shouldn't happen now — tell me if one does |
-| A countdown says "Expired" | The fixtures are dated September 2026; see the note below |
+| A countdown says "Expired" | Only the deliberately-lapsed fixtures should. Others self-update |
 | Acceptance button is disabled | You are the wrong persona. Use **Continue as …** |
 | The verifier says no authority exists | Reset the demo, or issue one via act 4 |
 | A second FAIL when you wanted a PASS | The role is still revoked. **Reset demo** |
 | Everything is dark and you wanted light | Theme toggle, top right |
 
-**The fixture dates will rot.** Everything is dated around September 2026, so
-countdowns and validity windows read correctly now and will read as expired if
-this is demoed much later. If dates look wrong, that is why — it is on the list
-to fix by anchoring the fixtures to a relative "today".
+**The fixture dates no longer rot.** Story dates are offsets from today, so an
+offer that expires "in a week" always does, and the capability in act 5 is
+always inside its validity window. The handful of things that read as expired
+are meant to — a lapsed tax certificate, a revoked permit, an offer nobody
+answered.
+
+**Every wait is skippable.** Look for **Skip the wait** on any hand-off. The
+only long one is act 1's register check, and that length is the point.
 
 ---
 
@@ -590,5 +609,7 @@ Be straightforward. The honest version lands better than a hedge:
 > any of this. It is a frontend prototype whose job is to make us agree on what
 > the product should be before anyone builds it."
 
-Then, if they push: the `README.md` table lists exactly what is simulated. It is
-worth handing over rather than paraphrasing.
+Then hand over **/whats-real** — click the prototype chip. It lists every
+simulated part, what it really is, and what would have to exist for it to be
+real, including the bits that genuinely are decided. It is written to be
+forwarded.

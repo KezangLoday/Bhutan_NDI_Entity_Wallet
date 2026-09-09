@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Icon } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
 import { ACTS, actByNumber } from "@/lib/demoStory";
-import type { PersonaId } from "@/lib/demoData";
+import { PERSONAS } from "@/lib/demoData";
 
 import { useScreenRegistry } from "./screenState";
 
@@ -44,10 +45,12 @@ export function DemoHarness() {
   const onAuthScreen =
     pathname === "/" || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
 
-  /** Personas are the three the story is driven as, in story order. */
-  const personas = people.filter((p): p is typeof p & { id: PersonaId } =>
-    ["rinzin", "dorji", "pema"].includes(p.id),
-  );
+  /** In story order, from the one list of who is drivable. The id is kept
+   *  alongside so the switcher passes a PersonaId rather than a bare string. */
+  const personas = PERSONAS.flatMap((id) => {
+    const person = people.find((p) => p.id === id);
+    return person ? [{ id, person }] : [];
+  });
 
   const act = actByNumber(harness.act);
 
@@ -143,17 +146,17 @@ export function DemoHarness() {
                 Driving as
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {personas.map((p) => (
+                {personas.map(({ id, person }) => (
                   <button
-                    key={p.id}
+                    key={id}
                     type="button"
-                    onClick={() => setPersona(p.id)}
-                    aria-pressed={harness.persona === p.id}
+                    onClick={() => setPersona(id)}
+                    aria-pressed={harness.persona === id}
                     className="ndi-navrow flex flex-col items-start rounded-[10px] px-2.5 py-1.5 text-left"
-                    data-active={harness.persona === p.id ? "1" : "0"}
+                    data-active={harness.persona === id ? "1" : "0"}
                   >
-                    <span className="font-display text-[13px] font-medium">{p.name}</span>
-                    <span className="text-[11.5px] leading-tight text-faint">{p.title}</span>
+                    <span className="font-display text-[13px] font-medium">{person.name}</span>
+                    <span className="text-[11.5px] leading-tight text-faint">{person.title}</span>
                   </button>
                 ))}
               </div>
@@ -227,16 +230,25 @@ export function DemoHarness() {
 
       {/* ---- The marker, and the way in ---- */}
       <div className="pointer-events-auto flex items-center gap-2">
-        <span className="inline-flex items-center gap-2 rounded-full border border-grid bg-[var(--chrome-fill-strong)] px-3 py-1.5 backdrop-blur-[20px]">
+        {/* A link, not a label. The marker's whole job is to stop somebody
+            concluding that the register integration exists, and "prototype"
+            on its own does not tell them which parts are simulated — the
+            page behind it does. One click from every screen. */}
+        <Link
+          href="/whats-real"
+          className="ndi-navrow inline-flex items-center gap-2 rounded-full border border-grid bg-[var(--chrome-fill-strong)] px-3 py-1.5 backdrop-blur-[20px]"
+          data-active="0"
+        >
           <span
             aria-hidden="true"
             className="h-1.5 w-1.5 flex-none rounded-full"
             style={{ background: "var(--ndi-warning)" }}
           />
-          <span className="font-display text-[11.5px] font-medium tracking-[0.02em] text-muted">
+          <span className="font-display text-[11.5px] font-medium tracking-[0.02em]">
             Prototype · data simulated
           </span>
-        </span>
+          <Icon name="arrowRight" size={11} strokeWidth={2.2} className="flex-none opacity-60" />
+        </Link>
 
         <button
           type="button"

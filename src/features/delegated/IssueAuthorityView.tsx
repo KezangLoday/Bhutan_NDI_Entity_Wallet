@@ -73,7 +73,18 @@ export function IssueAuthorityView() {
   const [kind, setKind] = useState<AuthorityKind>("capability");
   const [recipientId, setRecipientId] = useState("pema");
   const [title, setTitle] = useState("Declaration authority");
-  const [parentId, setParentId] = useState<string | null>(null);
+  /* Whether the operator has made a choice about the parent yet. Until they
+     have, a capability defaults to hanging off the recipient's existing role
+     rather than off nothing.
+
+     That default is the correct product behaviour — a capability almost
+     always derives from a role, and chaining it is what lets withdrawing the
+     role withdraw everything under it. It is also load-bearing for the demo:
+     with the default at "nothing", the capability issued in act 4 did not
+     depend on the Customs broker role, so revoking that role in act 5 left it
+     verifying happily and the whole point of the act evaporated. */
+  const [parentTouched, setParentTouched] = useState(false);
+  const [parentChoice, setParentChoice] = useState<string | null>(null);
   const [tasks, setTasks] = useState<string[]>(["customs:declaration"]);
   const [capped, setCapped] = useState(true);
   const [cap, setCap] = useState("500000");
@@ -96,6 +107,8 @@ export function IssueAuthorityView() {
   const parentOptions = delegatedAuthorities.filter(
     (a) => a.kind === "role" && a.recipientId === recipientId && a.status === "ACTIVE",
   );
+
+  const parentId = parentTouched ? parentChoice : (parentOptions[0]?.id ?? null);
 
   const issued = issuedId ? delegatedAuthorities.find((a) => a.id === issuedId) : null;
 
@@ -295,7 +308,10 @@ export function IssueAuthorityView() {
                       setKind(next);
                       /* A role has no parent, so switching away from
                          capability has to drop one that was chosen. */
-                      if (next === "role") setParentId(null);
+                      if (next === "role") {
+                        setParentTouched(false);
+                        setParentChoice(null);
+                      }
                       setValidUntil(plusDays(next === "role" ? 365 : 90));
                     }}
                     segments={[
@@ -335,7 +351,10 @@ export function IssueAuthorityView() {
                           checked={recipientId === person.id}
                           onChange={() => {
                             setRecipientId(person.id);
-                            setParentId(null);
+                            /* Roles belong to a person, so a parent chosen for
+                               the previous recipient means nothing here. */
+                            setParentTouched(false);
+                            setParentChoice(null);
                           }}
                           className="h-4 w-4 flex-none accent-[var(--ndi-mint)]"
                         />
@@ -386,7 +405,10 @@ export function IssueAuthorityView() {
                             type="radio"
                             name="parent"
                             checked={parentId === null}
-                            onChange={() => setParentId(null)}
+                            onChange={() => {
+                              setParentTouched(true);
+                              setParentChoice(null);
+                            }}
                             className="h-3.5 w-3.5 accent-[var(--ndi-mint)]"
                           />
                           Nothing — trace straight to the entity
@@ -400,7 +422,10 @@ export function IssueAuthorityView() {
                               type="radio"
                               name="parent"
                               checked={parentId === option.id}
-                              onChange={() => setParentId(option.id)}
+                              onChange={() => {
+                                setParentTouched(true);
+                                setParentChoice(option.id);
+                              }}
                               className="h-3.5 w-3.5 accent-[var(--ndi-mint)]"
                             />
                             {option.title}

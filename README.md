@@ -10,7 +10,9 @@ the controllership model of the National Digital Identity Act of Bhutan 2023.
 
 > **This is a prototype. There is no backend and no network layer.** Every
 > register lookup, approval, revocation and verification decision is a fixture.
-> See [What's real vs simulated](#whats-real-vs-simulated).
+> The running demo says so too: the `prototype · data simulated` marker on
+> every screen links to a page listing exactly which parts are simulated and
+> what each would need to be real. See [What's real vs simulated](#whats-real-vs-simulated).
 
 ## Run
 
@@ -190,6 +192,7 @@ before any walkthrough:
 | Revocation propagating to a verifier | Fixture. Nothing propagates anywhere. |
 | A signed PASS / FAIL verification decision | Derived live by `src/lib/avs.ts`, a named stand-in for the verification service. It walks the real chain and fails closed, but there is no service behind it. |
 | An immutable, hash-chained audit trail | An array in `localStorage`. Clearing site data clears it. |
+| A credential arriving in someone's personal wallet | A row in browser storage, plus a "simulate accepting" button. No phone is contacted. |
 | Scope and approval enforcement | Rendered from fixtures. Enforcement belongs on the server and is not built. |
 
 A fuller version of this table ships as a page inside the demo. Keep both
