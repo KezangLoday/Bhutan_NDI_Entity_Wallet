@@ -742,3 +742,109 @@ select option {
   outline: none;
   box-shadow: var(--ring);
 }
+
+/* ---- Modal dialog ------------------------------------------ */
+/* Native <dialog> + showModal(). The element sits in the top layer, so it
+   needs no z-index against the sidebar, the harness bar or the atmosphere —
+   but that also means the usual centring utilities do not apply, and the
+   backdrop can only be reached through ::backdrop. */
+.ndi-dialog {
+  margin: auto;
+  max-height: calc(100dvh - 2rem);
+  /* auto, not visible: a terminate confirmation lists everything the action
+     will stop, and on a short viewport that list is taller than the dialog.
+     With overflow visible it was simply cut off — the worst possible place to
+     hide content, since the list is the whole reason the dialog exists. */
+  overflow: auto;
+  background: var(--surface-canvas);
+  box-shadow: var(--shadow-card);
+}
+.ndi-dialog::backdrop {
+  background: var(--scrim);
+  backdrop-filter: blur(5px);
+}
+/* The open state animates; the closed state must not, or a dialog that has
+   never been opened plays its entrance on first paint. */
+@media (prefers-reduced-motion: no-preference) {
+  .ndi-dialog[open] {
+    animation: ndi-dialog-in var(--dur) var(--ease-out);
+  }
+  .ndi-dialog[open]::backdrop {
+    animation: ndi-fade-in var(--dur) var(--ease-out);
+  }
+}
+@keyframes ndi-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ndi-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The dialog's confirm control. Default carries the gradient the primary CTA
+   wears; danger drops it for an outlined red, because a filled red button is
+   the loudest thing on the screen and this is a decision to be read, not a
+   button to be hit reflexively. */
+.ndi-dialog-confirm {
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--ndi-mint-deep), var(--ndi-mint));
+  color: var(--ndi-ink-900);
+  transition: filter var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out),
+    background var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+.ndi-dialog-confirm:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: var(--glow-sm);
+}
+.ndi-dialog-confirm:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.ndi-dialog-confirm[data-tone="danger"] {
+  background: rgb(225 73 62 / 0.1);
+  border-color: rgb(225 73 62 / 0.45);
+  color: var(--ndi-danger);
+}
+.ndi-dialog-confirm[data-tone="danger"]:hover:not(:disabled) {
+  filter: none;
+  background: rgb(225 73 62 / 0.16);
+  border-color: var(--ndi-danger);
+  box-shadow: none;
+}
+.ndi-dialog-confirm:disabled {
+  cursor: not-allowed;
+  /* Matches the disabled CTA elsewhere: the gradient goes, so a permanently
+     disabled control does not read as merely dimmed and still pressable. */
+  background: var(--surface-raised);
+  border-color: var(--border-grid);
+  color: var(--text-faint);
+  filter: none;
+  box-shadow: none;
+}
+
+/* ---- Switch ------------------------------------------------ */
+.ndi-switch {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+}
+.ndi-switch:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.ndi-switch:disabled {
+  cursor: not-allowed;
+}
