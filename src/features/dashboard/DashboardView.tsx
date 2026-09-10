@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { useScreenState } from "@/components/demo/screenState";
 import { AppShell } from "@/components/layout/AppShell";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
@@ -9,10 +10,29 @@ import { Panel } from "@/components/ui/Panel";
 import { StatCard } from "@/components/ui/StatCard";
 import { WaveBanner } from "@/components/ui/WaveBanner";
 import { Icon } from "@/components/ui/icons";
+import { NeedsAttention } from "@/features/wallet/NeedsAttention";
 import { useDemo } from "@/lib/demoStore";
 
-export function DashboardView({ firstName = "Kezang" }: { firstName?: string }) {
-  const { organizations, schemas, credDefs, credentials, activity } = useDemo();
+/**
+ * B1 — the landing surface.
+ *
+ * Two products share this screen, and the order matters. The entity-wallet
+ * tasks come first because they are what somebody signing in has come to do;
+ * the issuer/verifier panels below are the surrounding product and belong to
+ * the owner. A Controller sees only the first part — not a dimmed version of
+ * the second, which would advertise capabilities they do not have.
+ */
+export function DashboardView({ firstName }: { firstName?: string } = {}) {
+  const { organizations, schemas, credDefs, credentials, activity, currentPerson, harness } =
+    useDemo();
+
+  /* The suspended face is a §9 global rather than a fixture state: a
+     controller whose authority is pulled mid-session must hit an explained
+     dead end, not a dashboard that quietly still works. */
+  const screenState = useScreenState("B1", ["has_tasks", "all_clear", "access_suspended"]);
+
+  const name = firstName ?? currentPerson.name.split(" ")[0];
+  const isOwner = harness.persona === "rinzin";
 
   return (
     <AppShell>
@@ -21,7 +41,7 @@ export function DashboardView({ firstName = "Kezang" }: { firstName?: string }) 
           eyebrow="— Dashboard"
           title={
             <>
-              Welcome back, <span className="ndi-wave-text ndi-wave-tight">{firstName}</span>
+              Welcome back, <span className="ndi-wave-text ndi-wave-tight">{name}</span>
             </>
           }
           lead={
@@ -43,6 +63,49 @@ export function DashboardView({ firstName = "Kezang" }: { firstName?: string }) 
           }
         />
 
+        {screenState === "access_suspended" ? (
+          <Panel>
+            <div className="relative z-[4] flex items-start gap-3">
+              <Icon
+                name="shieldAlert"
+                size={18}
+                strokeWidth={2}
+                className="mt-0.5 flex-none"
+                style={{ color: "var(--ndi-danger)" }}
+              />
+              <div className="flex flex-col gap-1">
+                <p className="font-display text-[14.5px] font-semibold text-strong">
+                  Your access has been suspended
+                </p>
+                <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+                  Nothing you attempt will go through while it is paused, so
+                  there is no point starting anything. The owner can lift it, and
+                  you can appeal it.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2.5">
+                  <Link href="/wallet/authority">
+                    <HairlineButton className="h-10 px-4 text-[13px]">
+                      See my authority
+                    </HairlineButton>
+                  </Link>
+                  <Link href="/appeals">
+                    <HairlineButton className="h-10 px-4 text-[13px]">Appeal it</HairlineButton>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </Panel>
+        ) : (
+          /* The entity wallet leads. `all_clear` empties the queue so the
+             cleared face can be reviewed without deciding everything first. */
+          <NeedsAttention key={screenState} allClear={screenState === "all_clear"} />
+        )}
+
+        {/* The surrounding issuer/verifier product, owner only. A controller
+            shown a dimmed version of this has been told about capabilities
+            they do not have. */}
+        {!isOwner ? null : (
+        <>
         {/* Column count follows the space the cards actually have, not the
             viewport. A viewport breakpoint got this backwards: at 900px the
             drawer is closed and the full width goes to one stretched card,
@@ -160,6 +223,8 @@ export function DashboardView({ firstName = "Kezang" }: { firstName?: string }) 
             )}
           </div>
         </Panel>
+        </>
+        )}
       </div>
     </AppShell>
   );

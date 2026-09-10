@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { DM_Mono, Host_Grotesk, Inter } from "next/font/google";
 
+import { DemoHarness } from "@/components/demo/DemoHarness";
+import { ScreenStateProvider } from "@/components/demo/screenState";
 import { Atmosphere } from "@/components/layout/Atmosphere";
 import { DemoProvider } from "@/lib/demoStore";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -52,12 +54,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             no backend by design: the Studio's front end runs against an
             in-browser model so the whole product can be driven in a demo. */}
         <DemoProvider>
-          <div className="relative isolate min-h-screen">
-            <Atmosphere />
-            {/* overflow-x-clip, not hidden: hidden would create a scroll container
-                and break sticky positioning. */}
-            <div className="relative z-[1] overflow-x-clip">{children}</div>
-          </div>
+          {/* The screen-state registry wraps the tree so a page can declare
+              its states and the harness bar, which is a sibling rather than
+              an ancestor of the page, can offer them. */}
+          <ScreenStateProvider>
+            <div className="relative isolate min-h-screen">
+              <Atmosphere />
+              {/* overflow-x-clip, not hidden: hidden would create a scroll container
+                  and break sticky positioning. */}
+              <div className="relative z-[1] overflow-x-clip">{children}</div>
+            </div>
+            {/* Outside the content column: it is scaffolding, not product. */}
+            <DemoHarness />
+          </ScreenStateProvider>
         </DemoProvider>
       </body>
     </html>
