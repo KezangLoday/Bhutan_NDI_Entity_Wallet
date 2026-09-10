@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { DetailList } from "@/components/ui/DetailList";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HairlineButton } from "@/components/ui/HairlineButton";
+import { DetailLayout } from "@/components/ui/DetailLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { ScopeSummary } from "@/components/ui/ScopeSummary";
@@ -83,15 +84,56 @@ export function MyAuthorityView() {
 
   const myActions = auditEntries.filter((e) => e.actorId === harness.persona);
 
+  /* Where the authority came from is what you check the sentences against,
+     not part of reading them — so it sits beside them once there is room. */
+  const provenance = (
+    <Panel>
+      <div className="relative z-[4] flex flex-col gap-1">
+        <h2 className="font-display text-[15px] font-semibold text-strong">
+          Why I can do it
+        </h2>
+      </div>
+      <div className="relative z-[4]">
+        <DetailList
+          items={[
+            { label: "Legal basis", value: legalBasisLabel(relation.legalBasis) },
+            {
+              label: "Signed instrument",
+              value: relation.instrument
+                ? `${relation.instrument.fileName} · ${relation.instrument.reference}`
+                : "None attached",
+            },
+            {
+              label: "Accepted by me",
+              value: relation.acceptedAt ? formatDate(relation.acceptedAt) : "Not yet",
+            },
+            {
+              label: "In force",
+              value: relation.scope.validUntil
+                ? `${formatDate(relation.scope.validFrom)} until ${formatDate(
+                    relation.scope.validUntil,
+                  )}`
+                : `${formatDate(relation.scope.validFrom)}, with no end date`,
+            },
+            { label: "Scope version", value: `Version ${relation.scope.version}` },
+          ]}
+        />
+      </div>
+    </Panel>
+  );
+
   return (
     <AppShell>
-      <div className="mx-auto flex w-full max-w-[900px] flex-col gap-5">
-        <PageHeader
-          crumbs={[{ label: "My authority" }]}
-          title="What I may do"
-          actions={<StatusPill status={expiringSoon ? "expiring" : shown} />}
-        />
-
+      <DetailLayout
+        header={
+          <PageHeader
+            crumbs={[{ label: "My authority" }]}
+            title="What I may do"
+            actions={<StatusPill status={expiringSoon ? "expiring" : shown} />}
+          />
+        }
+        side={provenance}
+      >
         {stopped ? (
           <Panel>
             <div className="relative z-[4] flex items-start gap-3">
@@ -165,40 +207,6 @@ export function MyAuthorityView() {
         <Panel>
           <div className="relative z-[4] flex flex-col gap-1">
             <h2 className="font-display text-[15px] font-semibold text-strong">
-              Why I can do it
-            </h2>
-          </div>
-          <div className="relative z-[4]">
-            <DetailList
-              items={[
-                { label: "Legal basis", value: legalBasisLabel(relation.legalBasis) },
-                {
-                  label: "Signed instrument",
-                  value: relation.instrument
-                    ? `${relation.instrument.fileName} · ${relation.instrument.reference}`
-                    : "None attached",
-                },
-                {
-                  label: "Accepted by me",
-                  value: relation.acceptedAt ? formatDate(relation.acceptedAt) : "Not yet",
-                },
-                {
-                  label: "In force",
-                  value: relation.scope.validUntil
-                    ? `${formatDate(relation.scope.validFrom)} until ${formatDate(
-                        relation.scope.validUntil,
-                      )}`
-                    : `${formatDate(relation.scope.validFrom)}, with no end date`,
-                },
-                { label: "Scope version", value: `Version ${relation.scope.version}` },
-              ]}
-            />
-          </div>
-        </Panel>
-
-        <Panel>
-          <div className="relative z-[4] flex flex-col gap-1">
-            <h2 className="font-display text-[15px] font-semibold text-strong">
               What I have done
             </h2>
             <p className="text-[12.5px] leading-[1.5] text-faint">
@@ -260,7 +268,7 @@ export function MyAuthorityView() {
             </p>
           </div>
         )}
-      </div>
+      </DetailLayout>
     </AppShell>
   );
 }
