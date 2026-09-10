@@ -130,7 +130,7 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
 
   return (
     <AppShell>
-      <div className="flex max-w-[820px] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[900px] flex-col gap-5">
         <PageHeader
           crumbs={[{ label: isAddressee ? "Your authority" : "Controllership" }]}
           /* Tense first, person second. An owner opening a relation that is

@@ -54,7 +54,7 @@ export function EntityProfileView() {
 
   return (
     <AppShell>
-      <div className="flex max-w-[860px] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[980px] flex-col gap-5">
         <PageHeader
           crumbs={[{ label: "Controllership" }, { label: "Entity" }]}
           title={org?.name ?? "The entity"}

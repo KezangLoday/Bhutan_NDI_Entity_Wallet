@@ -19,7 +19,10 @@ export function AppShell({ children }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);
 
   return (
-    <div>
+    /* The attribute is read by the `ndi-demo-harness` rule: the harness is
+       fixed to the viewport and needs to know whether a sidebar is in the
+       way. */
+    <div data-app-shell="1">
       <TopBar navOpen={navOpen} onToggleNav={() => setNavOpen((o) => !o)} />
       <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
 
@@ -34,8 +37,13 @@ export function AppShell({ children }: AppShellProps) {
       {/* A flex column at least as tall as the viewport, with the main region
           growing: that is what holds the footer to the bottom on a short page
           instead of letting it ride up under the content. box-sizing is
-          border-box, so pt-16 comes out of the dvh rather than adding to it. */}
-      <div className="flex min-h-dvh flex-col pt-16 min-[901px]:pl-[248px]">
+          border-box, so pt-16 comes out of the dvh rather than adding to it.
+
+          The demo harness is fixed to the bottom of the viewport, so without
+          the bottom padding the last thing on a page — usually the primary
+          action — sat underneath it. It goes on this column rather than on
+          <main> so the footer clears the harness as well. */}
+      <div className="flex min-h-dvh flex-col pb-16 pt-16 min-[901px]:pl-[248px]">
         <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 min-[641px]:px-6 min-[901px]:px-8 min-[901px]:py-8">
           {children}
         </main>

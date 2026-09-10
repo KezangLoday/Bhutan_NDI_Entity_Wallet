@@ -85,7 +85,7 @@ export function MyAuthorityView() {
 
   return (
     <AppShell>
-      <div className="flex max-w-[820px] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[900px] flex-col gap-5">
         <PageHeader
           crumbs={[{ label: "My authority" }]}
           title="What I may do"

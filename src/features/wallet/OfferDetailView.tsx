@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useScreenState } from "@/components/demo/screenState";
 import { AppShell } from "@/components/layout/AppShell";
 import { Countdown } from "@/components/ui/Countdown";
+import { DetailLayout } from "@/components/ui/DetailLayout";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -57,11 +58,15 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
   if (!offer) {
     return (
       <AppShell>
-        <div className="flex flex-col gap-5">
-          <PageHeader
-            crumbs={[{ label: "Offers", href: "/wallet/offers" }, { label: "Not found" }]}
-            title="Offer not found"
-          />
+        <DetailLayout
+          width={720}
+          header={
+            <PageHeader
+              crumbs={[{ label: "Offers", href: "/wallet/offers" }, { label: "Not found" }]}
+              title="Offer not found"
+            />
+          }
+        >
           <Panel>
             <p className="relative z-[4] text-[13.5px] text-muted">
               It may have been reset with the demo.{" "}
@@ -71,7 +76,7 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
               .
             </p>
           </Panel>
-        </div>
+        </DetailLayout>
       </AppShell>
     );
   }
@@ -101,15 +106,48 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
   const needsApproval = decision === "requires_approval";
   const settled = state === "accepted" || state === "declined" || state === "expired";
 
+  /* Context rather than the task: who sent this and whether they are
+     accredited is what you check the offer against, so on a wide screen it
+     sits beside the payload instead of pushing it down the page. */
+  const issuer = (
+    <Panel>
+      <div className="relative z-[4] flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+            Offered by
+          </p>
+          <p className="font-display text-[14.5px] font-semibold text-strong">
+            {offer.issuer}
+          </p>
+          <p className="break-all font-mono text-[11.5px] text-faint">{offer.issuerDid}</p>
+        </div>
+        <StatusPill
+          status={offer.issuerTrusted ? "verified" : "pending"}
+          label={offer.issuerTrusted ? "On the trust registry" : "Not on the trust registry"}
+        />
+      </div>
+      {!offer.issuerTrusted ? (
+        <p className="relative z-[4] mt-3 max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+          This issuer is not accredited on the NDI trust registry. Anything
+          they issue can still be held, but a relying party may not accept
+          it.
+        </p>
+      ) : null}
+    </Panel>
+  );
+
   return (
     <AppShell>
-      <div className="flex max-w-[780px] flex-col gap-5">
-        <PageHeader
-          crumbs={[{ label: "Offers", href: "/wallet/offers" }, { label: offer.type }]}
-          title={offer.type}
-          actions={<StatusPill status={state} />}
-        />
-
+      <DetailLayout
+        header={
+          <PageHeader
+            crumbs={[{ label: "Offers", href: "/wallet/offers" }, { label: offer.type }]}
+            title={offer.type}
+            actions={<StatusPill status={state} />}
+          />
+        }
+        side={issuer}
+      >
         {/* ---- The server's answer, first ---- */}
         {refused ? (
           <Panel>
@@ -200,32 +238,6 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
           </Panel>
         ) : null}
 
-        {/* ---- Who is offering it ---- */}
-        <Panel>
-          <div className="relative z-[4] flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                Offered by
-              </p>
-              <p className="font-display text-[14.5px] font-semibold text-strong">
-                {offer.issuer}
-              </p>
-              <p className="break-all font-mono text-[11.5px] text-faint">{offer.issuerDid}</p>
-            </div>
-            <StatusPill
-              status={offer.issuerTrusted ? "verified" : "pending"}
-              label={offer.issuerTrusted ? "On the trust registry" : "Not on the trust registry"}
-            />
-          </div>
-          {!offer.issuerTrusted ? (
-            <p className="relative z-[4] mt-3 max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-              This issuer is not accredited on the NDI trust registry. Anything
-              they issue can still be held, but a relying party may not accept
-              it.
-            </p>
-          ) : null}
-        </Panel>
-
         {/* ---- What is actually in it ---- */}
         <Panel>
           <div className="relative z-[4] flex flex-col gap-1">
@@ -291,7 +303,7 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
             </p>
           </div>
         ) : null}
-      </div>
+      </DetailLayout>
     </AppShell>
   );
 }

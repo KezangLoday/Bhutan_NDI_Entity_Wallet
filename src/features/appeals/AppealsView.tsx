@@ -78,7 +78,7 @@ export function AppealsView() {
 
   return (
     <AppShell>
-      <div className="flex max-w-[860px] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-5">
         <PageHeader
           crumbs={[{ label: "Appeals" }]}
           title={isOwner ? "Appeals against the entity" : "Your appeals"}
@@ -129,168 +129,182 @@ export function AppealsView() {
                     <StatusPill status={state} />
                   </div>
 
-                  <div className="rounded-[12px] border border-grid px-3.5 py-3">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                      The reason given
-                    </p>
-                    <p className="mt-1.5 max-w-[62ch] text-[13px] leading-[1.6] text-body">
-                      {appeal.noticeReason}
-                    </p>
-                  </div>
-
-                  {/* ---- The window ---- */}
-                  {!settled ? (
-                    <p className="text-[12.5px] leading-[1.5] text-faint">
-                      {appeal.windowWorkingDays} working days to appeal from the
-                      date of the notice, and a decision within{" "}
-                      {appeal.decisionWorkingDays} working days of that. These
-                      periods are provisional until the governance framework
-                      settles them.
-                    </p>
-                  ) : null}
-
-                  {/* ---- The submission ---- */}
-                  {appeal.submission ? (
+                  {/* The notice on one side, the response to it on the other.
+                      An appeal card is a conversation between two parties, and
+                      once there is room for two columns that reads far better
+                      than one long strip with the entity's reason at the top
+                      and the answer to it four scrolls down. Below 1201px the
+                      content column is too narrow to split, so it stacks in
+                      the order it was always in. */}
+                  <div className="grid gap-4 min-[1201px]:grid-cols-2 min-[1201px]:items-start min-[1201px]:gap-6">
+                    <div className="flex min-w-0 flex-col gap-4">
                     <div className="rounded-[12px] border border-grid px-3.5 py-3">
                       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                        {isOwner ? `${subject.name} says` : "What you said"}
+                        The reason given
                       </p>
                       <p className="mt-1.5 max-w-[62ch] text-[13px] leading-[1.6] text-body">
-                        {appeal.submission}
+                        {appeal.noticeReason}
                       </p>
-                      {appeal.submittedAt ? (
-                        <p className="mt-2 text-[12px] text-faint">
-                          Submitted {formatDate(appeal.submittedAt)}
+                    </div>
+
+                    {/* ---- The window ---- */}
+                    {!settled ? (
+                      <p className="text-[12.5px] leading-[1.5] text-faint">
+                        {appeal.windowWorkingDays} working days to appeal from the
+                        date of the notice, and a decision within{" "}
+                        {appeal.decisionWorkingDays} working days of that. These
+                        periods are provisional until the governance framework
+                        settles them.
+                      </p>
+                    ) : null}
+
+                    </div>
+
+                    <div className="flex min-w-0 flex-col gap-4 min-[1201px]:border-l min-[1201px]:border-subtle min-[1201px]:pl-6">
+                    {/* ---- The submission ---- */}
+                    {appeal.submission ? (
+                      <div className="rounded-[12px] border border-grid px-3.5 py-3">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                          {isOwner ? `${subject.name} says` : "What you said"}
                         </p>
-                      ) : null}
-                      {appeal.evidence.length > 0 ? (
-                        <ul className="mt-2 flex flex-wrap gap-1.5">
-                          {appeal.evidence.map((file) => (
-                            <li
-                              key={file}
-                              className="flex items-center gap-1.5 rounded-full border border-grid px-2.5 py-1 text-[12px] text-muted"
-                            >
-                              <Icon name="fileText" size={12} strokeWidth={2} />
-                              {file}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
-                  ) : null}
+                        <p className="mt-1.5 max-w-[62ch] text-[13px] leading-[1.6] text-body">
+                          {appeal.submission}
+                        </p>
+                        {appeal.submittedAt ? (
+                          <p className="mt-2 text-[12px] text-faint">
+                            Submitted {formatDate(appeal.submittedAt)}
+                          </p>
+                        ) : null}
+                        {appeal.evidence.length > 0 ? (
+                          <ul className="mt-2 flex flex-wrap gap-1.5">
+                            {appeal.evidence.map((file) => (
+                              <li
+                                key={file}
+                                className="flex items-center gap-1.5 rounded-full border border-grid px-2.5 py-1 text-[12px] text-muted"
+                              >
+                                <Icon name="fileText" size={12} strokeWidth={2} />
+                                {file}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    ) : null}
 
-                  {/* ---- The outcome ---- */}
-                  {state === "upheld_reinstated" ? (
-                    <div className="flex items-start gap-2.5">
-                      <Icon
-                        name="check"
-                        size={16}
-                        strokeWidth={2.4}
-                        className="mt-0.5 flex-none text-accent"
-                      />
-                      <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                        The appeal was upheld and {appeal.againstTitle} has been
-                        reinstated. It verifies again wherever it is used —
-                        including anything that hangs off it.
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {state === "rejected" ? (
-                    <div className="flex items-start gap-2.5">
-                      <Icon
-                        name="info"
-                        size={16}
-                        strokeWidth={2}
-                        className="mt-0.5 flex-none"
-                        style={{ color: "var(--text-faint)" }}
-                      />
-                      <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                        The appeal was not upheld. The withdrawal stands, and
-                        the reasoning is part of the entity&rsquo;s permanent
-                        record.
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {/* ---- What each side can do ---- */}
-                  {!isOwner && state === "notice_issued" ? (
-                    <div className="flex flex-col gap-3 border-t border-subtle pt-4">
-                      <label className={FIELD_BLOCK_CLASS}>
-                        <span className={LABEL_CLASS}>Your answer</span>
-                        <textarea
-                          value={draft}
-                          onChange={(e) =>
-                            setDrafts((d) => ({ ...d, [appeal.id]: e.target.value }))
-                          }
-                          rows={4}
-                          placeholder="Say what you think the entity got wrong, and what you would like put right."
-                          className={`${FIELD_CLASS} resize-y py-3`}
+                    {/* ---- The outcome ---- */}
+                    {state === "upheld_reinstated" ? (
+                      <div className="flex items-start gap-2.5">
+                        <Icon
+                          name="check"
+                          size={16}
+                          strokeWidth={2.4}
+                          className="mt-0.5 flex-none text-accent"
                         />
-                      </label>
-
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <GradientButton
-                          onClick={() => submitAppeal(appeal.id, draft.trim())}
-                          disabled={draft.trim() === ""}
-                        >
-                          <Icon name="send" size={15} strokeWidth={2} />
-                          Submit the appeal
-                        </GradientButton>
-                        <HairlineButton>
-                          <Icon name="download" size={14} strokeWidth={2} />
-                          Attach evidence
-                        </HairlineButton>
+                        <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+                          The appeal was upheld and {appeal.againstTitle} has been
+                          reinstated. It verifies again wherever it is used —
+                          including anything that hangs off it.
+                        </p>
                       </div>
-                      <p className="max-w-[62ch] text-[12.5px] leading-[1.5] text-faint">
-                        You can also ask for the entity&rsquo;s record of what
-                        happened. An appeal you cannot see the evidence for is
-                        not much of an appeal.
-                      </p>
-                    </div>
-                  ) : null}
+                    ) : null}
 
-                  {!isOwner && state === "under_review" ? (
-                    <p className="border-t border-subtle pt-4 text-[13px] leading-[1.6] text-muted">
-                      Submitted and waiting on a decision. You will be told the
-                      outcome either way — a decision is due within{" "}
-                      {appeal.decisionWorkingDays} working days.
-                    </p>
-                  ) : null}
-
-                  {isOwner && state === "under_review" ? (
-                    <div className="flex flex-col gap-2.5 border-t border-subtle pt-4">
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <GradientButton
-                          onClick={() => decideAppeal(appeal.id, "upheld_reinstated")}
-                        >
-                          <Icon name="check" size={15} strokeWidth={2.2} />
-                          Uphold and reinstate
-                        </GradientButton>
-                        <button
-                          type="button"
-                          onClick={() => decideAppeal(appeal.id, "rejected")}
-                          className="ndi-dialog-confirm inline-flex h-11 items-center gap-2 rounded-[10px] px-4 font-display text-[13.5px] font-semibold"
-                          data-tone="danger"
-                        >
-                          Reject the appeal
-                        </button>
+                    {state === "rejected" ? (
+                      <div className="flex items-start gap-2.5">
+                        <Icon
+                          name="info"
+                          size={16}
+                          strokeWidth={2}
+                          className="mt-0.5 flex-none"
+                          style={{ color: "var(--text-faint)" }}
+                        />
+                        <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+                          The appeal was not upheld. The withdrawal stands, and
+                          the reasoning is part of the entity&rsquo;s permanent
+                          record.
+                        </p>
                       </div>
-                      <p className="max-w-[62ch] text-[12.5px] leading-[1.5] text-faint">
-                        Upholding it puts {appeal.againstTitle} back exactly as
-                        it was. Either decision goes into the record with your
-                        name on it.
-                      </p>
-                    </div>
-                  ) : null}
+                    ) : null}
 
-                  {isOwner && state === "notice_issued" ? (
-                    <p className="border-t border-subtle pt-4 text-[13px] leading-[1.6] text-muted">
-                      {subject.name} has been told and has not answered yet.
-                      There is nothing for you to do until they do, or until the
-                      window closes.
-                    </p>
-                  ) : null}
+                    {/* ---- What each side can do ---- */}
+                    {!isOwner && state === "notice_issued" ? (
+                      <div className="flex flex-col gap-3 border-t border-subtle pt-4 min-[1201px]:border-t-0 min-[1201px]:pt-0">
+                        <label className={FIELD_BLOCK_CLASS}>
+                          <span className={LABEL_CLASS}>Your answer</span>
+                          <textarea
+                            value={draft}
+                            onChange={(e) =>
+                              setDrafts((d) => ({ ...d, [appeal.id]: e.target.value }))
+                            }
+                            rows={4}
+                            placeholder="Say what you think the entity got wrong, and what you would like put right."
+                            className={`${FIELD_CLASS} resize-y py-3`}
+                          />
+                        </label>
+
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <GradientButton
+                            onClick={() => submitAppeal(appeal.id, draft.trim())}
+                            disabled={draft.trim() === ""}
+                          >
+                            <Icon name="send" size={15} strokeWidth={2} />
+                            Submit the appeal
+                          </GradientButton>
+                          <HairlineButton>
+                            <Icon name="download" size={14} strokeWidth={2} />
+                            Attach evidence
+                          </HairlineButton>
+                        </div>
+                        <p className="max-w-[62ch] text-[12.5px] leading-[1.5] text-faint">
+                          You can also ask for the entity&rsquo;s record of what
+                          happened. An appeal you cannot see the evidence for is
+                          not much of an appeal.
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {!isOwner && state === "under_review" ? (
+                      <p className="border-t border-subtle pt-4 min-[1201px]:border-t-0 min-[1201px]:pt-0 text-[13px] leading-[1.6] text-muted">
+                        Submitted and waiting on a decision. You will be told the
+                        outcome either way — a decision is due within{" "}
+                        {appeal.decisionWorkingDays} working days.
+                      </p>
+                    ) : null}
+
+                    {isOwner && state === "under_review" ? (
+                      <div className="flex flex-col gap-2.5 border-t border-subtle pt-4 min-[1201px]:border-t-0 min-[1201px]:pt-0">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <GradientButton
+                            onClick={() => decideAppeal(appeal.id, "upheld_reinstated")}
+                          >
+                            <Icon name="check" size={15} strokeWidth={2.2} />
+                            Uphold and reinstate
+                          </GradientButton>
+                          <button
+                            type="button"
+                            onClick={() => decideAppeal(appeal.id, "rejected")}
+                            className="ndi-dialog-confirm inline-flex h-11 items-center gap-2 rounded-[10px] px-4 font-display text-[13.5px] font-semibold"
+                            data-tone="danger"
+                          >
+                            Reject the appeal
+                          </button>
+                        </div>
+                        <p className="max-w-[62ch] text-[12.5px] leading-[1.5] text-faint">
+                          Upholding it puts {appeal.againstTitle} back exactly as
+                          it was. Either decision goes into the record with your
+                          name on it.
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {isOwner && state === "notice_issued" ? (
+                      <p className="border-t border-subtle pt-4 min-[1201px]:border-t-0 min-[1201px]:pt-0 text-[13px] leading-[1.6] text-muted">
+                        {subject.name} has been told and has not answered yet.
+                        There is nothing for you to do until they do, or until the
+                        window closes.
+                      </p>
+                    ) : null}
+                    </div>
+                  </div>
                 </div>
               </Panel>
             );

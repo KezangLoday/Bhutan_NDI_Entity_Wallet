@@ -73,7 +73,15 @@ export function DemoHarness() {
      would otherwise show act 1 as Rinzin for a frame before swapping to
      whichever act the story was left on. */
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[70] flex flex-col items-start gap-2 p-3 min-[641px]:p-4">
+    /* `ndi-demo-harness` insets the bar past the sidebar on desktop. The bar
+       is fixed to the viewport, so without it the marker and the panel sat on
+       top of the nav rail rather than beside it — and the rail is exactly
+       where somebody's eye is when they go looking for the demo controls.
+       Which screens have a rail is not knowable from here (the verifier,
+       onboarding and the what's-real page all render without one), so the
+       rule keys off the shell's own presence in the document rather than a
+       list of routes that would rot. */
+    <div className="ndi-demo-harness pointer-events-none fixed inset-x-0 bottom-0 z-[70] flex flex-col items-start gap-2 p-3 min-[641px]:p-4">
       {open && hydrated ? (
         <div className="pointer-events-auto w-full max-w-[560px] rounded-2xl border border-grid bg-[var(--chrome-fill-strong)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur-[20px] backdrop-saturate-[140%]">
           {/* ---- Story runner ---- */}

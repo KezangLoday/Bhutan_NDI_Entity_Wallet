@@ -8,6 +8,7 @@ import { useScreenState } from "@/components/demo/screenState";
 import { AppShell } from "@/components/layout/AppShell";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Countdown } from "@/components/ui/Countdown";
+import { DetailLayout } from "@/components/ui/DetailLayout";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -124,18 +125,58 @@ export function PresentProofView({ requestId }: { requestId: string }) {
 
   const extra = selected.filter((a) => !request.requiredAttributes.includes(a));
 
+  /* Who is asking, and whether they are accredited, is the thing you weigh
+     the disclosure against — so on a wide screen it stays in view beside the
+     attribute list rather than scrolling away above it. */
+  const asker = (
+    <Panel>
+      <div className="relative z-[4] flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+            Asked by
+          </p>
+          <p className="font-display text-[14.5px] font-semibold text-strong">
+            {request.relyingParty}
+          </p>
+          <p className="break-all font-mono text-[11.5px] text-faint">
+            {request.relyingPartyDid}
+          </p>
+        </div>
+        <StatusPill
+          status={request.relyingPartyTrusted ? "verified" : "pending"}
+          label={
+            request.relyingPartyTrusted
+              ? "On the trust registry"
+              : "Not on the trust registry"
+          }
+        />
+      </div>
+
+      {request.requestsControllershipProof ? (
+        <p className="relative z-[4] mt-3 max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+          They have also asked for proof that you are authorised to act for
+          the entity. That is shared only because they asked — it is not
+          attached to presentations by default.
+        </p>
+      ) : null}
+    </Panel>
+  );
+
   return (
     <AppShell>
-      <div className="flex max-w-[820px] flex-col gap-5">
-        <PageHeader
-          crumbs={[
-            { label: "Verification requests", href: "/wallet/verification-requests" },
-            { label: request.relyingParty },
-          ]}
-          title={`${request.relyingParty} is asking for a proof`}
-          actions={<StatusPill status={state} />}
-        />
-
+      <DetailLayout
+        header={
+          <PageHeader
+            crumbs={[
+              { label: "Verification requests", href: "/wallet/verification-requests" },
+              { label: request.relyingParty },
+            ]}
+            title={`${request.relyingParty} is asking for a proof`}
+            actions={<StatusPill status={state} />}
+          />
+        }
+        side={asker}
+      >
         {refused ? (
           <Panel>
             <div className="relative z-[4] flex items-start gap-3">
@@ -230,39 +271,6 @@ export function PresentProofView({ requestId }: { requestId: string }) {
             </div>
           </Panel>
         ) : null}
-
-        {/* ---- Who is asking ---- */}
-        <Panel>
-          <div className="relative z-[4] flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                Asked by
-              </p>
-              <p className="font-display text-[14.5px] font-semibold text-strong">
-                {request.relyingParty}
-              </p>
-              <p className="break-all font-mono text-[11.5px] text-faint">
-                {request.relyingPartyDid}
-              </p>
-            </div>
-            <StatusPill
-              status={request.relyingPartyTrusted ? "verified" : "pending"}
-              label={
-                request.relyingPartyTrusted
-                  ? "On the trust registry"
-                  : "Not on the trust registry"
-              }
-            />
-          </div>
-
-          {request.requestsControllershipProof ? (
-            <p className="relative z-[4] mt-3 max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-              They have also asked for proof that you are authorised to act for
-              the entity. That is shared only because they asked — it is not
-              attached to presentations by default.
-            </p>
-          ) : null}
-        </Panel>
 
         {/* ---- The disclosure choice ---- */}
         {!refused && !settled && state !== "parked" && !parked ? (
@@ -368,7 +376,7 @@ export function PresentProofView({ requestId }: { requestId: string }) {
             </div>
           </>
         ) : null}
-      </div>
+      </DetailLayout>
     </AppShell>
   );
 }
