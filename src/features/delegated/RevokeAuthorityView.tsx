@@ -122,7 +122,7 @@ export function RevokeAuthorityView({ authorityId }: { authorityId: string }) {
 
   return (
     <AppShell>
-      <div className="flex max-w-[760px] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[820px] flex-col gap-5">
         <PageHeader
           crumbs={[
             { label: "Delegated authority", href: "/delegated-authority" },

@@ -848,3 +848,15 @@ select option {
 .ndi-switch:disabled {
   cursor: not-allowed;
 }
+
+/* The demo harness clears the sidebar rather than sitting on top of it.
+
+   Keyed off the shell's presence in the document, not off the route: the
+   verifier, the onboarding flow and the what's-real page all render without a
+   rail, and a list of routes here would be wrong the first time one is added.
+   Below 901px the rail is a drawer and there is nothing to clear. */
+@media (min-width: 901px) {
+  body:has([data-app-shell]) .ndi-demo-harness {
+    padding-left: 264px;
+  }
+}

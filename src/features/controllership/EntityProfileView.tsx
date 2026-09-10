@@ -6,6 +6,7 @@ import { useScreenState } from "@/components/demo/screenState";
 import { AppShell } from "@/components/layout/AppShell";
 import { DetailList } from "@/components/ui/DetailList";
 import { HairlineButton } from "@/components/ui/HairlineButton";
+import { DetailLayout } from "@/components/ui/DetailLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { StatusPill } from "@/components/ui/StatusPill";
@@ -52,26 +53,70 @@ export function EntityProfileView() {
   const activeRelations = relations.filter((r) => r.state === "ACTIVE").length;
   const liveAuthorities = delegatedAuthorities.filter((a) => a.status === "ACTIVE").length;
 
+  /* The registered facts are what the rest of the page is about, so they
+     read better as a card you keep in view than as the first thing you
+     scroll past. */
+  const identity = (
+    <Panel>
+      <div className="relative z-[4] flex flex-col gap-1">
+        <h2 className="font-display text-[15px] font-semibold text-strong">Identity</h2>
+      </div>
+      <div className="relative z-[4]">
+        <DetailList
+          items={[
+            { label: "Registered name", value: org?.name ?? "—" },
+            {
+              label: "Registration number",
+              value:
+                foundational?.attributes.find((a) => a.name === "registration_number")
+                  ?.value ?? "—",
+            },
+            {
+              label: "Kind",
+              value:
+                foundational?.attributes.find((a) => a.name === "entity_type")?.value ?? "—",
+            },
+            { label: "Registered address", value: org?.location ?? "—" },
+            {
+              label: "Organisation DID",
+              value: "did:indy:bhutan:NrLg7pQ2vX9mKdT4wB6sZc",
+              mono: true,
+            },
+          ]}
+        />
+      </div>
+    </Panel>
+  );
+
   return (
     <AppShell>
-      <div className="flex max-w-[860px] flex-col gap-5">
-        <PageHeader
-          crumbs={[{ label: "Controllership" }, { label: "Entity" }]}
-          title={org?.name ?? "The entity"}
-          actions={
-            <StatusPill
-              status={foundationalExpired ? "expired" : certificationPending ? "pending" : "verified"}
-              label={
-                foundationalExpired
-                  ? "Cannot prove itself"
-                  : certificationPending
-                    ? "Certification pending"
-                    : "Verified and accredited"
-              }
-            />
-          }
-        />
-
+      <DetailLayout
+        header={
+          <PageHeader
+            crumbs={[{ label: "Controllership" }, { label: "Entity" }]}
+            title={org?.name ?? "The entity"}
+            actions={
+              <StatusPill
+                status={
+                  foundationalExpired
+                    ? "expired"
+                    : certificationPending
+                      ? "pending"
+                      : "verified"
+                }
+                label={
+                  foundationalExpired
+                    ? "Cannot prove itself"
+                    : certificationPending
+                      ? "Certification pending"
+                      : "Verified and accredited"
+                }
+              />
+            }
+          />
+        }
+        side={identity}
+      >
         {foundationalExpired ? (
           <Panel>
             <div className="relative z-[4] flex items-start gap-3">
@@ -103,37 +148,6 @@ export function EntityProfileView() {
             </div>
           </Panel>
         ) : null}
-
-        {/* ---- Identity ---- */}
-        <Panel>
-          <div className="relative z-[4] flex flex-col gap-1">
-            <h2 className="font-display text-[15px] font-semibold text-strong">Identity</h2>
-          </div>
-          <div className="relative z-[4]">
-            <DetailList
-              items={[
-                { label: "Registered name", value: org?.name ?? "—" },
-                {
-                  label: "Registration number",
-                  value:
-                    foundational?.attributes.find((a) => a.name === "registration_number")
-                      ?.value ?? "—",
-                },
-                {
-                  label: "Kind",
-                  value:
-                    foundational?.attributes.find((a) => a.name === "entity_type")?.value ?? "—",
-                },
-                { label: "Registered address", value: org?.location ?? "—" },
-                {
-                  label: "Organisation DID",
-                  value: "did:indy:bhutan:NrLg7pQ2vX9mKdT4wB6sZc",
-                  mono: true,
-                },
-              ]}
-            />
-          </div>
-        </Panel>
 
         {/* ---- The three things that can fail independently ---- */}
         <Panel>
@@ -233,7 +247,7 @@ export function EntityProfileView() {
             </Link>
           </div>
         </Panel>
-      </div>
+      </DetailLayout>
     </AppShell>
   );
 }

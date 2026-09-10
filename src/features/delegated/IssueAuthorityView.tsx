@@ -165,7 +165,7 @@ export function IssueAuthorityView() {
 
     return (
       <AppShell>
-        <div className="flex max-w-[720px] flex-col gap-5">
+        <div className="mx-auto flex w-full max-w-[760px] flex-col gap-5">
           <PageHeader
             crumbs={[
               { label: "Delegated authority", href: "/delegated-authority" },
@@ -278,7 +278,7 @@ export function IssueAuthorityView() {
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-5">
         <PageHeader
           crumbs={[
             { label: "Delegated authority", href: "/delegated-authority" },

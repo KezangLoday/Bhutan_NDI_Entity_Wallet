@@ -8,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Dialog } from "@/components/ui/Dialog";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
+import { DetailLayout } from "@/components/ui/DetailLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { ScopeSummary } from "@/components/ui/ScopeSummary";
@@ -128,40 +129,83 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
             ? "declined"
             : null;
 
+  /* The instrument and the legal basis are what somebody deciding whether
+     to accept checks the sentences against, so they belong beside them
+     rather than between the scope and the duties. */
+  const provenance = (
+    <Panel>
+      <div className="relative z-[4] flex flex-col gap-1">
+        <h2 className="font-display text-[15px] font-semibold text-strong">
+          Where this authority comes from
+        </h2>
+      </div>
+      <div className="relative z-[4]">
+        <DetailList
+          items={[
+            { label: "Granted by", value: "Norling Logistics Pvt. Ltd." },
+            { label: "Legal basis", value: legalBasisLabel(relation.legalBasis) },
+            {
+              label: "Signed instrument",
+              value: relation.instrument
+                ? `${relation.instrument.fileName} · ${relation.instrument.reference}`
+                : "None attached",
+            },
+            {
+              label: "Document fingerprint",
+              value: relation.instrument?.hash ?? "—",
+              mono: true,
+            },
+            {
+              label: "In force",
+              value: relation.scope.validUntil
+                ? `${formatDate(relation.scope.validFrom)} until ${formatDate(
+                    relation.scope.validUntil,
+                  )}`
+                : `${formatDate(relation.scope.validFrom)}, with no end date`,
+            },
+          ]}
+        />
+      </div>
+    </Panel>
+  );
+
   return (
     <AppShell>
-      <div className="flex max-w-[820px] flex-col gap-5">
-        <PageHeader
-          crumbs={[{ label: isAddressee ? "Your authority" : "Controllership" }]}
-          /* Tense first, person second. An owner opening a relation that is
-             already active must not be told it is "proposed" — it was
-             accepted, and the screen is now a record rather than a decision. */
-          title={
-            decided === "accepted"
-              ? isAddressee
-                ? "Your authority is active"
-                : `${person.name}'s authority is active`
-              : decided === "declined"
+      <DetailLayout
+        side={provenance}
+        header={
+          <PageHeader
+            crumbs={[{ label: isAddressee ? "Your authority" : "Controllership" }]}
+            /* Tense first, person second. An owner opening a relation that is
+               already active must not be told it is "proposed" — it was
+               accepted, and the screen is now a record rather than a decision. */
+            title={
+              decided === "accepted"
                 ? isAddressee
-                  ? "You declined this authority"
-                  : `${person.name} declined this authority`
-                : isAddressee
-                  ? "Authority proposed to you"
-                  : `Authority proposed to ${person.name}`
-          }
-          actions={
-            <StatusPill
-              status={
-                decided === "accepted"
-                  ? "active"
-                  : decided === "declined"
-                    ? "terminated"
-                    : "pending_acceptance"
-              }
-            />
-          }
-        />
-
+                  ? "Your authority is active"
+                  : `${person.name}'s authority is active`
+                : decided === "declined"
+                  ? isAddressee
+                    ? "You declined this authority"
+                    : `${person.name} declined this authority`
+                  : isAddressee
+                    ? "Authority proposed to you"
+                    : `Authority proposed to ${person.name}`
+            }
+            actions={
+              <StatusPill
+                status={
+                  decided === "accepted"
+                    ? "active"
+                    : decided === "declined"
+                      ? "terminated"
+                      : "pending_acceptance"
+                }
+              />
+            }
+          />
+        }
+      >
         {!isAddressee && !decided ? (
           <Panel>
             <div className="relative z-[4] flex flex-col gap-3">
@@ -273,41 +317,6 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
           </div>
         </Panel>
 
-        <Panel>
-          <div className="relative z-[4] flex flex-col gap-1">
-            <h2 className="font-display text-[15px] font-semibold text-strong">
-              Where this authority comes from
-            </h2>
-          </div>
-          <div className="relative z-[4]">
-            <DetailList
-              items={[
-                { label: "Granted by", value: "Norling Logistics Pvt. Ltd." },
-                { label: "Legal basis", value: legalBasisLabel(relation.legalBasis) },
-                {
-                  label: "Signed instrument",
-                  value: relation.instrument
-                    ? `${relation.instrument.fileName} · ${relation.instrument.reference}`
-                    : "None attached",
-                },
-                {
-                  label: "Document fingerprint",
-                  value: relation.instrument?.hash ?? "—",
-                  mono: true,
-                },
-                {
-                  label: "In force",
-                  value: relation.scope.validUntil
-                    ? `${formatDate(relation.scope.validFrom)} until ${formatDate(
-                        relation.scope.validUntil,
-                      )}`
-                    : `${formatDate(relation.scope.validFrom)}, with no end date`,
-                },
-              ]}
-            />
-          </div>
-        </Panel>
-
         {/* ---- What accepting means ---- */}
         <Panel>
           <div className="relative z-[4] flex flex-col gap-1">
@@ -400,7 +409,7 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
             setDeclineOpen(false);
           }}
         />
-      </div>
+      </DetailLayout>
     </AppShell>
   );
 }
