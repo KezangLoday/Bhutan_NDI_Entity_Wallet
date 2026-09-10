@@ -235,8 +235,8 @@ Press **Send for acceptance**.
 
 ### 4 · The hand-off — acceptance
 
-You will land on a panel saying it has gone to Dorji. Click **Open what Dorji
-will see**.
+You will land on a panel saying it has gone to Ugyen. Click **Open what Ugyen
+will see** (the button carries whoever you picked).
 
 **You will see a notice saying you are still signed in as Rinzin, and that only
 Ugyen can accept.** Do not skip past this — it is the moment the story turns:
@@ -556,7 +556,7 @@ Worth showing:
 
 ## Switching who you are
 
-Demo controls → **Driving as**. Three people:
+Demo controls → **Driving as**. Four people:
 
 - **Rinzin Dema** — owner. Sees everything, including Controllership and
   Delegated authority.
@@ -564,6 +564,9 @@ Demo controls → **Driving as**. Three people:
   all.**
 - **Pema Choden** — clearing agent. Sees almost nothing; she works through her
   own phone wallet and a counterparty's website.
+- **Ugyen Phuntsho** — warehouse manager. Holds nothing until act 2 grants it,
+  which is exactly why he is the one to build an authority for. Before that,
+  his wallet correctly says he has no authority here.
 
 Switch from Rinzin to Dorji with the sidebar visible and point at it:
 
