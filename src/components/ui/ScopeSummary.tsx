@@ -31,7 +31,7 @@ import { StatusPill } from "./StatusPill";
  * impossible. Both render from one model, so they cannot disagree.
  *
  * Lifecycle state is not rendered inside a sentence, ever. A relation that
- * says "Dorji may present proofs" while it is suspended is a lie in prose
+ * says "Rinzin may present proofs" while it is suspended is a lie in prose
  * form, so the state arrives as a pill beside the block where it cannot be
  * missed. `state` is optional here precisely so a caller has to think about
  * whether the state is already visible in its own header.

@@ -223,7 +223,7 @@ export function ApprovalDetailView({ operationId }: { operationId: string }) {
                   label: "Requested by",
                   value: (
                     <DualAttribution
-                      entity="Norling Logistics Pvt. Ltd."
+                      entity="Pelden Trading Pvt. Ltd."
                       actorId={operation.requestedBy}
                       size="compact"
                     />

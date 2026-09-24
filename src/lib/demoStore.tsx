@@ -56,8 +56,12 @@ const STORAGE_KEY = "ndi-studio-demo";
  *
  *   1 — the original seed
  *   2 — DIDs corrected from did:indy to did:polygon
+ *   3 — the running example: Pelden Trading, with Dorji as the director.
+ *       Dorji and Rinzin swapped roles, so a version-2 save that says
+ *       "driving as rinzin" meant the owner and would now mean the controller
+ *       — the exact silent wrongness this guard exists to prevent.
  */
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 
 /**
  * Appends one audit row, carrying the hash chain forward.
@@ -859,7 +863,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                 operation: "credential:accept" as const,
                 summary: `Accept ${offer.type} from ${offer.issuer}`,
                 requestedBy: s.harness.persona,
-                relationId: relation?.id ?? "rel-dorji",
+                relationId: relation?.id ?? "rel-rinzin",
                 scopeVersion: relation?.scope.version ?? 1,
                 targetId: offer.id,
                 targetRelyingParty: null,
@@ -900,7 +904,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                 operation: "proof:present" as const,
                 summary: `Present ${request.credentialType} to ${request.relyingParty}`,
                 requestedBy: s.harness.persona,
-                relationId: relation?.id ?? "rel-dorji",
+                relationId: relation?.id ?? "rel-rinzin",
                 scopeVersion: relation?.scope.version ?? 1,
                 targetId: request.id,
                 targetRelyingParty: request.relyingParty,

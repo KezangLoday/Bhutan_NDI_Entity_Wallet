@@ -183,7 +183,7 @@ export function MyAuthorityView() {
         <Panel>
           <div className="relative z-[4] flex flex-col gap-1">
             <h2 className="font-display text-[15px] font-semibold text-strong">
-              Acting for Norling Logistics Pvt. Ltd.
+              Acting for Pelden Trading Pvt. Ltd.
             </h2>
             <p className="text-[12.5px] leading-[1.5] text-faint">
               Not as it. Everything you do is recorded as the entity&rsquo;s
@@ -249,7 +249,7 @@ export function MyAuthorityView() {
           >
             <Icon name="check" size={14} strokeWidth={2.2} className="mt-px flex-none" />
             <span>
-              Your request has gone to Rinzin Dema. If she changes this
+              Your request has gone to Dorji Wangchuk. If he changes this
               authority, it comes back to you to accept before it takes effect.
             </span>
           </p>

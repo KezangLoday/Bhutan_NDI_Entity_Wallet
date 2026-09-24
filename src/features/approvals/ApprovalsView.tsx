@@ -100,7 +100,7 @@ export function ApprovalsView() {
                       <div className="flex flex-col gap-1">
                         <p className="text-[12px] text-faint">Requested by</p>
                         <DualAttribution
-                          entity="Norling Logistics Pvt. Ltd."
+                          entity="Pelden Trading Pvt. Ltd."
                           actorId={operation.requestedBy}
                           size="compact"
                         />

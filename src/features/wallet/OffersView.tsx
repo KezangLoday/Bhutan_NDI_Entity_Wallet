@@ -47,7 +47,7 @@ export function OffersView() {
         />
 
         <p className="max-w-[68ch] text-[13.5px] leading-[1.65] text-muted">
-          Credentials other organisations have offered to Norling Logistics.
+          Credentials other organisations have offered to Pelden Trading.
           What each one contains is read from the offer itself, not from
           anything anyone typed here.
         </p>

@@ -49,8 +49,8 @@ to a device, because the entity has no device.
 ## The story
 
 One entity, one grant, one delegation, one failure — six acts. The cast:
-**Norling Logistics Pvt. Ltd.**, with **Rinzin Dema** as Owner / Root Authority,
-**Dorji Wangchuk** as Controller, and **Pema Choden** as a clearing agent
+**Pelden Trading Pvt. Ltd.**, with **Dorji Wangchuk** as Owner / Root Authority,
+**Rinzin Dema** as Controller, and **Pema Choden** as a clearing agent
 holding delegated authority; counterparties are Bank of Bhutan and BNSW.
 
 | Act | What the audience learns |

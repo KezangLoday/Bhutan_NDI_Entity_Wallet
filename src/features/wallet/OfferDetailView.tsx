@@ -28,7 +28,7 @@ import { formatDate } from "@/features/controllership/scopeModel";
  * agent-fetched payload rather than from anything a user typed, and the
  * screen has to make that visible: a Controller accepting a credential into
  * the entity's wallet is accepting these values, and a screen that showed
- * "Customs Broker Licence — 4 attributes" would be asking them to accept
+ * "Business Licence — 4 attributes" would be asking them to accept
  * something they have not seen.
  *
  * THE REFUSAL IS DESIGNED, NOT AN ERROR
@@ -175,7 +175,7 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
                   >
                     <Icon name="check" size={14} strokeWidth={2.2} className="mt-px flex-none" />
                     <span>
-                      Your request has gone to Rinzin Dema. The offer stays here
+                      Your request has gone to Dorji Wangchuk. The offer stays here
                       until it expires.
                     </span>
                   </p>
@@ -222,7 +222,7 @@ export function OfferDetailView({ offerId }: { offerId: string }) {
                   In the entity&rsquo;s wallet
                 </p>
                 <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                  Recorded as Norling Logistics accepting it, carried out by
+                  Recorded as Pelden Trading accepting it, carried out by
                   you.
                 </p>
                 <div className="mt-2">

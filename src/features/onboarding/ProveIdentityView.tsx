@@ -111,7 +111,7 @@ export function ProveIdentityView() {
     <OnboardingShell current={1}>
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.025em] text-strong">
-          Prove that you represent Norling Logistics
+          Prove that you represent Pelden Trading
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
           Two things have to be true: that you are who you say you are, and
@@ -133,7 +133,7 @@ export function ProveIdentityView() {
           status={handoffStatus}
           statusDetail={
             shown === "register"
-              ? "Asking the Corporate Regulatory Authority whether you are a registered representative of Norling Logistics. This is a real lookup against an external body, and it takes as long as it takes."
+              ? "Asking the Corporate Regulatory Authority whether you are a registered representative of Pelden Trading. This is a real lookup against an external body, and it takes as long as it takes."
               : shown === "not_representative"
                 ? "The register does not list you as a representative of this organisation."
                 : undefined
@@ -198,7 +198,7 @@ export function ProveIdentityView() {
             />
             <div className="flex flex-col gap-2">
               <p className="font-display text-[14.5px] font-semibold text-strong">
-                We could not confirm that you represent Norling Logistics
+                We could not confirm that you represent Pelden Trading
               </p>
               <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
                 Your identity was proved — that part worked. But the Corporate Regulatory Authority
@@ -235,7 +235,7 @@ export function ProveIdentityView() {
                   The register confirms you
                 </p>
                 <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                  You are listed as a representative of Norling Logistics Pvt.
+                  You are listed as a representative of Pelden Trading Pvt.
                   Ltd. A wallet has been created for the organisation, and you
                   hold its root authority.
                 </p>

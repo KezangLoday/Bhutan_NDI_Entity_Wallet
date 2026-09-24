@@ -33,7 +33,7 @@ export const ACTS: Act[] = [
     title: "The entity becomes real",
     learns:
       "An organisation can hold credentials — and the platform never asserts its identity by itself. A government register confirms it.",
-    persona: "rinzin",
+    persona: "dorji",
     route: "/onboarding/claim",
   },
   {
@@ -41,7 +41,7 @@ export const ACTS: Act[] = [
     title: "Authority is granted, narrowly",
     learns:
       "Authority is a scoped, legally-grounded relation that the controller has to accept. Not a role dropdown.",
-    persona: "rinzin",
+    persona: "dorji",
     route: "/controllership/relations/new",
   },
   {
@@ -49,7 +49,7 @@ export const ACTS: Act[] = [
     title: "The Controller works, under approval",
     learns:
       "Least disclosure by default, an approval gate that actually holds, and an audit trail that records both the entity and the person.",
-    persona: "dorji",
+    persona: "rinzin",
     route: "/dashboard",
   },
   {
@@ -57,7 +57,7 @@ export const ACTS: Act[] = [
     title: "Authority is delegated to a person's wallet",
     learns:
       "The entity issues authority into someone's own wallet, carrying constraints any verifier can read.",
-    persona: "rinzin",
+    persona: "dorji",
     route: "/delegated-authority/new",
   },
   {

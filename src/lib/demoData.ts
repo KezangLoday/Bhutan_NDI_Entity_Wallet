@@ -171,8 +171,8 @@ export interface ApiKey {
 /* ================================================================== */
 /* Entity Wallet                                                       */
 /*                                                                     */
-/* Everything below serves one story: Norling Logistics becomes real,  */
-/* grants Dorji a narrow authority, works under approval, delegates to */
+/* Everything below serves one story: Pelden Trading becomes real,  */
+/* grants Rinzin a narrow authority, works under approval, delegates to */
 /* Pema's own wallet, has that authority checked at a counterparty —   */
 /* once passing, once failing — and leaves Pema a way to appeal.       */
 /*                                                                     */
@@ -201,17 +201,17 @@ export type PersonId = string;
  * Four rather than three, and the fourth exists for a reason worth recording.
  * Act 2 is a grant being created from nothing, which means it needs somebody
  * who does not already hold a controllership — and everyone else does, or
- * shouldn't. Dorji's relation is seeded active so act 3 can be shown on its
+ * shouldn't. Rinzin's relation is seeded active so act 3 can be shown on its
  * own; Pema is a Pattern B delegate and giving her a controllership would
  * teach the wrong model; Karma has left. Without Ugyen, act 2's person
  * selector offers only people it then refuses, and the act cannot be
  * completed at all.
  */
-export type PersonaId = "rinzin" | "dorji" | "pema" | "ugyen";
+export type PersonaId = "dorji" | "rinzin" | "pema" | "ugyen";
 
 /** The drivable personas, in story order. One list, so the harness, the nav
  *  and the acceptance screen cannot disagree about who exists. */
-export const PERSONAS: PersonaId[] = ["rinzin", "dorji", "pema", "ugyen"];
+export const PERSONAS: PersonaId[] = ["dorji", "rinzin", "pema", "ugyen"];
 
 export interface Person {
   id: PersonId;
@@ -645,7 +645,7 @@ const at = (offset: number, time: string): string => `${day(offset)}T${time}:00+
 
 /** Dates are fixed strings, not computed: a demo should look the same twice. */
 export const SEED: DemoState = {
-  activeOrgId: "org-norling",
+  activeOrgId: "org-pelden",
   schemas: [
     {
       id: "schema:bhutan:2:CitizenshipID:1.2",
@@ -786,13 +786,13 @@ export const SEED: DemoState = {
   organizations: [
     {
       /* The entity the whole Entity Wallet story is about. */
-      id: "org-norling",
-      name: "Norling Logistics Pvt. Ltd.",
-      description: "Freight forwarding and customs clearance. CRA-2019-04477.",
+      id: "org-pelden",
+      name: "Pelden Trading Pvt. Ltd.",
+      description: "General trading — import and wholesale. CRA-2019-04477.",
       role: "Owner",
       members: 5,
       createdAt: "2026-05-20",
-      website: "https://www.norlinglogistics.bt",
+      website: "https://www.peldentrading.bt",
       location: "Babesa, Thimphu, Bhutan",
       visibility: "private",
     },
@@ -838,7 +838,7 @@ export const SEED: DemoState = {
     },
     {
       id: "m-3",
-      name: "Jigme Dorji",
+      name: "Jigme Rinzin",
       email: "jigme@bhutanndi.bt",
       role: "Issuer",
       status: "active",
@@ -950,7 +950,7 @@ export const SEED: DemoState = {
     {
       id: "br-4",
       uploadId: "bulk-2201",
-      holder: "dorji.p@rub.edu.bt",
+      holder: "rinzin.p@rub.edu.bt",
       status: "failed",
       error: "Missing required attribute: graduation_year",
     },
@@ -979,18 +979,18 @@ export const SEED: DemoState = {
 
   people: [
     {
-      id: "rinzin",
-      name: "Rinzin Dema",
+      id: "dorji",
+      name: "Dorji Wangchuk",
       cid: "•••• •••• 4821",
-      email: "rinzin.dema@norlinglogistics.bt",
-      title: "Managing director · registered representative",
+      email: "dorji.wangchuk@peldentrading.bt",
+      title: "Director · registered representative",
       cidVerified: true,
     },
     {
-      id: "dorji",
-      name: "Dorji Wangchuk",
+      id: "rinzin",
+      name: "Rinzin Dema",
       cid: "•••• •••• 7134",
-      email: "dorji.wangchuk@norlinglogistics.bt",
+      email: "rinzin.dema@peldentrading.bt",
       title: "Operations manager",
       cidVerified: true,
     },
@@ -1008,7 +1008,7 @@ export const SEED: DemoState = {
       id: "ugyen",
       name: "Ugyen Phuntsho",
       cid: "•••• •••• 8306",
-      email: "ugyen.phuntsho@norlinglogistics.bt",
+      email: "ugyen.phuntsho@peldentrading.bt",
       title: "Warehouse manager",
       cidVerified: true,
     },
@@ -1016,7 +1016,7 @@ export const SEED: DemoState = {
       id: "sonam",
       name: "Sonam Yeshey",
       cid: "•••• •••• 5573",
-      email: "sonam.yeshey@norlinglogistics.bt",
+      email: "sonam.yeshey@peldentrading.bt",
       title: "Finance officer",
       cidVerified: true,
     },
@@ -1024,7 +1024,7 @@ export const SEED: DemoState = {
       id: "karma",
       name: "Karma Wangmo",
       cid: "•••• •••• 1208",
-      email: "karma.wangmo@norlinglogistics.bt",
+      email: "karma.wangmo@peldentrading.bt",
       title: "Finance officer (left the company)",
       cidVerified: true,
     },
@@ -1034,7 +1034,7 @@ export const SEED: DemoState = {
       id: "tenzin",
       name: "Tenzin Norbu",
       cid: "—",
-      email: "tenzin.norbu@norlinglogistics.bt",
+      email: "tenzin.norbu@peldentrading.bt",
       title: "Warehouse supervisor",
       cidVerified: false,
     },
@@ -1046,12 +1046,12 @@ export const SEED: DemoState = {
          else is granted out of, and the reason the scope grammar needs a
          special case rather than a sentence listing every operation. */
       id: "rel-root",
-      personId: "rinzin",
+      personId: "dorji",
       legalBasis: "entity_consent",
       instrument: {
         fileName: "board-resolution-2026-05-18.pdf",
         hash: "sha256:4f1c9e2a7b83d05e6c41a9fb2d7e08c3915b6ad4e2f70c81",
-        reference: "NL/BR/2026/011",
+        reference: "PT/BR/2026/011",
       },
       scope: {
         version: 1,
@@ -1073,16 +1073,17 @@ export const SEED: DemoState = {
       activatedAt: day(-112),
     },
     {
-      /* Act 2's grant. Deliberately narrow, and narrow in a way you can see:
-         he may accept two kinds of credential and present exactly one, to two
+      /* Rinzin's grant, the one Act 3 runs on. Deliberately narrow, and
+         narrow in a way you can see: she may accept two kinds of credential
+         and present exactly one, to two
          named counterparties, and only presenting needs an approver. */
-      id: "rel-dorji",
-      personId: "dorji",
+      id: "rel-rinzin",
+      personId: "rinzin",
       legalBasis: "entity_consent",
       instrument: {
         fileName: "board-resolution-2026-05-28.pdf",
         hash: "sha256:9a7d40be15c2f386071e4dab8c93520fe6b1748ad03c95e2",
-        reference: "NL/BR/2026/014",
+        reference: "PT/BR/2026/014",
       },
       scope: {
         version: 3,
@@ -1092,7 +1093,7 @@ export const SEED: DemoState = {
           { operation: "credential:receive", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
           {
             operation: "credential:accept",
-            credentialTypes: { mode: "list", values: ["Business Registration", "Customs Broker Licence"] },
+            credentialTypes: { mode: "list", values: ["Business Registration", "Business Licence"] },
             relyingParties: { mode: "any" },
             approval: "AUTO",
           },
@@ -1121,7 +1122,7 @@ export const SEED: DemoState = {
       instrument: {
         fileName: "board-resolution-2026-09-01.pdf",
         hash: "sha256:2e58ac91d7f4630b85c2019eab7d43f6c80915e7b24da6f3",
-        reference: "NL/BR/2026/019",
+        reference: "PT/BR/2026/019",
       },
       scope: {
         version: 1,
@@ -1146,7 +1147,7 @@ export const SEED: DemoState = {
       instrument: {
         fileName: "board-resolution-2026-03-04.pdf",
         hash: "sha256:71b3ec4a09d8526f1c74b0ade39f2851dc6047ba9e13f582",
-        reference: "NL/BR/2026/006",
+        reference: "PT/BR/2026/006",
       },
       scope: {
         version: 2,
@@ -1180,7 +1181,7 @@ export const SEED: DemoState = {
       issuerDid: "did:polygon:0xbc8970d729b33f01ff0e7ca3caaf695da8747db4",
       issuerTrusted: true,
       attributes: [
-        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
         { name: "registration_number", value: "CRA-2019-04477" },
         { name: "entity_type", value: "Private limited company" },
         { name: "registered_address", value: "Babesa, Thimphu, Bhutan" },
@@ -1199,7 +1200,7 @@ export const SEED: DemoState = {
       issuerDid: "did:polygon:0x08b3ba5dcbac0b871587004b93f298dcc81726c3",
       issuerTrusted: true,
       attributes: [
-        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
         { name: "tpn", value: "TPN-114-8830" },
         { name: "assessment_year", value: "2025" },
         { name: "cleared_on", value: day(-161) },
@@ -1216,7 +1217,7 @@ export const SEED: DemoState = {
       issuerDid: "did:polygon:0x7df3e776fe6432c53644c127df254180e12526fb",
       issuerTrusted: true,
       attributes: [
-        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
         { name: "permit_number", value: "RSTA-FF-2024-0912" },
         { name: "vehicle_classes", value: "Heavy goods, container" },
       ],
@@ -1230,16 +1231,22 @@ export const SEED: DemoState = {
   offers: [
     {
       /* Act 3's offer. In scope and automatic — accepting it is the whole
-         interaction, and the type is read from this payload, not typed. */
-      id: "offer-customs",
-      type: "Customs Broker Licence",
-      issuer: "Department of Revenue & Customs",
-      issuerDid: "did:polygon:0x08b3ba5dcbac0b871587004b93f298dcc81726c3",
+         interaction, and the type is read from this payload, not typed.
+
+         A trade licence, because that is what a trading company is offered
+         after incorporation (Story A2 in the user stories: MoICE issues the
+         Business Licence that authorises the activity). This was a Customs
+         Broker Licence while the entity was a logistics firm; an importer does
+         not hold one — it hires a licensed clearing agent, which is Pema. */
+      id: "offer-licence",
+      type: "Business Licence",
+      issuer: "Ministry of Industry, Commerce & Employment",
+      issuerDid: "did:polygon:0xafb50adefe9b359e15a79eada5d0bbb2675f33d3",
       issuerTrusted: true,
       attributes: [
-        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
-        { name: "licence_number", value: "DRC-CB-2026-0331" },
-        { name: "broker_class", value: "Class A" },
+        { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
+        { name: "licence_number", value: "BL-THI-2026-10442" },
+        { name: "licensed_activity", value: "General trading — import and wholesale" },
         { name: "valid_until", value: day(358) },
       ],
       decision: "allowed",
@@ -1257,13 +1264,13 @@ export const SEED: DemoState = {
       issuerDid: "did:polygon:0x4fc2bf84747e22ab86675163f6b59fc8ab469cb4",
       issuerTrusted: true,
       attributes: [
-        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
         { name: "policy_number", value: "RICB-MV-2026-77412" },
         { name: "sum_insured", value: "BTN 4,200,000" },
       ],
       decision: "out_of_scope",
       decisionReason:
-        "Your authority covers Business Registration and Customs Broker Licence credentials. Accepting insurance credentials was not granted.",
+        "Your authority covers Business Registration and Business Licence credentials. Accepting insurance credentials was not granted.",
       state: "pending",
       receivedAt: day(-4),
       expiresAt: day(10),
@@ -1275,7 +1282,7 @@ export const SEED: DemoState = {
       issuerDid: "did:polygon:0x08b3ba5dcbac0b871587004b93f298dcc81726c3",
       issuerTrusted: true,
       attributes: [
-        { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+        { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
         { name: "facility_code", value: "BW-PHU-0043" },
         { name: "bonded_capacity", value: "1,800 m³" },
       ],
@@ -1291,7 +1298,7 @@ export const SEED: DemoState = {
       issuer: "Department of Labour",
       issuerDid: "did:polygon:0x37c307beb791b306b109010ad5d97de062f28f02",
       issuerTrusted: true,
-      attributes: [{ name: "registered_name", value: "Norling Logistics Pvt. Ltd." }],
+      attributes: [{ name: "registered_name", value: "Pelden Trading Pvt. Ltd." }],
       decision: "allowed",
       decisionReason: null,
       state: "expired",
@@ -1397,13 +1404,13 @@ export const SEED: DemoState = {
 
   parkedOperations: [
     {
-      /* Waiting on Rinzin. The payload hash is what her wallet signature
+      /* Waiting on Dorji. The payload hash is what his wallet signature
          would actually commit to — B7 shows it for that reason. */
       id: "park-present-bob",
       operation: "proof:present",
       summary: "Present Business Registration to Bank of Bhutan",
-      requestedBy: "dorji",
-      relationId: "rel-dorji",
+      requestedBy: "rinzin",
+      relationId: "rel-rinzin",
       scopeVersion: 3,
       targetId: "vr-bob-earlier",
       targetRelyingParty: "Bank of Bhutan",
@@ -1420,8 +1427,8 @@ export const SEED: DemoState = {
       id: "park-accept-warehouse",
       operation: "credential:accept",
       summary: "Accept Bonded Warehouse Authorisation from Department of Revenue & Customs",
-      requestedBy: "dorji",
-      relationId: "rel-dorji",
+      requestedBy: "rinzin",
+      relationId: "rel-rinzin",
       scopeVersion: 3,
       targetId: "offer-warehouse",
       targetRelyingParty: null,
@@ -1440,7 +1447,7 @@ export const SEED: DemoState = {
       id: "park-issue-highvalue",
       operation: "authority:issue",
       summary: "Issue Declaration authority to Pema Choden — cap Nu. 1,200,000",
-      requestedBy: "rinzin",
+      requestedBy: "dorji",
       relationId: "rel-root",
       scopeVersion: 1,
       targetId: null,
@@ -1448,7 +1455,7 @@ export const SEED: DemoState = {
       payloadHash: "sha256:7d19a4fe0c38b5217e9c460da3f8b12a4e07c1685bd93fa2",
       policy: "DUAL_CONTROL",
       requiredSignatures: 2,
-      signatures: [{ personId: "rinzin", at: day(-1), method: "wallet" }],
+      signatures: [{ personId: "dorji", at: day(-1), method: "wallet" }],
       state: "parked",
       decisionReason: null,
       createdAt: day(-1),
@@ -1469,7 +1476,7 @@ export const SEED: DemoState = {
       policy: "DUAL_CONTROL",
       requiredSignatures: 2,
       signatures: [
-        { personId: "rinzin", at: day(-8), method: "wallet" },
+        { personId: "dorji", at: day(-8), method: "wallet" },
         { personId: "sonam", at: day(-8), method: "web" },
       ],
       state: "stale",
@@ -1483,8 +1490,8 @@ export const SEED: DemoState = {
       id: "park-expired",
       operation: "credential:accept",
       summary: "Accept Warehouse Safety Certificate from Department of Labour",
-      requestedBy: "dorji",
-      relationId: "rel-dorji",
+      requestedBy: "rinzin",
+      relationId: "rel-rinzin",
       scopeVersion: 3,
       targetId: "offer-lapsed",
       targetRelyingParty: null,
@@ -1501,15 +1508,15 @@ export const SEED: DemoState = {
       id: "park-approved-bnsw",
       operation: "proof:present",
       summary: "Present Business Registration to Bhutan National Single Window",
-      requestedBy: "dorji",
-      relationId: "rel-dorji",
+      requestedBy: "rinzin",
+      relationId: "rel-rinzin",
       scopeVersion: 3,
       targetId: "vr-bnsw-done",
       targetRelyingParty: "Bhutan National Single Window",
       payloadHash: "sha256:e572b0491ac8d36f7be24051c9da8317064fb2e85d1a7c63",
       policy: "SINGLE_APPROVER",
       requiredSignatures: 1,
-      signatures: [{ personId: "rinzin", at: day(-14), method: "wallet" }],
+      signatures: [{ personId: "dorji", at: day(-14), method: "wallet" }],
       state: "approved",
       decisionReason: null,
       createdAt: day(-14),
@@ -1619,15 +1626,15 @@ export const SEED: DemoState = {
       id: "dec-84120",
       outcome: "PASS",
       verifier: "Bhutan National Single Window",
-      entity: "Norling Logistics Pvt. Ltd.",
+      entity: "Pelden Trading Pvt. Ltd.",
       actorId: "pema",
       authorityId: "da-cap-declaration",
       declarationRef: "BNSW-DEC-2026-84120",
       declarationHash: "sha256:1f6b90c4a7e2d3850b94cf17e6a02d5b83741ce90b2d6f45",
       declaredValue: { amount: 420000, currency: "BTN" },
       chain: [
-        { id: "hc-foundational", label: "Business Registration", kind: "foundational", heldBy: "Norling Logistics Pvt. Ltd.", status: "valid" },
-        { id: "rel-root", label: "Root authority", kind: "relation", heldBy: "Rinzin Dema", status: "valid" },
+        { id: "hc-foundational", label: "Business Registration", kind: "foundational", heldBy: "Pelden Trading Pvt. Ltd.", status: "valid" },
+        { id: "rel-root", label: "Root authority", kind: "relation", heldBy: "Dorji Wangchuk", status: "valid" },
         { id: "da-role-broker", label: "Customs broker", kind: "role", heldBy: "Pema Choden", status: "valid" },
         { id: "da-cap-declaration", label: "Declaration authority", kind: "capability", heldBy: "Pema Choden", status: "valid" },
       ],
@@ -1648,15 +1655,15 @@ export const SEED: DemoState = {
       id: "dec-84137",
       outcome: "FAIL",
       verifier: "Bhutan National Single Window",
-      entity: "Norling Logistics Pvt. Ltd.",
+      entity: "Pelden Trading Pvt. Ltd.",
       actorId: "pema",
       authorityId: "da-cap-declaration",
       declarationRef: "BNSW-DEC-2026-84137",
       declarationHash: "sha256:8c04e71ab5d2f39607be4a1c8d5079f2361ba0e75c8d4f19",
       declaredValue: { amount: 380000, currency: "BTN" },
       chain: [
-        { id: "hc-foundational", label: "Business Registration", kind: "foundational", heldBy: "Norling Logistics Pvt. Ltd.", status: "valid" },
-        { id: "rel-root", label: "Root authority", kind: "relation", heldBy: "Rinzin Dema", status: "valid" },
+        { id: "hc-foundational", label: "Business Registration", kind: "foundational", heldBy: "Pelden Trading Pvt. Ltd.", status: "valid" },
+        { id: "rel-root", label: "Root authority", kind: "relation", heldBy: "Dorji Wangchuk", status: "valid" },
         { id: "da-role-broker", label: "Customs broker", kind: "role", heldBy: "Pema Choden", status: "revoked" },
         { id: "da-cap-declaration", label: "Declaration authority", kind: "capability", heldBy: "Pema Choden", status: "valid" },
       ],
@@ -1680,7 +1687,7 @@ export const SEED: DemoState = {
       id: "dec-unreachable",
       outcome: "SERVICE_UNREACHABLE",
       verifier: "Bhutan National Single Window",
-      entity: "Norling Logistics Pvt. Ltd.",
+      entity: "Pelden Trading Pvt. Ltd.",
       actorId: "pema",
       authorityId: "da-cap-declaration",
       declarationRef: "BNSW-DEC-2026-84141",
@@ -1703,8 +1710,8 @@ export const SEED: DemoState = {
       seq: 8,
       operation: "authority:revoke",
       summary: "Revoked Customs broker role held by Pema Choden",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "rinzin",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "dorji",
       relationId: "rel-root",
       scopeVersion: 1,
       approvedById: null,
@@ -1719,7 +1726,7 @@ export const SEED: DemoState = {
       seq: 7,
       operation: "authority:accept",
       summary: "Pema Choden accepted Declaration authority",
-      entity: "Norling Logistics Pvt. Ltd.",
+      entity: "Pelden Trading Pvt. Ltd.",
       actorId: "pema",
       relationId: "rel-root",
       scopeVersion: 1,
@@ -1735,8 +1742,8 @@ export const SEED: DemoState = {
       seq: 6,
       operation: "authority:issue",
       summary: "Issued Declaration authority to Pema Choden — cap Nu. 500,000 per declaration",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "rinzin",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "dorji",
       relationId: "rel-root",
       scopeVersion: 1,
       approvedById: null,
@@ -1748,17 +1755,17 @@ export const SEED: DemoState = {
     },
     {
       /* The row that carries the whole dual-attribution point: the entity
-         presented, Dorji acted, Rinzin approved, and only a digest of what
+         presented, Rinzin acted, Dorji approved, and only a digest of what
          was disclosed is kept. */
       id: "au-5",
       seq: 5,
       operation: "proof:present",
       summary: "Presented Business Registration to Bhutan National Single Window",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "dorji",
-      relationId: "rel-dorji",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-rinzin",
       scopeVersion: 3,
-      approvedById: "rinzin",
+      approvedById: "dorji",
       relyingPartyDid: "did:polygon:0xc70c2d3625bec5a34d5b3746b830d36f2525f163",
       disclosedDigest: "sha256:a7f3c9e1",
       at: at(-14, "14:23"),
@@ -1770,8 +1777,8 @@ export const SEED: DemoState = {
       seq: 4,
       operation: "relation:terminate",
       summary: "Terminated the controllership of Karma Wangmo",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "rinzin",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "dorji",
       relationId: "rel-karma",
       scopeVersion: 2,
       approvedById: null,
@@ -1785,10 +1792,10 @@ export const SEED: DemoState = {
       id: "au-3",
       seq: 3,
       operation: "relation:accept",
-      summary: "Dorji Wangchuk accepted the duties of a controller",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "dorji",
-      relationId: "rel-dorji",
+      summary: "Rinzin Dema accepted the duties of a controller",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "rinzin",
+      relationId: "rel-rinzin",
       scopeVersion: 3,
       approvedById: null,
       relyingPartyDid: null,
@@ -1801,10 +1808,10 @@ export const SEED: DemoState = {
       id: "au-2",
       seq: 2,
       operation: "relation:create",
-      summary: "Created a controllership relation for Dorji Wangchuk",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "rinzin",
-      relationId: "rel-dorji",
+      summary: "Created a controllership relation for Rinzin Dema",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "dorji",
+      relationId: "rel-rinzin",
       scopeVersion: 1,
       approvedById: null,
       relyingPartyDid: null,
@@ -1818,8 +1825,8 @@ export const SEED: DemoState = {
       seq: 1,
       operation: "credential:accept",
       summary: "Accepted the entity's Business Registration from the Corporate Regulatory Authority",
-      entity: "Norling Logistics Pvt. Ltd.",
-      actorId: "rinzin",
+      entity: "Pelden Trading Pvt. Ltd.",
+      actorId: "dorji",
       relationId: "rel-root",
       scopeVersion: 1,
       approvedById: null,
@@ -1872,7 +1879,7 @@ export const SEED: DemoState = {
   ],
 
   harness: {
-    persona: "rinzin",
+    persona: "dorji",
     act: 0,
     runnerOpen: false,
     stateOverrides: {},

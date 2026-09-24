@@ -32,8 +32,8 @@ import { useDemo } from "@/lib/demoStore";
  *
  * WHY EVERY ROW SHOWS TWO NAMES
  *
- * This is where dual attribution earns its keep. "Norling Logistics, acted by
- * Dorji Wangchuk, approved by Rinzin Dema" answers the three questions an
+ * This is where dual attribution earns its keep. "Pelden Trading, acted by
+ * Rinzin Dema, approved by Dorji Wangchuk" answers the three questions an
  * investigation actually asks — on whose behalf, by whose hand, on whose
  * authority — and no single-name log can answer any of them.
  */
@@ -68,7 +68,7 @@ export function AuditView() {
         />
 
         <p className="max-w-[68ch] text-[13.5px] leading-[1.65] text-muted">
-          Every action taken for Norling Logistics, in the order it happened.
+          Every action taken for Pelden Trading, in the order it happened.
           Nothing here can be changed or removed, including by the owner. Each
           entry commits to the one before it, so an altered entry would break
           everything after it.

@@ -86,7 +86,7 @@ export function CreateRelationView() {
         <Panel>
           <div className="relative z-[4] flex max-w-[640px] flex-col gap-6">
             <p className="text-[13.5px] leading-[1.65] text-muted">
-              A controllership lets a person act for Norling Logistics — never as
+              A controllership lets a person act for Pelden Trading — never as
               it. It stands on a legal basis, is evidenced by a signed
               instrument, and takes effect only once the person accepts the
               duties that come with it.
@@ -216,7 +216,7 @@ export function CreateRelationView() {
                   type="text"
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
-                  placeholder="NL/BR/2026/014"
+                  placeholder="PT/BR/2026/014"
                   className={`${FIELD_CLASS} h-11`}
                 />
               </label>

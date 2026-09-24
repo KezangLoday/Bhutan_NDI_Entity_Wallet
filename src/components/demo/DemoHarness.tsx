@@ -70,7 +70,7 @@ export function DemoHarness() {
      The panel is, in effect, gated anyway — `open` starts false, so nothing
      that reads persisted persona or act state can paint before the store has
      been read. The one thing worth waiting for is the act summary, which
-     would otherwise show act 1 as Rinzin for a frame before swapping to
+     would otherwise show act 1 as Dorji for a frame before swapping to
      whichever act the story was left on. */
   return (
     /* `ndi-demo-harness` insets the bar past the sidebar on desktop. The bar

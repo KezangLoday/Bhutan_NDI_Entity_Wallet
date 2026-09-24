@@ -36,11 +36,11 @@ interface NavItem {
   personas?: PersonaId[];
 }
 
-const OWNER: PersonaId[] = ["rinzin"];
+const OWNER: PersonaId[] = ["dorji"];
 /* Anyone who operates the entity wallet, whether or not they hold authority
    yet — Ugyen has none until act 2 grants it, and the wallet group showing
    him "you hold no authority here" is the correct answer rather than a gap. */
-const OPERATES: PersonaId[] = ["rinzin", "dorji", "ugyen"];
+const OPERATES: PersonaId[] = ["dorji", "rinzin", "ugyen"];
 
 const PRIMARY: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },

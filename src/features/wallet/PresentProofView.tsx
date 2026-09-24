@@ -202,7 +202,7 @@ export function PresentProofView({ requestId }: { requestId: string }) {
                     className="mt-1 flex items-start gap-2 text-[13px] leading-[1.5] text-accent"
                   >
                     <Icon name="check" size={14} strokeWidth={2.2} className="mt-px flex-none" />
-                    <span>Your request has gone to Rinzin Dema.</span>
+                    <span>Your request has gone to Dorji Wangchuk.</span>
                   </p>
                 ) : (
                   <div className="mt-1 flex flex-wrap gap-2.5">

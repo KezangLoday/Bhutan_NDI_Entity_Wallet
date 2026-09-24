@@ -186,7 +186,7 @@ export function NeedsAttention({ allClear = false }: { allClear?: boolean } = {}
             What you may do
           </h2>
           <p className="text-[12.5px] leading-[1.5] text-faint">
-            Acting for Norling Logistics. Never as it.
+            Acting for Pelden Trading. Never as it.
           </p>
         </div>
 
