@@ -126,3 +126,40 @@ export function AuthError({ message, onDismiss }: { message: ReactNode; onDismis
     </p>
   );
 }
+
+/**
+ * A non-error notice inside a signed-out card: a notice that must be read
+ * before acting (SCR-ONB-01's proxy warning), or a degraded state that is
+ * not the person's fault (a request that did not send).
+ *
+ * Separate from AuthError because the two must not look alike. UX-EW-01's
+ * error-banner rule — say what happened, whether anything was saved, and what
+ * to do next — applies to both, but a connection dropping is not something
+ * the person did, and red would say it was.
+ */
+export function AuthNotice({
+  children,
+  tone = "info",
+  role,
+}: {
+  children: ReactNode;
+  tone?: "info" | "warning";
+  role?: "status" | "alert";
+}) {
+  return (
+    <div
+      role={role}
+      className="relative z-[4] m-0 flex items-start gap-2.5 rounded-xl border border-grid px-3.5 py-3 text-[13px] leading-[1.55] text-body"
+      style={{ background: "rgb(var(--tint) / 0.04)" }}
+    >
+      <Icon
+        name="info"
+        size={15}
+        strokeWidth={2}
+        className="mt-px flex-none"
+        style={{ color: tone === "warning" ? "var(--ndi-warning)" : "var(--accent)" }}
+      />
+      <div className="flex-1">{children}</div>
+    </div>
+  );
+}

@@ -364,6 +364,26 @@ interface DemoActions {
   /** An owner's decision on one. Upholding reinstates the authority. */
   decideAppeal: (id: string, outcome: "upheld_reinstated" | "rejected") => void;
 
+  /* ---- Account creation (FLOW-ONB-01) ----
+     Steps 1–8. Each maps to one step of the flow specification; nothing
+     here decides whether an address is acceptable — the view renders E1 and
+     E7 identically (S3), and the store records only what happened. */
+
+  /** Step 2: record a provisional account and "send" the verification mail. */
+  startSignup: (email: string) => void;
+  /** Resend the verification mail. Throttled by the view against S4. */
+  resendSignupMail: () => void;
+  /** Step 4–5: the verification link is opened. Returns false if it was already used (E3). */
+  consumeSignupLink: () => boolean;
+  /** Steps 6–8: name and password set, account created, session issued. */
+  completeSignup: (name: string) => void;
+  /** Adds an organisation to the signing-up account. Flow 2 and Kind M call it. */
+  addSignupMembership: (orgId: string, role: "Owner" | "Admin" | "Member") => void;
+  /** Where to go once the account exists — set by an invitation link (A1). */
+  setSignupReturn: (path: string | null) => void;
+  /** Throw the session away and start again from an empty sign-up. */
+  clearSignup: () => void;
+
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
      and the state switcher, which are what make the demo runnable by someone
@@ -1229,6 +1249,90 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             }),
           };
         }),
+
+      startSignup: (email) =>
+        setState((s) => ({
+          ...s,
+          /* A new sign-up replaces any earlier one: this is one browser, one
+             person at a time, and a half-finished session for a different
+             address is exactly what "change the address" throws away. The
+             return path survives, because an invitee who corrects their
+             address is still on their way back to the invitation. */
+          signup: {
+            email,
+            stage: "check_email",
+            sends: [Date.now()],
+            linkUsed: false,
+            name: "",
+            memberships: [],
+            returnTo: s.signup?.returnTo ?? null,
+            createdAt: null,
+          },
+        })),
+
+      resendSignupMail: () =>
+        setState((s) =>
+          s.signup
+            ? {
+                ...s,
+                /* A resend issues a fresh link, so the old one being used is
+                   no longer a reason to refuse — E2's "a new token is issued
+                   and the old one stays dead". */
+                signup: { ...s.signup, sends: [...s.signup.sends, Date.now()], linkUsed: false },
+              }
+            : s,
+        ),
+
+      consumeSignupLink: () => {
+        const current = stateRef.current.signup;
+        if (!current || current.linkUsed) return false;
+        setState((s) =>
+          s.signup
+            ? { ...s, signup: { ...s.signup, linkUsed: true, stage: "set_password" } }
+            : s,
+        );
+        return true;
+      },
+
+      completeSignup: (name) => {
+        setState((s) =>
+          s.signup
+            ? {
+                ...s,
+                signup: { ...s.signup, name, stage: "done", createdAt: today() },
+              }
+            : s,
+        );
+        /* Q5: the creation is recorded with its route. The password is not,
+           and never could be — it was never given to this store. */
+        log("Account created (self-service)");
+      },
+
+      addSignupMembership: (orgId, role) =>
+        setState((s) =>
+          s.signup && !s.signup.memberships.some((m) => m.orgId === orgId)
+            ? { ...s, signup: { ...s.signup, memberships: [...s.signup.memberships, { orgId, role }] } }
+            : s,
+        ),
+
+      setSignupReturn: (path) =>
+        setState((s) => ({
+          ...s,
+          signup: s.signup
+            ? { ...s.signup, returnTo: path }
+            : {
+                email: "",
+                stage: "check_email",
+                sends: [],
+                linkUsed: false,
+                name: "",
+                memberships: [],
+                returnTo: path,
+                createdAt: null,
+              },
+        })),
+
+      clearSignup: () => setState((s) => ({ ...s, signup: null })),
 
       setPersona: (persona) =>
         setState((s) => ({ ...s, harness: { ...s.harness, persona } })),

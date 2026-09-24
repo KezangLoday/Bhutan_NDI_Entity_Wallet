@@ -41,9 +41,16 @@ export function DemoHarness() {
   const [open, setOpen] = useState(false);
 
   /* The auth screens are pre-sign-in and have no persona. Showing a switcher
-     there would suggest the choice matters before anyone is signed in. */
+     there would suggest the choice matters before anyone is signed in.
+     /welcome is signed in, but as the account being created in FLOW-ONB-01,
+     which is not a persona — the switcher would offer to become someone the
+     screen is not about. */
   const onAuthScreen =
-    pathname === "/" || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+    pathname === "/" ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/welcome") ||
+    pathname.startsWith("/verify-email-success");
 
   /** In story order, from the one list of who is drivable. The id is kept
    *  alongside so the switcher passes a PersonaId rather than a bare string. */

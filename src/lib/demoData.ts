@@ -555,6 +555,51 @@ export interface Appeal {
 }
 
 /** Where the demo currently is in the story. */
+/* ================================================================== */
+/* Onboarding — Flow 1 (FLOW-ONB-01, FLOW-ONB-02)                      */
+/* ================================================================== */
+
+/**
+ * FLOW-ONB-01 — the one account the sign-up flow is creating.
+ *
+ * WHY THIS IS NOT A PERSONA
+ *
+ * Personas are people the story already knows, driven from the harness. The
+ * person signing up is, by definition, someone the platform does not know
+ * yet: until step 7 they are an email address and a token. Modelling them as
+ * a persona would mean an account existing before it has been created, which
+ * is the one thing this flow exists to prevent. So it is a session — one at
+ * a time, persisted so an interrupted sign-up resumes (UN-03), and cleared by
+ * starting again.
+ *
+ * WHAT IT DELIBERATELY DOES NOT HOLD
+ *
+ * No password (Keycloak holds it — FLOW-ONB-01 §12 item 3), no national ID,
+ * no organisation details, no DID (§7.3). A shell account has nothing to
+ * protect, and that is what makes an open sign-up door safe.
+ */
+export type SignupStage = "check_email" | "set_password" | "done";
+
+export interface SignupSession {
+  email: string;
+  stage: SignupStage;
+  /** Epoch ms of each verification mail sent, oldest first. S4 counts these. */
+  sends: number[];
+  /** The verification link is single-use (E3). */
+  linkUsed: boolean;
+  /** Set at step 6. */
+  name: string;
+  /** Organisations this account belongs to. Empty means a shell (Q3). */
+  memberships: { orgId: string; role: "Owner" | "Admin" | "Member" }[];
+  /**
+   * Where to go once the account exists. An invitation link sets this, so a
+   * person who had to create an account first is brought straight back to
+   * the invitation (FLOW-ONB-02 A1) — "we'll bring you straight back here".
+   */
+  returnTo: string | null;
+  createdAt: string | null;
+}
+
 export interface HarnessState {
   /** Who the console is being driven as. Decides what is *absent*. */
   persona: PersonaId;
@@ -603,6 +648,10 @@ export interface DemoState {
   decisions: VerificationDecision[];
   auditEntries: AuditEntry[];
   appeals: Appeal[];
+
+  /* ---- Onboarding ---- */
+  signup: SignupSession | null;
+
   harness: HarnessState;
 }
 
@@ -1877,6 +1926,9 @@ export const SEED: DemoState = {
       evidence: ["handover-note-2026-08-08.pdf"],
     },
   ],
+
+  /* Nobody is part-way through signing up when the demo starts. */
+  signup: null,
 
   harness: {
     persona: "dorji",
