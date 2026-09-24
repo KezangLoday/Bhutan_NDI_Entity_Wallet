@@ -79,3 +79,30 @@ export const ACTS: Act[] = [
 ];
 
 export const actByNumber = (n: number): Act | undefined => ACTS.find((a) => a.number === n);
+
+/**
+ * The Gate 2 flows, as entry points beside the story rather than inside it.
+ *
+ * The six acts are the story told to someone new to the idea; Gate 2 is a
+ * review of Flows 1 and 2 against their specs, by people who already know
+ * it and want to walk one flow end to end. Folding the flows into the acts
+ * would make act 1 twenty screens long for the first audience, and putting
+ * them nowhere would leave the second audience typing URLs. So they sit in
+ * the harness as jumps, each with the persona that starts it.
+ *
+ * `persona: null` is a flow that starts before anyone is signed in.
+ */
+export interface FlowEntry {
+  flow: 1 | 2;
+  label: string;
+  persona: PersonaId | null;
+  route: string;
+}
+
+export const FLOW_ENTRIES: FlowEntry[] = [
+  { flow: 1, label: "Create an account", persona: null, route: "/sign-up" },
+  { flow: 1, label: "Invite a member", persona: "dorji", route: "/members/invite" },
+  { flow: 1, label: "Invite an agency", persona: "tshering", route: "/admin/invitations/new" },
+  { flow: 2, label: "Add an organisation", persona: "dorji", route: "/onboarding" },
+  { flow: 2, label: "Review a case at NDI", persona: "kinley", route: "/admin/reviews" },
+];

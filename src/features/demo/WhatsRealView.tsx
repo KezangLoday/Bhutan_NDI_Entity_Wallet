@@ -48,11 +48,47 @@ const SIMULATED: { area: string; icon: IconName; rows: Row[] }[] = [
         needs: "The existing NDI wallet proof-request flow, wired to this console.",
       },
       {
-        shown: "The Corporate Regulatory Authority confirming a representative",
+        shown: "The Corporate Regulatory Authority listing the organisations a person represents",
         reality:
-          "A fixture and a four-second delay. No register is queried, and the refusal is a button rather than an answer.",
+          "Two fixed rows and a four-second delay. No register is queried; the same two organisations come back for anyone, and \"lists nothing\" is a button rather than an answer.",
         needs:
-          "An integration per register, and a governance decision about which register confirms which kind of entity.",
+          "A list-by-person query per register — which not every register offers today — and a governance decision about which register confirms which kind of organisation.",
+      },
+      {
+        shown: "An NDI reviewer approving an organisation the register could not match",
+        reality:
+          "A queue in your browser. Uploaded files are reduced to their names and never leave the page; the reviewer is whichever administrator you are driving as.",
+        needs:
+          "A case store with document storage, a reviewer role and procedure, and a decision on who issues the registration after a review.",
+      },
+    ],
+  },
+  {
+    area: "Accounts and invitations",
+    icon: "mail",
+    rows: [
+      {
+        shown: "A verification email, and the link inside it",
+        reality:
+          "No email is sent. The dashed prototype panel stands in for the inbox, and the send limit is counted in your browser.",
+        needs: "A mail service with delivery and bounce reporting, and single-use signed links.",
+      },
+      {
+        shown: "An account with a password",
+        reality: "Nothing is stored anywhere but your browser, and the password is not kept at all.",
+        needs: "The platform's identity provider, with the password policy enforced server-side.",
+      },
+      {
+        shown: "An invitation delivered, bouncing, or accepted",
+        reality:
+          "No invitation is sent; the bounce is a seeded fixture, and \"open as the invitee\" stands in for the email. Acceptance re-checks are store logic, not a server.",
+        needs: "Invitation service with expiry, revocation and the acceptance-time re-checks run server-side.",
+      },
+      {
+        shown: "Two administrators designating a foundational issuer",
+        reality:
+          "Dual control is enforced by the demo store, which also refuses and logs a self-approval — but the store is not a boundary.",
+        needs: "Dual control enforced by the service, with the approver recorded in the audit trail.",
       },
     ],
   },

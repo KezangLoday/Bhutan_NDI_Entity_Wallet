@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { Icon } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
-import { ACTS, actByNumber } from "@/lib/demoStory";
+import { ACTS, FLOW_ENTRIES, actByNumber } from "@/lib/demoStory";
 import { PERSONAS } from "@/lib/demoData";
 
 import { useScreenRegistry } from "./screenState";
@@ -154,6 +154,36 @@ export function DemoHarness() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* ---- Gate 2 flows ---- */}
+          <div className="my-3 h-px bg-[var(--border-subtle)]" />
+          <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-faint">
+            Walk a flow
+          </p>
+          <div className="mt-2 flex flex-col gap-2">
+            {([1, 2] as const).map((flow) => (
+              <div key={flow} className="flex flex-wrap items-center gap-1.5">
+                <span className="w-[52px] flex-none font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint">
+                  Flow {flow}
+                </span>
+                {FLOW_ENTRIES.filter((f) => f.flow === flow).map((f) => (
+                  <button
+                    key={f.route}
+                    type="button"
+                    onClick={() => {
+                      if (f.persona) setPersona(f.persona);
+                      setOpen(false);
+                      router.push(f.route);
+                    }}
+                    className="ndi-navrow rounded-[9px] px-2.5 py-1.5 font-display text-[12.5px] font-medium"
+                    data-active="0"
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            ))}
           </div>
 
           {/* ---- Persona ---- */}
