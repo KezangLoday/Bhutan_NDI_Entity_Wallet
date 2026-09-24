@@ -27,12 +27,15 @@ const ITEMS: { label: string; href: string; icon: IconName }[] = [
  */
 export function AccountMenu() {
   const router = useRouter();
-  const { members } = useDemo();
+  const { currentPerson } = useDemo();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
 
-  /* The owner is the account signed in — the demo has no session of its own. */
-  const me = members.find((m) => m.role === "Owner") ?? members[0];
+  /* Whoever the console is being driven as is the account signed in — the
+     demo has no session of its own. It used to read the inherited Studio
+     member list, which named someone outside the story and emptied to "?"
+     on a freshly registered organisation. */
+  const me = currentPerson;
   const initial = (me?.name ?? "?").trim().slice(0, 1).toUpperCase();
 
   useEffect(() => {

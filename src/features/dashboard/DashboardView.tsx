@@ -23,7 +23,7 @@ import { useDemo } from "@/lib/demoStore";
  * the second, which would advertise capabilities they do not have.
  */
 export function DashboardView({ firstName }: { firstName?: string } = {}) {
-  const { organizations, schemas, credDefs, credentials, activity, currentPerson, harness } =
+  const { organizations, schemas, credDefs, credentials, activity, currentPerson, harness, firstRun } =
     useDemo();
 
   /* The suspended face is a §9 global rather than a fixture state: a
@@ -37,31 +37,42 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
   return (
     <AppShell>
       <div className="flex flex-col gap-5">
+        {/* A first day is greeted as one. "Welcome back" over an empty
+            console reads as data that went missing; "welcome" over the same
+            console reads as a beginning. */}
         <WaveBanner
           eyebrow="— Dashboard"
           title={
             <>
-              Welcome back, <span className="ndi-wave-text ndi-wave-tight">{name}</span>
+              {firstRun ? "Welcome" : "Welcome back"},{" "}
+              <span className="ndi-wave-text ndi-wave-tight">{name}</span>
             </>
           }
           lead={
-            organizations.length
-              ? "Issue and verify credentials on the Bhutan NDI network."
-              : "Create an organization to start issuing and verifying credentials on the Bhutan NDI network."
+            firstRun
+              ? `${organizations[0]?.name ?? "Your organisation"} is verified and holds its registration. Nothing has happened here yet.`
+              : "Issue and verify credentials on the Bhutan NDI network."
           }
           action={
-            <Link href={organizations.length ? "/credentials/issue" : "/organizations"}>
-              <GradientButton>
-                <Icon
-                  name={organizations.length ? "issue" : "plus"}
-                  size={16}
-                  strokeWidth={2}
-                />
-                {organizations.length ? "Issue credential" : "Create organization"}
-              </GradientButton>
-            </Link>
+            firstRun && isOwner ? (
+              <Link href="/controllership/relations/new">
+                <GradientButton>
+                  <Icon name="userCheck" size={16} strokeWidth={2} />
+                  Grant someone authority
+                </GradientButton>
+              </Link>
+            ) : (
+              <Link href="/credentials/issue">
+                <GradientButton>
+                  <Icon name="issue" size={16} strokeWidth={2} />
+                  Issue credential
+                </GradientButton>
+              </Link>
+            )
           }
         />
+
+        {firstRun && isOwner && screenState !== "access_suspended" ? <FirstSteps /> : null}
 
         {screenState === "access_suspended" ? (
           <Panel>
@@ -113,31 +124,6 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
             fit two. Letting the track size drive it also fills a wide display
             with four across instead of two and a lake of empty space. */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
-          <StatCard
-            title="Organizations"
-            count={organizations.length}
-            hint="An organization owns the schemas, credential definitions and connections you issue under."
-            emptyIcon="building"
-            emptyMessage="You have no organizations created or joined."
-            action={
-              <Link href="/organizations">
-                <HairlineButton className="mt-1 h-10 px-4 text-[13px]">
-                  <Icon name="plus" size={15} strokeWidth={2} />
-                  Create organization
-                </HairlineButton>
-              </Link>
-            }
-          >
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {organizations.slice(0, 3).map((o) => (
-                <li key={o.id} className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[13.5px] text-body">{o.name}</span>
-                  <span className="flex-none text-[12px] text-faint">{o.role}</span>
-                </li>
-              ))}
-            </ul>
-          </StatCard>
-
           <StatCard
             title="Schemas"
             count={schemas.length}
@@ -227,5 +213,60 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * The three things a new organisation's owner does next, in the order the
+ * product expects them. Shown only on the first day, and only to the owner —
+ * nobody else can act for the organisation yet.
+ */
+function FirstSteps() {
+  const steps: { icon: "userCheck" | "users" | "credentials"; title: string; body: string; href: string; cta: string }[] = [
+    {
+      icon: "userCheck",
+      title: "Appoint someone to act for it",
+      body: "Give a named person scoped authority — what they may do, for whom, and until when. They have to accept it.",
+      href: "/controllership/relations/new",
+      cta: "Grant authority",
+    },
+    {
+      icon: "users",
+      title: "Invite your colleagues",
+      body: "Members can see the organisation. Acting for it is set up separately.",
+      href: "/members/invite",
+      cta: "Invite a member",
+    },
+    {
+      icon: "credentials",
+      title: "See its registration",
+      body: "The credential it just accepted — the root every later authority traces back to.",
+      href: "/wallet/credentials",
+      cta: "Open held credentials",
+    },
+  ];
+  return (
+    <Panel>
+      <div className="relative z-[4] flex flex-col gap-4">
+        <h2 className="m-0 font-display text-[15px] font-semibold text-strong">Start here</h2>
+        <ol className="m-0 grid list-none gap-3 p-0 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+          {steps.map((step, i) => (
+            <li key={step.href} className="flex flex-col gap-2 rounded-[12px] border border-grid px-4 py-3.5">
+              <span className="flex items-center gap-2.5">
+                <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-grid font-mono text-[11px] text-muted">
+                  {i + 1}
+                </span>
+                <span className="font-display text-[13.5px] font-medium text-body">{step.title}</span>
+              </span>
+              <span className="text-[12.5px] leading-[1.55] text-faint">{step.body}</span>
+              <Link href={step.href} className="ndi-plainlink mt-auto inline-flex items-center gap-1.5 text-[12.5px] font-medium text-accent">
+                {step.cta}
+                <Icon name="arrowRight" size={13} strokeWidth={2} />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </Panel>
   );
 }

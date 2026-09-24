@@ -73,7 +73,7 @@ export function ChooseOrganisationView() {
 
 function ChooseOrganisation() {
   const router = useRouter();
-  const { orgOnboarding, manualReviews, selectOrganisation, submitManualReview } = useDemo();
+  const { orgOnboarding, manualReviews, orgInvitations, selectOrganisation, submitManualReview } = useDemo();
 
   const screenState = useScreenState("A3", [
     "live",
@@ -87,6 +87,19 @@ function ChooseOrganisation() {
 
   const kind = kindOf(orgOnboarding?.kind);
   const proved = orgOnboarding?.provedName;
+
+  /* INVITED BY NDI (FLOW-ONB-02 Kind O, self-service off). The invitation
+     already names the organisation, so there is nothing to choose — but the
+     invitation is not the trust decision either. The register is asked the
+     narrower question, "does it list this person against this one?", and
+     the answer decides exactly as it does on the self-service route. */
+  const invitation = orgOnboarding?.invitationId
+    ? orgInvitations.find((i) => i.id === orgOnboarding.invitationId)
+    : undefined;
+  const invitedName = invitation?.legalName ?? null;
+  const namedListing = invitedName
+    ? REGISTER_LISTINGS.find((l) => l.legalName.toLowerCase() === invitedName.toLowerCase() && !l.onPlatform)
+    : undefined;
 
   /* A refused case comes back here to be sent again with more, so it opens
      on the form with what was sent before — not on a fresh register lookup
@@ -111,11 +124,20 @@ function ChooseOrganisation() {
 
   /* The lookup starts on arrival: the person has already proved who they
      are, and there is nothing to ask them before the register answers. */
+  const finishLookup = () => {
+    if (invitedName && outcome.current === "listed") {
+      if (namedListing) confirmRef(namedListing.ref);
+      else setStage("none_found");
+      return;
+    }
+    setStage(outcome.current);
+  };
+
   const lookUp = () => {
     setSkippable(false);
     setStage("looking_up");
     timers.current.push(setTimeout(() => setSkippable(true), SKIP_AFTER_MS));
-    timers.current.push(setTimeout(() => setStage(outcome.current), REGISTER_CHECK_MS));
+    timers.current.push(setTimeout(finishLookup, REGISTER_CHECK_MS));
   };
 
   useEffect(() => {
@@ -151,8 +173,12 @@ function ChooseOrganisation() {
   const selected = REGISTER_LISTINGS.find((l) => l.ref === choice);
 
   const confirm = () => {
-    if (!selected) return;
-    selectOrganisation(selected.ref);
+    if (selected) confirmRef(selected.ref);
+  };
+
+  function confirmRef(ref: string) {
+    selectOrganisation(ref);
+    setChoice(ref);
     setStage("confirming");
     timers.current.push(
       setTimeout(() => {
@@ -160,7 +186,7 @@ function ChooseOrganisation() {
         timers.current.push(setTimeout(() => router.push("/onboarding/foundational"), LOCAL_MS + 400));
       }, ROUND_TRIP_MS),
     );
-  };
+  }
 
   const toReview = (why: "none" | "not_listed") => {
     setReviewReason(why);
@@ -170,8 +196,8 @@ function ChooseOrganisation() {
        listed-but-not-this-one case is a different organisation by
        definition, so that form starts empty. */
     if (why === "none" && !legalName) {
-      setLegalName("Pelden Trading Pvt. Ltd.");
-      setNumber("CRA-2019-04477");
+      setLegalName(invitedName ?? "Pelden Trading Pvt. Ltd.");
+      setNumber(invitedName && !invitedName.startsWith("Pelden") ? "" : "CRA-2019-04477");
     }
     setStage("review_form");
   };
@@ -204,14 +230,20 @@ function ChooseOrganisation() {
     <OnboardingShell current={2}>
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.025em] text-strong">
-          {shown === "review_form" ? "Ask NDI to review your organisation" : "Choose your organisation"}
+          {shown === "review_form"
+            ? "Ask NDI to review your organisation"
+            : invitedName
+              ? `Confirm you represent ${invitedName}`
+              : "Choose your organisation"}
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
           {shown === "review_form"
             ? reviewReason === "no_register"
               ? "There's no register that can confirm this kind of organisation automatically, so a person at NDI checks it instead. Tell us which organisation it is and send what shows you represent it."
               : "The register couldn't confirm this one, so a person at NDI checks it instead. Tell us which organisation it is and send what shows you represent it."
-            : `The ${register} is asked which organisations it lists ${proved ?? "you"} as representing. You choose from what it returns — you don't type a registration number.`}
+            : invitedName
+              ? `Your invitation from NDI names ${invitedName}. That isn't the confirmation — the ${register} is asked whether it lists ${proved ?? "you"} as representing it.`
+              : `The ${register} is asked which organisations it lists ${proved ?? "you"} as representing. You choose from what it returns — you don't type a registration number.`}
         </p>
       </div>
 
@@ -223,8 +255,10 @@ function ChooseOrganisation() {
               Asking the {register}
             </p>
             <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-              We&rsquo;re asking which organisations the register lists {proved ?? "you"} against. This is
-              a lookup against an outside body, and it takes as long as it takes — the platform
+              {invitedName
+                ? `We're asking whether the register lists ${proved ?? "you"} as representing ${invitedName}.`
+                : `We're asking which organisations the register lists ${proved ?? "you"} against.`}{" "}
+              This is a lookup against an outside body, and it takes as long as it takes — the platform
               can&rsquo;t answer this itself.
             </p>
             <div className="flex flex-wrap items-center gap-4">
@@ -233,7 +267,7 @@ function ChooseOrganisation() {
                   type="button"
                   onClick={() => {
                     timers.current.forEach(clearTimeout);
-                    setStage(outcome.current);
+                    finishLookup();
                   }}
                   className="ndi-plainlink text-[12.5px] font-medium text-muted"
                 >
@@ -320,7 +354,7 @@ function ChooseOrganisation() {
         <Panel>
           <ol className="relative z-[4] m-0 flex list-none flex-col gap-3 p-0" aria-live="polite">
             <Step
-              label={`The ${register} confirms you represent ${selected?.legalName ?? "the organisation"}`}
+              label={`The ${register} confirms you represent ${selected?.legalName ?? invitedName ?? "the organisation"}`}
               detail="Checked on the pair you chose — you, and this organisation."
               state={shown === "confirming" ? "active" : "done"}
             />
@@ -337,7 +371,9 @@ function ChooseOrganisation() {
         <Panel>
           <div className="relative z-[4] flex flex-col gap-3">
             <p className="font-display text-[14.5px] font-semibold text-strong">
-              The register doesn&rsquo;t list you against any organisation
+              {invitedName
+                ? `The register doesn't list you as representing ${invitedName}`
+                : "The register doesn't list you against any organisation"}
             </p>
             <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
               Your identity was proved — that part worked. The {register} simply has no organisation

@@ -16,7 +16,8 @@ Two things to do in the room before you say anything:
 
 1. **Open the demo controls** — bottom-left of the window, the small
    `Prototype · data simulated` chip with a **Demo controls** button beside it.
-   That panel is your remote: story acts, who you are signed in as, and reset.
+   That panel is your remote: story acts, the Gate 2 flows, the deployment's
+   self-service sign-up switch, who you are signed in as, and reset.
 2. **Press Reset demo** if anyone has touched it before you. The demo persists
    to browser storage, so it remembers whatever the last person did.
 
@@ -82,8 +83,13 @@ prove who you are**.
 
 ### 2 · Prove who you are — `/onboarding/prove`
 
-Press **Send the request to my wallet**. Point at **What you will share**:
-the person's name and citizenship number, and nothing about any organisation.
+The scan card is the NDI integration page people already know from other
+services — the framed code with the NDI mark, the two steps, the store badges
+and the support line. There is no "open wallet" link and no cloud wallet: this
+is a desk portal, so the only hand-off is a scan. The code does not scan (it
+says so under it), so press **Simulate the scan** in the dashed prototype
+panel. Point at **What you will share** first: the person's name and
+citizenship number, and nothing about any organisation.
 
 > "Only the person, not yet the company. Who Dorji is comes from his own
 > wallet — never from a field someone typed."
@@ -132,6 +138,19 @@ Press **Accept the registration**.
 
 > "*Pelden Trading is verified.* And this credential is the thing act five
 > walks back up to. Remember it."
+
+**Go to the console** lands on Pelden's first day: *Welcome, Dorji*, a
+**Start here** panel, nothing waiting, no activity. It holds its registration
+and Dorji's root authority and nothing else — the organisation existed thirty
+seconds ago, so the console says so. The audit trail has exactly two rows:
+the registration and the acceptance.
+
+> "Nothing has happened here yet, and the console doesn't pretend otherwise."
+
+Pressing **Next** to act 2 moves the story on to Pelden three months in —
+Rinzin appointed, credentials held, an authority issued to Pema. Say so out
+loud: *"Let's skip ahead a few months."* Your account and anything you did in
+the onboarding flows are kept.
 
 ---
 
@@ -184,9 +203,41 @@ administrators.
 3. Switch to **Kinley** and approve. The invitation is sent. The seeded
    Corporate Regulatory Authority invitation shows the finished version.
 
+### Flow 2 · Two ways onto the platform
+
+Which one applies is a deployment setting — self-service sign-up on or off
+(FLOW-ONB-01 P3). The demo controls show it, with **Switch on / off**, and each
+**Walk a flow** entry sets it for you. Both routes end in the same check: the
+register confirms the person represents the organisation.
+
+**Sign up and add it yourself** (self-service on) is act 1 above: the register
+lists the organisations it has against the person, and they choose one.
+
+**Invited by NDI to register** (self-service off), as Tshering:
+
+1. On the invitation form choose **To register as an ordinary business**. The
+   form fills with Pelden's details. No second administrator is needed —
+   the second approval follows what is being granted, and an ordinary
+   business is not a root of trust. **Send invitation**.
+2. **Invitations → Open as the invitee** (dashed — stands in for the email).
+   The invitation says plainly that it doesn't confirm Pelden by itself.
+3. **Create an account** — allowed even with self-service off, because the
+   invitation opened that door. Finish sign-up and you are brought back;
+   **Accept**.
+4. **Register the organisation** → prove who you are → the register is asked
+   the narrower question: *does it list this person against the organisation
+   the invitation names?* No list to choose from. Then the registration, and
+   back to the account's organisations with Pelden on it.
+
+If the register does not list them for the named organisation, it falls to
+manual review exactly as the self-service route does.
+
+With self-service off, the public **Create an account** page shows its
+switched-off state — try it to show the open door is shut.
+
 ### Flow 2 · When the register can't match — manual review
 
-1. **Walk a flow → Add an organisation**. Prove who you are, and while the
+1. **Walk a flow → Sign up and add it yourself**. Prove who you are, and while the
    register is being asked, press **Show what happens if the register lists
    nothing**.
 2. **Ask NDI to review it.** The form starts with Pelden's details so you are

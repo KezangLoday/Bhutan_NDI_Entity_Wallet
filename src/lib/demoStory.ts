@@ -91,18 +91,36 @@ export const actByNumber = (n: number): Act | undefined => ACTS.find((a) => a.nu
  * the harness as jumps, each with the persona that starts it.
  *
  * `persona: null` is a flow that starts before anyone is signed in.
+ *
+ * TWO WAYS ONTO THE PLATFORM
+ *
+ * An organisation arrives one of two ways, and which one is a deployment
+ * setting (FLOW-ONB-01 P3): with self-service sign-up on, its representative
+ * signs up and adds it; with it off, an NDI administrator invites it
+ * (FLOW-ONB-02 Kind O, no second approval for an ordinary business). Both
+ * end in the same Flow 2 check against the register. `selfService` is the
+ * setting the entry needs, applied when it is chosen, so neither route can
+ * be started in a deployment where it would not exist.
  */
 export interface FlowEntry {
   flow: 1 | 2;
   label: string;
   persona: PersonaId | null;
   route: string;
+  selfService?: boolean;
 }
 
 export const FLOW_ENTRIES: FlowEntry[] = [
-  { flow: 1, label: "Create an account", persona: null, route: "/sign-up" },
+  { flow: 1, label: "Create an account", persona: null, route: "/sign-up", selfService: true },
   { flow: 1, label: "Invite a member", persona: "dorji", route: "/members/invite" },
   { flow: 1, label: "Invite an agency", persona: "tshering", route: "/admin/invitations/new" },
-  { flow: 2, label: "Add an organisation", persona: "dorji", route: "/onboarding" },
+  { flow: 2, label: "Sign up and add it yourself", persona: "dorji", route: "/onboarding", selfService: true },
+  {
+    flow: 2,
+    label: "Invited by NDI to register",
+    persona: "tshering",
+    route: "/admin/invitations/new",
+    selfService: false,
+  },
   { flow: 2, label: "Review a case at NDI", persona: "kinley", route: "/admin/reviews" },
 ];

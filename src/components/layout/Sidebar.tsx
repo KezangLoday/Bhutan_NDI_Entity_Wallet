@@ -117,7 +117,6 @@ const PRIMARY: NavItem[] = [
   { label: "Appeals", icon: "shieldAlert", href: "/appeals", personas: PELDEN },
 
   /* ---- The existing issuer / verifier product -------------------------- */
-  { label: "Organizations", icon: "building", href: "/organizations", personas: OWNER },
   { label: "Users", icon: "users", href: "/users", personas: OWNER },
   { label: "Connections", icon: "connections", href: "/connections", personas: OWNER },
   {

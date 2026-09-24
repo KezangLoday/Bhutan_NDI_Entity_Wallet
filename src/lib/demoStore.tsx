@@ -15,6 +15,7 @@ import { verifyAuthority, type VerificationRequestInput } from "./avs";
 import { INVITATION_DAYS } from "./deployment";
 import {
   SEED,
+  firstRunState,
   type Attribute,
   type AuthorityKind,
   type BulkUpload,
@@ -70,8 +71,10 @@ const STORAGE_KEY = "ndi-studio-demo";
  *       registration screen to the new choose-your-organisation screen, so a
  *       version-4 save holding an A3 override of "verified" would force the
  *       new screen into a state it does not have.
+ *   6 — one organisation. A version-5 save would bring back the inherited
+ *       Bhutan NDI and Royal University rows the seed no longer has.
  */
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 
 /**
  * Appends one audit row, carrying the hash chain forward.
@@ -439,7 +442,7 @@ interface DemoActions {
      chose and proved is state. */
 
   /** Step 1 — the person opts in and says what kind of organisation. Starts afresh. */
-  startOrgOnboarding: (kind: OrgKind) => void;
+  startOrgOnboarding: (kind: OrgKind, invitationId?: string) => void;
   /** Step 2 — the wallet proof was answered. The name comes from the credential. */
   recordIdentityProof: (name: string) => void;
   /** Step 3 — the person picked one of the organisations the register listed. */
@@ -456,6 +459,8 @@ interface DemoActions {
   decideManualReview: (id: string, approve: boolean, reason?: string) => void;
   /** Steps 5–6 — registration accepted, holder capability switched on. */
   completeOrgOnboarding: () => void;
+  /** Leaves the first-run state for the story's lived-in one (acts 2–6). */
+  restoreStoryState: () => void;
 
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
@@ -469,6 +474,8 @@ interface DemoActions {
   setRunnerOpen: (open: boolean) => void;
   /** Force one screen into one of its states, for review. */
   setStateOverride: (screen: string, state: string | null) => void;
+  /** The deployment's self-service sign-up setting, switched for the demo. */
+  setSelfServiceSignup: (on: boolean) => void;
   clearStateOverrides: () => void;
 
   resetDemo: () => void;
@@ -1633,17 +1640,30 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           ),
         })),
 
-      startOrgOnboarding: (kind) =>
+      startOrgOnboarding: (kind, invitationId) =>
         setState((s) => ({
           ...s,
-          orgOnboarding: { kind, provedName: null, selectedRef: null, reviewId: null, completed: false },
+          orgOnboarding: {
+            kind,
+            provedName: null,
+            selectedRef: null,
+            reviewId: null,
+            completed: false,
+            invitationId: invitationId ?? null,
+          },
         })),
 
       recordIdentityProof: (name) =>
         setState((s) => ({
           ...s,
           orgOnboarding: {
-            ...(s.orgOnboarding ?? { kind: "company", selectedRef: null, reviewId: null, completed: false }),
+            ...(s.orgOnboarding ?? {
+              kind: "company",
+              selectedRef: null,
+              reviewId: null,
+              completed: false,
+              invitationId: null,
+            }),
             provedName: name,
           },
         })),
@@ -1704,8 +1724,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         })),
 
       completeOrgOnboarding: () => {
+        /* Lands on Pelden's first day, not on the story's three-months-in
+           seed — see firstRunState. Nothing is logged to the activity feed
+           for the same reason: nothing has been done in the console yet. */
         setState((s) => ({
-          ...s,
+          ...firstRunState(s),
           orgOnboarding: s.orgOnboarding ? { ...s.orgOnboarding, completed: true } : s.orgOnboarding,
           /* The account that did this now belongs to the organisation, as its
              owner — the first row of SCR-ONB-05's list. */
@@ -1714,8 +1737,25 @@ export function DemoProvider({ children }: { children: ReactNode }) {
               ? { ...s.signup, memberships: [...s.signup.memberships, { orgId: "org-pelden", role: "Owner" }] }
               : s.signup,
         }));
-        log("Organisation verified — holder capability switched on");
       },
+
+      restoreStoryState: () =>
+        setState((s) => {
+          if (!s.firstRun) return s;
+          /* Everything the first-run state emptied comes back from the seed.
+             What the presenter did in the onboarding flows is kept: the
+             account, the review cases, and any invitation they sent. */
+          const seeded = new Set(SEED.orgInvitations.map((i) => i.id));
+          return {
+            ...SEED,
+            signup: s.signup,
+            orgOnboarding: s.orgOnboarding,
+            manualReviews: s.manualReviews,
+            orgInvitations: [...s.orgInvitations.filter((i) => !seeded.has(i.id)), ...SEED.orgInvitations],
+            harness: s.harness,
+            firstRun: false,
+          };
+        }),
 
       setPersona: (persona) =>
         setState((s) => ({ ...s, harness: { ...s.harness, persona } })),
@@ -1724,6 +1764,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
       setRunnerOpen: (runnerOpen) =>
         setState((s) => ({ ...s, harness: { ...s.harness, runnerOpen } })),
+
+      setSelfServiceSignup: (selfServiceSignup) =>
+        setState((s) => ({ ...s, harness: { ...s.harness, selfServiceSignup } })),
 
       setStateOverride: (screen, override) =>
         setState((s) => {

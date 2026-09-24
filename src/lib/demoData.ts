@@ -15,6 +15,8 @@
  * review flagged that method as wrong for the NDI.)
  */
 
+import { SELF_SERVICE_SIGNUP_ENABLED } from "./deployment";
+
 export type LedgerKind = "AnonCreds" | "W3C";
 export type CredentialState = "offered" | "accepted" | "declined" | "revoked";
 export type VerificationState = "requested" | "verified" | "declined" | "expired";
@@ -714,6 +716,13 @@ export interface OrgOnboarding {
   reviewId: string | null;
   /** Registration accepted, holder capability on (Flow 2 step 6). */
   completed: boolean;
+  /**
+   * Set when the organisation was named by an NDI invitation (FLOW-ONB-02
+   * Kind O) rather than chosen from the register's list. The register is
+   * then asked to confirm that one pair — the person, and the organisation
+   * the invitation names — instead of listing.
+   */
+  invitationId: string | null;
 }
 
 /**
@@ -805,6 +814,14 @@ export interface HarnessState {
    * state you cannot reach is a state you cannot review.
    */
   stateOverrides: Record<string, string>;
+  /**
+   * FLOW-ONB-01 P3, as the deployment would set it. Held here rather than
+   * only in deployment.ts so the demo can show both ways onto the platform:
+   * on, businesses sign up for themselves; off, NDI invites each one
+   * (FLOW-ONB-02 Kind O). It is scaffolding — a deployment setting, not
+   * something any user of the product could change.
+   */
+  selfServiceSignup: boolean;
 }
 
 export interface DemoState {
@@ -846,6 +863,12 @@ export interface DemoState {
   orgInvitations: OrgInvitation[];
   orgOnboarding: OrgOnboarding | null;
   manualReviews: ManualReview[];
+  /**
+   * True from the moment onboarding completes until the story jumps past
+   * act 1: the console is showing Pelden on its first day (`firstRunState`),
+   * not the three-months-in seed.
+   */
+  firstRun: boolean;
 
   harness: HarnessState;
 }
@@ -1040,28 +1063,11 @@ export const SEED: DemoState = {
       location: "Babesa, Thimphu, Bhutan",
       visibility: "private",
     },
-    {
-      id: "org-ndi",
-      name: "Bhutan NDI",
-      description: "National Digital Identity programme office.",
-      role: "Owner",
-      members: 4,
-      createdAt: "2026-02-20",
-      website: "https://www.bhutanndi.com",
-      location: "Thimphu, Bhutan",
-      visibility: "public",
-    },
-    {
-      id: "org-rub",
-      name: "Royal University of Bhutan",
-      description: "Issues degree credentials to graduating students.",
-      role: "Admin",
-      members: 2,
-      createdAt: "2026-03-30",
-      website: "https://www.rub.edu.bt",
-      location: "Thimphu, Bhutan",
-      visibility: "public",
-    },
+    /* Only the one. The inherited Studio seed carried two more (Bhutan NDI
+       and the Royal University) so its switcher had something to switch
+       between; in an Entity Wallet demo they read as "one account runs
+       several businesses", which is not a thing this product offers and not
+       a question the room should be left asking. */
   ],
   members: [
     {
@@ -2266,10 +2272,129 @@ export const SEED: DemoState = {
     },
   ],
 
+  firstRun: false,
+
   harness: {
     persona: "dorji",
     act: 0,
     runnerOpen: false,
     stateOverrides: {},
+    selfServiceSignup: SELF_SERVICE_SIGNUP_ENABLED,
   },
 };
+
+/**
+ * Pelden Trading on the day it is registered — what completing Flow 2 leaves
+ * behind, in place of the months of history the story's seed carries.
+ *
+ * WHY ONBOARDING DOES NOT LAND ON THE SEED
+ *
+ * The seed is Pelden three months in: Rinzin appointed, credentials held,
+ * approvals parked, an authority issued to Pema and revoked. Arriving at that
+ * dashboard straight from registering the company told the room the opposite
+ * of what act 1 says — that an organisation which existed thirty seconds ago
+ * already had a past. A first-run console is empty except for the two things
+ * onboarding actually produced: the registration it accepted, and Dorji's
+ * root authority to act for it.
+ *
+ * WHAT IS KEPT, AND WHY
+ *
+ * - The foundational credential and the root relation, dated today.
+ * - The organisation's own DID, because provisioning its wallet made it.
+ * - Two audit rows for the registration and the acceptance. The dashboard
+ *   shows no activity — nothing has been done in the console — but an audit
+ *   trail that did not record the organisation coming into existence would
+ *   be a trail with a hole at the top.
+ * - Everything on the NDI side (invitations NDI issued, review cases), and
+ *   the people, so the persona switcher still works — though nobody but
+ *   Dorji is a member yet, and nobody else holds any authority.
+ *
+ * Acts 2–6 need the lived-in state, so the story runner restores it when it
+ * jumps past act 1 (see `restoreStoryState` in the store).
+ */
+export function firstRunState(s: DemoState): DemoState {
+  const today = day(0);
+  const foundational = SEED.heldCredentials.find((c) => c.isFoundational);
+  const root = SEED.relations.find((r) => r.isRootAuthority);
+  const entity = SEED.organizations[0];
+  return {
+    ...s,
+    activeOrgId: entity.id,
+    organizations: [{ ...entity, members: 1, createdAt: today }],
+    schemas: [],
+    credDefs: [],
+    dids: SEED.dids.slice(0, 1),
+    connections: [],
+    credentials: [],
+    verifications: [],
+    members: [],
+    certificates: [],
+    invitations: [],
+    ecosystems: [],
+    ecosystemMembers: [],
+    ecosystemInvitations: [],
+    bulkUploads: [],
+    bulkRecords: [],
+    apiKeys: [],
+    activity: [],
+    people: SEED.people.map((p) =>
+      p.id === "dorji" ? p : { ...p, memberRole: undefined },
+    ),
+    relations: root
+      ? [
+          {
+            ...root,
+            scope: { ...root.scope, validFrom: today },
+            createdAt: today,
+            acceptedAt: today,
+            activatedAt: today,
+          },
+        ]
+      : [],
+    heldCredentials: foundational ? [{ ...foundational, receivedAt: today }] : [],
+    offers: [],
+    verificationRequests: [],
+    parkedOperations: [],
+    delegatedAuthorities: [],
+    decisions: [],
+    auditEntries: [
+      {
+        id: "au-onb-2",
+        seq: 2,
+        operation: "credential:accept",
+        summary: "Accepted Business Registration under the bootstrap authority",
+        entity: entity.name,
+        actorId: "dorji",
+        relationId: root?.id ?? null,
+        scopeVersion: 1,
+        approvedById: null,
+        relyingPartyDid: null,
+        disclosedDigest: null,
+        at: new Date().toISOString(),
+        prevHash: "sha256:9b2e07c4",
+        rowHash: "sha256:3f81d6a0",
+      },
+      {
+        id: "au-onb-1",
+        seq: 1,
+        operation: "entity:register",
+        summary: "Registered, confirmed by the register — Dorji Wangchuk as director",
+        entity: entity.name,
+        actorId: "dorji",
+        relationId: null,
+        scopeVersion: null,
+        approvedById: null,
+        relyingPartyDid: null,
+        disclosedDigest: null,
+        at: new Date().toISOString(),
+        prevHash: "sha256:00000000",
+        rowHash: "sha256:9b2e07c4",
+      },
+    ],
+    appeals: [],
+    /* Only what NDI issued: an organisation that exists today has sent no
+       member invitations. */
+    orgInvitations: s.orgInvitations.filter((i) => i.kind === "O"),
+    firstRun: true,
+  };
+}

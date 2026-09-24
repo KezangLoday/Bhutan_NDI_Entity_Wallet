@@ -44,8 +44,14 @@ const SIMULATED: { area: string; icon: IconName; rows: Row[] }[] = [
       {
         shown: "A wallet proof request answered on a phone",
         reality:
-          "An authored pause and a deliberately non-scannable code. No wallet is contacted and nothing is signed.",
+          "An authored pause and a deliberately non-scannable code, on a card drawn after the NDI integration page. \"Simulate the scan\" stands in for the phone; the video guide and store badges go nowhere. No wallet is contacted and nothing is signed.",
         needs: "The existing NDI wallet proof-request flow, wired to this console.",
+      },
+      {
+        shown: "Self-service sign-up switched on or off",
+        reality:
+          "A demo control, so both ways onto the platform can be shown. In the product it is a deployment setting nobody using the console can change.",
+        needs: "The FLOW-ONB-01 P3 setting, read at request time and enforced by the server.",
       },
       {
         shown: "The Corporate Regulatory Authority listing the organisations a person represents",

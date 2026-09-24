@@ -35,6 +35,8 @@ export function DemoHarness() {
     setStateOverride,
     clearStateOverrides,
     resetDemo,
+    restoreStoryState,
+    setSelfServiceSignup,
     hydrated,
   } = useDemo();
   const { registered } = useScreenRegistry();
@@ -67,6 +69,10 @@ export function DemoHarness() {
   const goToAct = (n: number) => {
     const target = actByNumber(n);
     if (!target) return;
+    /* Acts 2–6 are Pelden three months in. Arriving from a freshly onboarded
+       Pelden, the story skips ahead to that — it never builds act 2 on top
+       of a first-day organisation that has no Rinzin and no history. */
+    if (n >= 2) restoreStoryState();
     setAct(n);
     setPersona(target.persona);
     router.push(target.route);
@@ -173,6 +179,7 @@ export function DemoHarness() {
                     type="button"
                     onClick={() => {
                       if (f.persona) setPersona(f.persona);
+                      if (f.selfService !== undefined) setSelfServiceSignup(f.selfService);
                       setOpen(false);
                       router.push(f.route);
                     }}
@@ -184,6 +191,27 @@ export function DemoHarness() {
                 ))}
               </div>
             ))}
+          </div>
+
+          {/* ---- Deployment ---- */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p id="self-service-label" className="text-[12.5px] leading-[1.5] text-muted">
+              Deployment: self-service sign-up is{" "}
+              <strong className="font-medium text-body">{harness.selfServiceSignup ? "on" : "off"}</strong>
+              {harness.selfServiceSignup
+                ? " — businesses sign up themselves."
+                : " — NDI invites each business."}
+            </p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={harness.selfServiceSignup}
+              aria-labelledby="self-service-label"
+              onClick={() => setSelfServiceSignup(!harness.selfServiceSignup)}
+              className="ndi-hairline-btn inline-flex h-8 items-center rounded-full px-3 font-display text-[12px] font-medium"
+            >
+              Switch {harness.selfServiceSignup ? "off" : "on"}
+            </button>
           </div>
 
           {/* ---- Persona ---- */}

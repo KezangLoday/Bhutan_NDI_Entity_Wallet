@@ -52,13 +52,10 @@ export function DeleteOrganizationView() {
               icon="building"
               tone="filtered"
               title="No organization to delete"
-              message="There is nothing here to remove. Create an organization first."
+              message="There is nothing here to remove."
               action={
-                <Link href="/create-organization">
-                  <HairlineButton>
-                    <Icon name="plus" size={15} strokeWidth={2} />
-                    Create organization
-                  </HairlineButton>
+                <Link href="/onboarding">
+                  <HairlineButton>Register your organisation</HairlineButton>
                 </Link>
               }
             />

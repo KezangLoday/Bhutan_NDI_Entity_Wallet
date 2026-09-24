@@ -67,8 +67,10 @@ chain explains delegated authority better than any diagram.
 
 Beside the story, the demo carries the two flows up for Gate 2 — **Flow 1**
 (create an account, invite a member, invite an agency under dual control) and
-**Flow 2** (add an organisation: prove who you are, choose from what the
-register lists, or go to NDI manual review when it can't match). Demo controls
+**Flow 2** (add an organisation, by either of its two routes — signing up
+and adding it yourself, or being invited by NDI to register it when
+self-service sign-up is off — with NDI manual review when the register
+can't match). Demo controls
 → **Walk a flow** starts each one as the right person.
 
 **Presenting it? Read [`docs/running-the-demo.md`](docs/running-the-demo.md)** —

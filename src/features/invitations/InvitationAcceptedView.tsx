@@ -22,6 +22,8 @@ import { AuthCardHeader, AuthNotice } from "@/features/auth/AuthCard";
  *   see and — again — that acting for it is separate. The organisation is
  *   named on the button, because a person who now belongs to two
  *   organisations must be able to tell which one they have just joined.
+ * - A business invited to register (self-service sign-up off) goes straight
+ *   into Flow 2 with the organisation already named by the invitation.
  * - An agency official lands on a task, with the steps ahead, because
  *   accepting is where their work starts rather than ends. Those steps are
  *   Flow 5, which this prototype has not built yet; the screen says so
@@ -29,14 +31,18 @@ import { AuthCardHeader, AuthNotice } from "@/features/auth/AuthCard";
  */
 export function InvitationAcceptedView({ id }: { id: string }) {
   const router = useRouter();
-  const { orgInvitations, organizations, setPersona, setActiveOrg } = useDemo();
+  const { orgInvitations, organizations, setPersona, setActiveOrg, startOrgOnboarding } = useDemo();
 
-  const forced = useScreenState("SCR-INV-05", ["live", "loading", "member", "agency", "error", "offline"]);
+  const forced = useScreenState("SCR-INV-05", ["live", "loading", "member", "agency", "business", "error", "offline"]);
 
   const inv = orgInvitations.find((i) => i.id === id);
   const org = inv?.orgId ? organizations.find((o) => o.id === inv.orgId) : null;
   const kind =
-    forced === "member" ? "M" : forced === "agency" ? "O" : (inv?.kind ?? "M");
+    forced === "member" ? "M" : forced === "agency" || forced === "business" ? "O" : (inv?.kind ?? "M");
+  /* An ordinary business invited to register — the route every business
+     takes while self-service sign-up is off. Unlike an agency it has
+     somewhere to go now: Flow 2, with the organisation already named. */
+  const business = forced === "business" || (forced !== "agency" && kind === "O" && inv?.needsSecondApproval === false);
   const name = kind === "M" ? (org?.name ?? "Pelden Trading Pvt. Ltd.") : (inv?.legalName ?? "the organisation");
 
   const goToOrg = () => {
@@ -91,6 +97,40 @@ export function InvitationAcceptedView({ id }: { id: string }) {
               <Icon name="arrowRight" size={16} strokeWidth={2} />
             </GradientButton>
             <HairlineButton onClick={() => router.push("/sign-in")}>Sign out</HairlineButton>
+          </div>
+        </>
+      ) : business ? (
+        <>
+          <AuthCardHeader title={`Next: register ${name}`} />
+          <div className="relative z-[4] flex flex-col gap-4">
+            <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
+              {[
+                ["Prove who you are", "From your own NDI Wallet — the register is asked about the person, never about a typed name."],
+                ["The register confirms you represent it", `The invitation names ${name}; the register still has to confirm it. NDI inviting you doesn't make you its representative.`],
+                ["Receive its registration", "The organisation accepts its registration into its own wallet, and you become its owner."],
+              ].map(([title, body], i) => (
+                <li key={title} className="flex items-start gap-3 rounded-[12px] border border-grid px-3.5 py-3">
+                  <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full border border-grid font-mono text-[11px] text-muted">
+                    {i + 1}
+                  </span>
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-[13.5px] font-medium text-body">{title}</span>
+                    <span className="text-[12.5px] leading-[1.5] text-faint">{body}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <GradientButton
+              block
+              disabled={forced === "offline"}
+              onClick={() => {
+                startOrgOnboarding("company", inv?.id);
+                router.push("/onboarding/prove");
+              }}
+            >
+              Register the organisation
+              <Icon name="arrowRight" size={16} strokeWidth={2} />
+            </GradientButton>
           </div>
         </>
       ) : (

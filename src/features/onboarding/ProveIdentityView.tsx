@@ -106,7 +106,7 @@ export function ProveIdentityView() {
           Prove who you are
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
-          Answer a request from your NDI Wallet. It tells us who you are, so that
+          Scan the code with your Bhutan NDI Wallet. It tells us who you are, so that
           {kind.register
             ? ` the ${kind.register} can be asked which organisations it lists you as representing.`
             : " NDI knows exactly who is asking it to review the organisation."}{" "}
@@ -117,7 +117,7 @@ export function ProveIdentityView() {
       <Panel>
         <WalletHandoff
           value="ndi-onboarding-proof"
-          title="Answer the request in your NDI Wallet"
+          title="Prove who you are with your NDI Wallet"
           purpose="Your citizen credential establishes who you are. Nothing else is asked for."
           sharing={[
             "Your full name, as it appears on your citizen credential",
@@ -130,6 +130,7 @@ export function ProveIdentityView() {
               : undefined
           }
           onRetry={() => setStage("idle")}
+          onSimulateScan={() => start("proved")}
           onCancel={() => router.push("/onboarding")}
           onSkip={
             skippable && shown === "wallet"
@@ -194,10 +195,6 @@ export function ProveIdentityView() {
 
       {shown === "idle" ? (
         <div className="flex flex-wrap items-center gap-2.5">
-          <GradientButton onClick={() => start("proved")}>
-            <Icon name="fingerprint" size={15} strokeWidth={2} />
-            Send the request to my wallet
-          </GradientButton>
           <HairlineButton onClick={() => router.push("/onboarding")}>Back</HairlineButton>
           <button
             type="button"
