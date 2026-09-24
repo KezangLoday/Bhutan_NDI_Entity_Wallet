@@ -207,11 +207,23 @@ export type PersonId = string;
  * selector offers only people it then refuses, and the act cannot be
  * completed at all.
  */
-export type PersonaId = "dorji" | "rinzin" | "pema" | "ugyen";
+export type PersonaId = "dorji" | "rinzin" | "pema" | "ugyen" | "invitee" | "tshering" | "kinley";
 
 /** The drivable personas, in story order. One list, so the harness, the nav
- *  and the acceptance screen cannot disagree about who exists. */
-export const PERSONAS: PersonaId[] = ["dorji", "rinzin", "pema", "ugyen"];
+ *  and the acceptance screen cannot disagree about who exists.
+ *
+ *  Two kinds arrived with Flow 1. The NDI platform admins (Tshering, Kinley)
+ *  are the two administrators a foundational-issuer invitation needs — two,
+ *  because the whole point of that gate is that one cannot do it alone.
+ *  And "invitee" is whoever last accepted a member invitation: not a named
+ *  character, because the person is whoever the owner typed into the invite
+ *  form, and their record only exists once they have accepted. The harness
+ *  shows a persona only while its person exists, so the invitee appears the
+ *  moment there is one. */
+export const PERSONAS: PersonaId[] = ["dorji", "rinzin", "pema", "ugyen", "invitee", "tshering", "kinley"];
+
+/** NDI's own administrators — not members of any business on the platform. */
+export const PLATFORM_ADMINS: PersonaId[] = ["tshering", "kinley"];
 
 export interface Person {
   id: PersonId;
@@ -223,6 +235,17 @@ export interface Person {
   title: string;
   /** Whether the register has confirmed them. Gates C2's person selector. */
   cidVerified: boolean;
+  /**
+   * Their role in Pelden Trading, if they belong to it at all.
+   *
+   * Membership, not authority (FLOW-ONB-02 Q4). A member can sign in and see
+   * the organisation; acting for it needs a controllership relation on top,
+   * granted separately and accepted (Flow 3). The two are kept in different
+   * places precisely so that nothing can read one as the other. Absent for
+   * people outside the company — Pema is an external clearing agent, and
+   * NDI's administrators belong to no business at all.
+   */
+  memberRole?: "Owner" | "Admin" | "Member";
 }
 
 /**
@@ -600,6 +623,67 @@ export interface SignupSession {
   createdAt: string | null;
 }
 
+/**
+ * FLOW-ONB-02 — an invitation, of either kind.
+ *
+ * ONE RECORD, TWO KINDS, NO HIDDEN BRANCHING
+ *
+ * Kind M adds a person to an organisation that exists; Kind O brings on an
+ * organisation that does not exist yet. The specification is careful that
+ * every difference between them is tabulated (§1.1), so they share one
+ * record and differ in which fields are filled — rather than the platform's
+ * own `org_invitations`, which requires an organisation and a user id and so
+ * cannot name an organisation that has not been created (§12 item 2).
+ *
+ * The second approval follows the capability being granted, not the kind
+ * (POL-CAP, §1.1): a foundational issuer needs it, an ordinary business
+ * invited to register does not. So it is a field, not a property of Kind O.
+ */
+export type InvitationKind = "M" | "O";
+
+export type OrgInvitationState =
+  | "PENDING_APPROVAL" // Kind O, waiting on a second administrator. Not sent.
+  | "PENDING" // Sent. Confers nothing until accepted.
+  | "ACCEPTED"
+  | "DECLINED" // A2
+  | "EXPIRED" // E4 — 14 days (M), 30 days (O)
+  | "REVOKED" // E5 — withdrawn by the inviter or an admin before acceptance
+  | "REFUSED" // The second administrator said no. Never sent.
+  | "VOID"; // E6 — the inviter lost their authority before acceptance
+
+export interface OrgInvitation {
+  id: string;
+  kind: InvitationKind;
+  /** The address it goes to. Stored whole here; the audit log would hash it. */
+  email: string;
+  /* ---- Kind M ---- */
+  orgId: string | null;
+  role: "Member" | "Admin" | null;
+  /* ---- Kind O ---- */
+  /** The organisation to be created. */
+  legalName: string | null;
+  /** How it is constituted — its legal identity, in the proposer's words. */
+  legalIdentity: string | null;
+  /** What it is being brought on for, in words the approver will read. */
+  purpose: string | null;
+  /** Whether POL-CAP requires a second administrator for what this grants. */
+  needsSecondApproval: boolean;
+  /* ---- Both ---- */
+  invitedBy: PersonId;
+  approvedBy: PersonId | null;
+  createdAt: string;
+  /** Null until it has actually been sent — a Kind O invitation waiting on
+   *  approval has not been. */
+  sentAt: string | null;
+  expiresAt: string | null;
+  state: OrgInvitationState;
+  /** E8 — delivery is asynchronous, and a failure is only visible here. */
+  delivery: "not_sent" | "delivered" | "failed";
+  decidedAt: string | null;
+  /** Who accepted it, once someone has. */
+  acceptedName: string | null;
+}
+
 export interface HarnessState {
   /** Who the console is being driven as. Decides what is *absent*. */
   persona: PersonaId;
@@ -651,6 +735,7 @@ export interface DemoState {
 
   /* ---- Onboarding ---- */
   signup: SignupSession | null;
+  orgInvitations: OrgInvitation[];
 
   harness: HarnessState;
 }
@@ -1034,6 +1119,7 @@ export const SEED: DemoState = {
       email: "dorji.wangchuk@peldentrading.bt",
       title: "Director · registered representative",
       cidVerified: true,
+      memberRole: "Owner",
     },
     {
       id: "rinzin",
@@ -1042,6 +1128,7 @@ export const SEED: DemoState = {
       email: "rinzin.dema@peldentrading.bt",
       title: "Operations manager",
       cidVerified: true,
+      memberRole: "Member",
     },
     {
       id: "pema",
@@ -1060,6 +1147,7 @@ export const SEED: DemoState = {
       email: "ugyen.phuntsho@peldentrading.bt",
       title: "Warehouse manager",
       cidVerified: true,
+      memberRole: "Member",
     },
     {
       id: "sonam",
@@ -1068,6 +1156,7 @@ export const SEED: DemoState = {
       email: "sonam.yeshey@peldentrading.bt",
       title: "Finance officer",
       cidVerified: true,
+      memberRole: "Member",
     },
     {
       id: "karma",
@@ -1086,6 +1175,27 @@ export const SEED: DemoState = {
       email: "tenzin.norbu@peldentrading.bt",
       title: "Warehouse supervisor",
       cidVerified: false,
+      memberRole: "Member",
+    },
+    {
+      /* The two NDI administrators a foundational-issuer invitation needs.
+         Neither belongs to Pelden Trading or to any business: they act for
+         the platform administration organisation, which is seeded rather
+         than onboarded (Flow 1 design D9). */
+      id: "tshering",
+      name: "Tshering Yangzom",
+      cid: "•••• •••• 3317",
+      email: "tshering.yangzom@ndi.bt",
+      title: "Platform admin · Bhutan NDI",
+      cidVerified: true,
+    },
+    {
+      id: "kinley",
+      name: "Kinley Wangdi",
+      cid: "•••• •••• 6048",
+      email: "kinley.wangdi@ndi.bt",
+      title: "Platform admin · Bhutan NDI",
+      cidVerified: true,
     },
   ],
 
@@ -1929,6 +2039,79 @@ export const SEED: DemoState = {
 
   /* Nobody is part-way through signing up when the demo starts. */
   signup: null,
+
+  orgInvitations: [
+    {
+      /* History, not a demo step: how Ugyen came to be a member at all.
+         Membership came first and authority separately, later — which is
+         exactly the order act 2 then shows (Flow 1 design §7.4). */
+      id: "inv-ugyen",
+      kind: "M",
+      email: "ugyen.phuntsho@peldentrading.bt",
+      orgId: "org-pelden",
+      role: "Member",
+      legalName: null,
+      legalIdentity: null,
+      purpose: null,
+      needsSecondApproval: false,
+      invitedBy: "dorji",
+      approvedBy: null,
+      createdAt: day(-44),
+      sentAt: day(-44),
+      expiresAt: day(-30),
+      state: "ACCEPTED",
+      delivery: "delivered",
+      decidedAt: day(-43),
+      acceptedName: "Ugyen Phuntsho",
+    },
+    {
+      /* Seeded so the pending list opens with the one failure it exists to
+         surface (E8): delivery is asynchronous, and this list is the only
+         place a bounced invitation is ever visible to the person who sent
+         it. */
+      id: "inv-tashi",
+      kind: "M",
+      email: "tashi.dema@pelden-trading.bt",
+      orgId: "org-pelden",
+      role: "Member",
+      legalName: null,
+      legalIdentity: null,
+      purpose: null,
+      needsSecondApproval: false,
+      invitedBy: "dorji",
+      approvedBy: null,
+      createdAt: day(-2),
+      sentAt: day(-2),
+      expiresAt: day(12),
+      state: "PENDING",
+      delivery: "failed",
+      decidedAt: null,
+      acceptedName: null,
+    },
+    {
+      /* The Corporate Regulatory Authority's own designation, months ago —
+         the root of trust every company on the platform chains back to. It
+         took two administrators, and the record says which two. */
+      id: "inv-cra",
+      kind: "O",
+      email: "registrar@cra.gov.bt",
+      orgId: null,
+      role: null,
+      legalName: "Corporate Regulatory Authority",
+      legalIdentity: "Statutory authority · Registrar of Companies",
+      purpose: "Foundational issuer for companies — issues the Business Registration every company chains back to.",
+      needsSecondApproval: true,
+      invitedBy: "tshering",
+      approvedBy: "kinley",
+      createdAt: day(-128),
+      sentAt: day(-127),
+      expiresAt: day(-97),
+      state: "ACCEPTED",
+      delivery: "delivered",
+      decidedAt: day(-125),
+      acceptedName: "Office of the Registrar",
+    },
+  ],
 
   harness: {
     persona: "dorji",

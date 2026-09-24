@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
-import type { PersonaId } from "@/lib/demoData";
+import { PLATFORM_ADMINS, type PersonaId } from "@/lib/demoData";
 
 interface NavChild {
   label: string;
@@ -39,11 +39,32 @@ interface NavItem {
 const OWNER: PersonaId[] = ["dorji"];
 /* Anyone who operates the entity wallet, whether or not they hold authority
    yet — Ugyen has none until act 2 grants it, and the wallet group showing
-   him "you hold no authority here" is the correct answer rather than a gap. */
-const OPERATES: PersonaId[] = ["dorji", "rinzin", "ugyen"];
+   him "you hold no authority here" is the correct answer rather than a gap.
+   A member who has just accepted an invitation is in the same position:
+   they can see the organisation, and the wallet tells them they cannot act
+   for it (FLOW-ONB-02 AC-08). */
+const OPERATES: PersonaId[] = ["dorji", "rinzin", "ugyen", "invitee"];
+/* Everyone who belongs to, or works with, Pelden Trading — which is everyone
+   except NDI's own administrators, who belong to no business on the
+   platform and have nothing in its workspace to see. */
+const PELDEN: PersonaId[] = ["dorji", "rinzin", "pema", "ugyen", "invitee"];
 
 const PRIMARY: NavItem[] = [
-  { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
+  { label: "Dashboard", icon: "dashboard", href: "/dashboard", personas: PELDEN },
+
+  /* ---- NDI administration ------------------------------------------------
+     Only for the platform's own administrators. Their whole console is this
+     group: they act for the platform administration organisation, not for
+     any business, so none of a business's workspace appears for them. */
+  {
+    label: "NDI administration",
+    icon: "shieldCheck",
+    personas: PLATFORM_ADMINS,
+    children: [
+      { label: "Invitations", href: "/admin/invitations", icon: "mail" },
+      { label: "Approvals", href: "/admin/approvals", icon: "userCheck" },
+    ],
+  },
 
   /* ---- Entity wallet ---------------------------------------------------
      The entity-wallet groups sit directly under Dashboard, above the
@@ -75,6 +96,11 @@ const PRIMARY: NavItem[] = [
      hard-coding that here would duplicate a fact the relation already
      states. Filtered below. */
   { label: "Approvals", icon: "userCheck", href: "/approvals" },
+  /* Who belongs — next to Controllership, which is who may act. Side by side
+     on purpose: they are the two things most easily mistaken for each other
+     (FLOW-ONB-02 Q4), and the nav is the first place that can keep them
+     apart. */
+  { label: "Members", icon: "users", href: "/members", personas: OWNER },
   {
     label: "Controllership",
     icon: "lockRounded",
@@ -87,7 +113,7 @@ const PRIMARY: NavItem[] = [
   },
   { label: "Delegated authority", icon: "send", href: "/delegated-authority", personas: OWNER },
   /* Pema's only reason to open the console at all. */
-  { label: "Appeals", icon: "shieldAlert", href: "/appeals" },
+  { label: "Appeals", icon: "shieldAlert", href: "/appeals", personas: PELDEN },
 
   /* ---- The existing issuer / verifier product -------------------------- */
   { label: "Organizations", icon: "building", href: "/organizations", personas: OWNER },

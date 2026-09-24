@@ -50,7 +50,10 @@ export function DemoHarness() {
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/welcome") ||
-    pathname.startsWith("/verify-email-success");
+    pathname.startsWith("/verify-email-success") ||
+    /* The invitee opening their link is not a persona either: whether they
+       have an account at all is the question SCR-INV-04 is answering. */
+    pathname.startsWith("/invitation/");
 
   /** In story order, from the one list of who is drivable. The id is kept
    *  alongside so the switcher passes a PersonaId rather than a bare string. */

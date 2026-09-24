@@ -88,6 +88,14 @@ const STATUS_TONE: Record<string, Tone> = {
   upheld_reinstated: "positive",
   window_closed: "neutral",
 
+  /* Invitations (FLOW-ONB-02). An invitation waiting on a second
+     administrator is pending, not a problem: the gate doing its job. A void
+     one is negative but says nothing about the invitee — E6 is a lapse. */
+  pending_approval: "pending",
+  refused: "negative",
+  void: "negative",
+  delivery_failed: "warning",
+
   /* Presentation flow. */
   ready: "pending",
   signing: "pending",

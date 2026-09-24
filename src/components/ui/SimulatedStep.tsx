@@ -67,3 +67,23 @@ export function SimulatedAction({
     </button>
   );
 }
+
+/**
+ * The inline form, for a table row: the same dashed treatment in a pill, for
+ * standing in for "the invitee opens the link in their inbox" beside the
+ * product's own row actions without being mistaken for one of them.
+ */
+export function SimulatedLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Prototype — stands in for the invitee opening the link in their email"
+      className="inline-flex min-h-[32px] items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed px-2.5 text-[12px] font-medium text-muted hover:text-body"
+      style={{ borderColor: "var(--border-strong)" }}
+    >
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--ndi-warning)" }} />
+      {children}
+    </button>
+  );
+}
