@@ -684,6 +684,114 @@ export interface OrgInvitation {
   acceptedName: string | null;
 }
 
+/* ================================================================== */
+/* Onboarding — Flow 2 (organisation onboarding, holder)               */
+/* ================================================================== */
+
+/** Which register can vouch for you depends on what kind of thing you are. */
+export type OrgKind = "company" | "licensed" | "cso";
+
+/**
+ * Flow 2 in progress — one organisation being added by one representative.
+ *
+ * LIST, THEN SELECT
+ *
+ * The representative proves who they are first, and the register returns
+ * the organisations it lists them against, to pick from (GovTech
+ * requirements §6.1, item 1b — decided 24 Sep 2026). Nobody types a
+ * registration number to claim a company: the person's identity comes from
+ * the wallet proof, never from a field, and the organisation is a selection
+ * — an opaque reference the register handed back — not an identifier someone
+ * could guess. `selectedRef` holds that reference and nothing more.
+ */
+export interface OrgOnboarding {
+  kind: OrgKind;
+  /** The name the citizen credential gave when the proof was answered. */
+  provedName: string | null;
+  /** The register's opaque reference for the organisation chosen. */
+  selectedRef: string | null;
+  /** Set when the register listed nothing and the person asked NDI to review. */
+  reviewId: string | null;
+  /** Registration accepted, holder capability on (Flow 2 step 6). */
+  completed: boolean;
+}
+
+/**
+ * Flow 2's fallback when the register cannot match — decided 24 Sep 2026:
+ * manual review, not a dead end (Flow catalogue, Flow 1 edge cases).
+ *
+ * HOLDER is "automatic where a register answers; otherwise NDI review"
+ * (Flow 1 design §8). So a case carries what the register actually said —
+ * the reason it is here at all — beside what the person claims and the
+ * evidence they gave, and the reviewer's decision is recorded with their
+ * name. Until it is approved the organisation stays an ordinary one: it can
+ * hold nothing.
+ */
+/**
+ * What the register returns for an authenticated representative: the
+ * organisations it lists them against. A fixture — no register is queried.
+ *
+ * Two rows, because a list of one does not show that this is a choice, and
+ * because the second row is the case worth seeing: an organisation already on
+ * the platform, registered by another director. Registering it again would be
+ * re-onboarding, which the Flow 1 design calls a defect wherever it appears —
+ * the way in for a second director is an invitation from the first.
+ */
+export interface RegisterListing {
+  /** Opaque — the register's reference, not a registration number. */
+  ref: string;
+  legalName: string;
+  registrationNumber: string;
+  entityType: string;
+  /** What the register says this person is to the organisation. */
+  capacity: string;
+  /** Already registered on the platform by someone else. */
+  onPlatform: boolean;
+}
+
+export const REGISTER_LISTINGS: RegisterListing[] = [
+  {
+    ref: "cra:rep:7f3a91c2",
+    legalName: "Pelden Trading Pvt. Ltd.",
+    registrationNumber: "CRA-2019-04477",
+    entityType: "Private limited company",
+    capacity: "Director",
+    onPlatform: false,
+  },
+  {
+    ref: "cra:rep:1c90e44b",
+    legalName: "Druk Valley Hardware Pvt. Ltd.",
+    registrationNumber: "CRA-2023-11802",
+    entityType: "Private limited company",
+    capacity: "Director",
+    onPlatform: true,
+  },
+];
+
+export type ReviewState = "UNDER_REVIEW" | "APPROVED" | "REFUSED";
+
+export interface ManualReview {
+  id: string;
+  /** What the applicant is given to quote. */
+  reference: string;
+  kind: OrgKind;
+  legalName: string;
+  registrationNumber: string;
+  applicantName: string;
+  /** Masked. Proved from the applicant's wallet before they got this far. */
+  applicantCid: string;
+  /** What the register returned — why an automatic decision was not possible. */
+  registerAnswer: string;
+  evidence: string[];
+  note: string;
+  submittedAt: string;
+  state: ReviewState;
+  reviewerId: PersonId | null;
+  decidedAt: string | null;
+  /** Required on refusal, so the applicant is told why. */
+  reason: string | null;
+}
+
 export interface HarnessState {
   /** Who the console is being driven as. Decides what is *absent*. */
   persona: PersonaId;
@@ -736,6 +844,8 @@ export interface DemoState {
   /* ---- Onboarding ---- */
   signup: SignupSession | null;
   orgInvitations: OrgInvitation[];
+  orgOnboarding: OrgOnboarding | null;
+  manualReviews: ManualReview[];
 
   harness: HarnessState;
 }
@@ -2039,6 +2149,49 @@ export const SEED: DemoState = {
 
   /* Nobody is part-way through signing up when the demo starts. */
   signup: null,
+
+  orgOnboarding: null,
+
+  manualReviews: [
+    {
+      /* A licensed business whose licence the register could not find —
+         BLMIS records for older licences are not all digitised. Waiting in
+         the queue so the reviewer's screen opens with a real decision on
+         it, rather than on an empty state. */
+      id: "mr-yangchen",
+      reference: "MR-2026-0142",
+      kind: "licensed",
+      legalName: "Yangchen Handicrafts",
+      registrationNumber: "BL-PARO-2011-0387",
+      applicantName: "Yangchen Tshomo",
+      applicantCid: "•••• •••• 5190",
+      registerAnswer: "The Ministry of Industry, Commerce & Employment found no licence under that number.",
+      evidence: ["trade-licence-2011-scan.pdf", "renewal-receipt-2025.pdf"],
+      note: "Licence issued in Paro in 2011 on paper and renewed every year since. The renewal receipt carries the same number.",
+      submittedAt: day(-1),
+      state: "UNDER_REVIEW",
+      reviewerId: null,
+      decidedAt: null,
+      reason: null,
+    },
+    {
+      id: "mr-karma",
+      reference: "MR-2026-0119",
+      kind: "company",
+      legalName: "Karma Tours & Treks Pvt. Ltd.",
+      registrationNumber: "CRA-2024-02291",
+      applicantName: "Karma Lhamo",
+      applicantCid: "•••• •••• 7726",
+      registerAnswer: "The Corporate Regulatory Authority listed no companies for this person.",
+      evidence: ["certificate-of-incorporation.pdf", "board-resolution-appointing-director.pdf"],
+      note: "Appointed director in August; the register had not been updated when I applied.",
+      submittedAt: day(-19),
+      state: "APPROVED",
+      reviewerId: "kinley",
+      decidedAt: day(-17),
+      reason: null,
+    },
+  ],
 
   orgInvitations: [
     {

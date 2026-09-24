@@ -63,6 +63,7 @@ const PRIMARY: NavItem[] = [
     children: [
       { label: "Invitations", href: "/admin/invitations", icon: "mail" },
       { label: "Approvals", href: "/admin/approvals", icon: "userCheck" },
+      { label: "Manual review", href: "/admin/reviews", icon: "fileText" },
     ],
   },
 

@@ -34,7 +34,7 @@ export const ACTS: Act[] = [
     learns:
       "An organisation can hold credentials — and the platform never asserts its identity by itself. A government register confirms it.",
     persona: "dorji",
-    route: "/onboarding/claim",
+    route: "/onboarding",
   },
   {
     number: 2,
