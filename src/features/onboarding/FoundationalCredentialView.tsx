@@ -119,7 +119,7 @@ export function FoundationalCredentialView() {
           Accept the organisation&rsquo;s registration
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
-          The Registrar of Companies is offering Norling Logistics a credential
+          The Corporate Regulatory Authority is offering Norling Logistics a credential
           for its own registration. This is the root of everything that
           follows.
         </p>
@@ -164,7 +164,7 @@ export function FoundationalCredentialView() {
                 Offered by
               </p>
               <p className="font-display text-[14.5px] font-semibold text-strong">
-                Registrar of Companies
+                Corporate Regulatory Authority
               </p>
               <p className="text-[12.5px] text-faint">
                 The register that just confirmed you

@@ -190,7 +190,8 @@ before any walkthrough:
 | A government register confirming a representative | Fixture plus an authored delay. No register integration exists. |
 | Approval-as-signature from a personal wallet | Fixture. The QR is a deliberate non-scannable stand-in (`QrPlaceholder`). |
 | Revocation propagating to a verifier | Fixture. Nothing propagates anywhere. |
-| A signed PASS / FAIL verification decision | Derived live by `src/lib/avs.ts`, a named stand-in for the verification service. It walks the real chain and fails closed, but there is no service behind it. |
+| The Bhutan National Single Window as a verifier | A stand-in page drawn as BNSW. The Single Window is not live yet — still in procurement as of August 2026; customs runs on DRC's eCMS today. |
+| A signed PASS / FAIL verification decision | Derived live by `src/lib/avs.ts`, a named stand-in for the Authority Verification API. It walks the real chain and fails closed, but there is no service behind it. |
 | An immutable, hash-chained audit trail | An array in `localStorage`. Clearing site data clears it. |
 | A credential arriving in someone's personal wallet | A row in browser storage, plus a "simulate accepting" button. No phone is contacted. |
 | Scope and approval enforcement | Rendered from fixtures. Enforcement belongs on the server and is not built. |

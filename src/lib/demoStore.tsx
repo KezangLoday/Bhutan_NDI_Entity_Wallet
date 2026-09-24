@@ -44,6 +44,22 @@ import {
 const STORAGE_KEY = "ndi-studio-demo";
 
 /**
+ * Bump this whenever a change to the SEED would leave a saved demo showing
+ * something now known to be wrong.
+ *
+ * Saved state is otherwise merged over the seed, which is right for additive
+ * changes — a new collection just appears — but wrong for corrections: a
+ * browser that ran the demo last week would keep the old values until someone
+ * pressed Reset, and the presenter is the one person who would not notice.
+ * A save from a different seed version is discarded and the demo starts
+ * fresh, which costs a presenter nothing they meant to keep.
+ *
+ *   1 — the original seed
+ *   2 — DIDs corrected from did:indy to did:polygon
+ */
+const SEED_VERSION = 2;
+
+/**
  * Appends one audit row, carrying the hash chain forward.
  *
  * Newest first, matching how the trail is read. The hashes are fixtures — this
@@ -188,6 +204,32 @@ function applyPresentation(
 
 /** Today, as the seed writes dates. Anything created in a demo is dated now. */
 const today = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * A DID shaped like the method it claims to be.
+ *
+ * This used to be `${method}:bhutan:<random>` for every method, which gave
+ * did:polygon:bhutan:… and did:key:bhutan:… — shapes neither method uses.
+ * Nobody reads a new DID closely in a demo, but a DID that is visibly the
+ * wrong shape is the kind of detail an engineer in the room notices and then
+ * stops trusting the rest. Random, not derived from anything: there are no
+ * keys here to derive it from.
+ */
+const newDidId = (method: string): string => {
+  const hex = (n: number) =>
+    Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+  const base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  switch (method) {
+    case "did:polygon":
+      return `did:polygon:0x${hex(40)}`;
+    case "did:key":
+      return `did:key:z6Mk${Array.from({ length: 44 }, () => base58[Math.floor(Math.random() * 58)]).join("")}`;
+    case "did:web":
+      return "did:web:issuer.bhutanndi.bt";
+    default:
+      return `${method}:${hex(32)}`;
+  }
+};
 const rid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 
 interface DemoActions {
@@ -377,10 +419,14 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<DemoState>;
+        const saved = JSON.parse(raw) as { seedVersion?: number; state?: Partial<DemoState> };
         /* Merged over the seed rather than replacing it, so a state saved by an
-           older build that lacks a newer collection still loads. */
-        setState({ ...SEED, ...parsed });
+           older build that lacks a newer collection still loads. A save with
+           no version, or another version, predates a correction — see
+           SEED_VERSION — and is dropped. */
+        if (saved.seedVersion === SEED_VERSION && saved.state) {
+          setState({ ...SEED, ...saved.state });
+        }
       }
     } catch {
       /* Corrupt or unavailable storage just means the demo starts fresh. */
@@ -391,7 +437,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seedVersion: SEED_VERSION, state }));
     } catch {
       /* Over quota or private mode — the demo still works for this session. */
     }
@@ -440,7 +486,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
       addDid: ({ method, keyType, alias }) => {
         const did: Did = {
-          id: `${method}:bhutan:${Math.random().toString(36).slice(2, 24)}`,
+          id: newDidId(method),
           method,
           keyType,
           alias,

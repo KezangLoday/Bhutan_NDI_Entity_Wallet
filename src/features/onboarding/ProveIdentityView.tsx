@@ -116,7 +116,7 @@ export function ProveIdentityView() {
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
           Two things have to be true: that you are who you say you are, and
           that the register lists you as a representative of this organisation.
-          You prove the first. The Registrar of Companies answers the second —
+          You prove the first. The Corporate Regulatory Authority answers the second —
           we do not decide it, and we cannot.
         </p>
       </div>
@@ -133,7 +133,7 @@ export function ProveIdentityView() {
           status={handoffStatus}
           statusDetail={
             shown === "register"
-              ? "Asking the Registrar of Companies whether you are a registered representative of Norling Logistics. This is a real lookup against an external body, and it takes as long as it takes."
+              ? "Asking the Corporate Regulatory Authority whether you are a registered representative of Norling Logistics. This is a real lookup against an external body, and it takes as long as it takes."
               : shown === "not_representative"
                 ? "The register does not list you as a representative of this organisation."
                 : undefined
@@ -170,7 +170,7 @@ export function ProveIdentityView() {
             />
             <StageRow
               label="The register confirms you represent the organisation"
-              detail="Asked of the Registrar of Companies. The platform never asserts this itself."
+              detail="Asked of the Corporate Regulatory Authority. The platform never asserts this itself."
               state={
                 shown === "register"
                   ? "active"
@@ -201,14 +201,14 @@ export function ProveIdentityView() {
                 We could not confirm that you represent Norling Logistics
               </p>
               <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                Your identity was proved — that part worked. But the Registrar
-                of Companies does not currently list you as a representative of
+                Your identity was proved — that part worked. But the Corporate Regulatory Authority
+                does not currently list you as a representative of
                 this organisation, so nothing can be registered in its name.
               </p>
               <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
                 This is a matter of record rather than a fault here. If the
                 register is out of date, it has to be corrected with the
-                Registrar first — we cannot override it, and an organisation
+                Corporate Regulatory Authority first — we cannot override it, and an organisation
                 whose representative we could not establish is exactly the
                 organisation nobody should be able to register.
               </p>

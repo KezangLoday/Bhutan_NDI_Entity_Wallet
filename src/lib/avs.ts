@@ -201,7 +201,7 @@ export function verifyAuthority(
       chain: [],
       checks: [],
       reasons: [
-        "The authority verification service could not be reached, so nothing could be checked.",
+        "The Authority Verification API could not be reached, so nothing could be checked.",
         "An unverifiable authority is treated as no authority.",
       ],
       signature: "",

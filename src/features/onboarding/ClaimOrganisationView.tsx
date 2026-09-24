@@ -33,7 +33,7 @@ const ENTITY_TYPES = [
   {
     value: "company",
     label: "Private or public limited company",
-    register: "Registrar of Companies",
+    register: "Corporate Regulatory Authority",
     supported: true,
   },
   {

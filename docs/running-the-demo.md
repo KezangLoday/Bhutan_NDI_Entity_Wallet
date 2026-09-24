@@ -87,7 +87,7 @@ Press **Start the identity check**.
 
 > "Every other wait here is about two seconds. This one is not, deliberately.
 > This is the moment the platform admits it cannot assert the company's
-> identity by itself and has to ask the Registrar of Companies. If that
+> identity by itself and has to ask the Corporate Regulatory Authority — the Registrar of Companies. If that
 > resolved instantly, the most important architectural fact about the whole
 > product would slide straight past you."
 
@@ -448,9 +448,16 @@ Press **Simulate Pema accepting**, then **See it checked at a counterparty**.
 **Stop and point out the chrome.** No sidebar, no NDI logo, different colours,
 and a line reading *Not part of NDI Studio*.
 
-> "We have left the product. This is the Single Window's own website. It is a
-> different organisation's system, and it is about to check Pema's authority
-> without asking Norling Logistics anything."
+> "We have left the product. This stands in for the Single Window's own
+> website — a different organisation's system — and it is about to check
+> Pema's authority without asking Norling Logistics anything."
+
+**Say plainly that BNSW is not live yet** if anyone from customs, trade or
+GovTech is in the room — they will know. Its main system is still being
+procured; customs today runs on DRC's eCMS, which is the likely interim
+counterparty. That is also why delegation is fast-follow rather than first
+release: it waits on a counterparty being ready. The page footer and
+`/whats-real` both say so.
 
 Leave the value at `420000`. Press **Submit declaration**.
 
@@ -608,7 +615,7 @@ only long one is act 1's register check, and that length is the point.
 Be straightforward. The honest version lands better than a hedge:
 
 > "The screens are real and the model behind them is real. Nothing underneath
-> is — no register integration, no verification service, no server enforcing
+> is — no register integration, no Authority Verification API, no server enforcing
 > any of this. It is a frontend prototype whose job is to make us agree on what
 > the product should be before anyone builds it."
 

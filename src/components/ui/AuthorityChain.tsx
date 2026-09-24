@@ -36,7 +36,7 @@ export function AuthorityChain({ chain }: { chain: AuthorityChainLink[] }) {
   if (chain.length === 0) {
     return (
       <p className="relative z-[4] text-[13.5px] leading-[1.6] text-muted">
-        No chain was walked — the verification service could not be reached, so
+        No chain was walked — the Authority Verification API could not be reached, so
         nothing was checked.
       </p>
     );

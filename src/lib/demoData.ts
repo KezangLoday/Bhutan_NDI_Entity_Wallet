@@ -7,8 +7,12 @@
  * it lists, it lists from here. The seed exists so the app is worth looking at
  * on first load rather than being a tour of empty states.
  *
- * Ids are readable rather than random, because they show up in the UI and a
- * demo reads better with "did:indy:bhutan:XkT4..." than with a uuid.
+ * Ids are readable rather than random where they show up in the UI — a
+ * readable id reads better in a demo than a uuid. DIDs are the exception:
+ * they are did:polygon, because the NDI's verifiable data registry is anchored
+ * on Polygon/Ethereum, and a DID shaped like the real thing is worth more here
+ * than a memorable one. (They were did:indy:bhutan:… until the documentation
+ * review flagged that method as wrong for the NDI.)
  */
 
 export type LedgerKind = "AnonCreds" | "W3C";
@@ -602,7 +606,7 @@ export interface DemoState {
   harness: HarnessState;
 }
 
-const ISSUER_DID = "did:indy:bhutan:8XkT4vQmR2sLpNbW9dHyZa";
+const ISSUER_DID = "did:polygon:0x63e1c57eb106e9daa28f8883118b7b35ce6288c1";
 
 /* ================================================================== */
 /* Dates that do not rot                                               */
@@ -704,7 +708,7 @@ export const SEED: DemoState = {
   dids: [
     {
       id: ISSUER_DID,
-      method: "did:indy",
+      method: "did:polygon",
       keyType: "ed25519",
       alias: "Issuer key",
       isIssuer: true,
@@ -1172,8 +1176,8 @@ export const SEED: DemoState = {
       /* Act 1's milestone, and the root of every chain in Act 5. */
       id: "hc-foundational",
       type: "Business Registration",
-      issuer: "Registrar of Companies",
-      issuerDid: "did:indy:bhutan:RoC4mT8pWq2vZx7nKdB5sY",
+      issuer: "Corporate Regulatory Authority",
+      issuerDid: "did:polygon:0xbc8970d729b33f01ff0e7ca3caaf695da8747db4",
       issuerTrusted: true,
       attributes: [
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
@@ -1192,7 +1196,7 @@ export const SEED: DemoState = {
       id: "hc-tax",
       type: "Tax Clearance Certificate",
       issuer: "Department of Revenue & Customs",
-      issuerDid: "did:indy:bhutan:DRC9kL3wN6tR8vQm2xY7pZ",
+      issuerDid: "did:polygon:0x08b3ba5dcbac0b871587004b93f298dcc81726c3",
       issuerTrusted: true,
       attributes: [
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
@@ -1209,7 +1213,7 @@ export const SEED: DemoState = {
       id: "hc-freight",
       type: "Freight Forwarder Permit",
       issuer: "Road Safety & Transport Authority",
-      issuerDid: "did:indy:bhutan:RSTA5nQ7xK2mV9wB4tL6pD",
+      issuerDid: "did:polygon:0x7df3e776fe6432c53644c127df254180e12526fb",
       issuerTrusted: true,
       attributes: [
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
@@ -1230,7 +1234,7 @@ export const SEED: DemoState = {
       id: "offer-customs",
       type: "Customs Broker Licence",
       issuer: "Department of Revenue & Customs",
-      issuerDid: "did:indy:bhutan:DRC9kL3wN6tR8vQm2xY7pZ",
+      issuerDid: "did:polygon:0x08b3ba5dcbac0b871587004b93f298dcc81726c3",
       issuerTrusted: true,
       attributes: [
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
@@ -1250,7 +1254,7 @@ export const SEED: DemoState = {
       id: "offer-insurance",
       type: "Fleet Insurance Certificate",
       issuer: "Royal Insurance Corporation of Bhutan",
-      issuerDid: "did:indy:bhutan:RICB2vT8mQ5wK9xN3pL7dB",
+      issuerDid: "did:polygon:0x4fc2bf84747e22ab86675163f6b59fc8ab469cb4",
       issuerTrusted: true,
       attributes: [
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
@@ -1268,7 +1272,7 @@ export const SEED: DemoState = {
       id: "offer-warehouse",
       type: "Bonded Warehouse Authorisation",
       issuer: "Department of Revenue & Customs",
-      issuerDid: "did:indy:bhutan:DRC9kL3wN6tR8vQm2xY7pZ",
+      issuerDid: "did:polygon:0x08b3ba5dcbac0b871587004b93f298dcc81726c3",
       issuerTrusted: true,
       attributes: [
         { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
@@ -1285,7 +1289,7 @@ export const SEED: DemoState = {
       id: "offer-lapsed",
       type: "Warehouse Safety Certificate",
       issuer: "Department of Labour",
-      issuerDid: "did:indy:bhutan:DoL7mK4tQ9vX2wN6pB3sZL",
+      issuerDid: "did:polygon:0x37c307beb791b306b109010ad5d97de062f28f02",
       issuerTrusted: true,
       attributes: [{ name: "registered_name", value: "Norling Logistics Pvt. Ltd." }],
       decision: "allowed",
@@ -1302,7 +1306,7 @@ export const SEED: DemoState = {
          required — least disclosure has something to defend here. */
       id: "vr-bob",
       relyingParty: "Bank of Bhutan",
-      relyingPartyDid: "did:indy:bhutan:BoB3nQ8mT5wK2xV7pL9dY",
+      relyingPartyDid: "did:polygon:0x42c7fe47af259e3e911a36578833f3beb2e50493",
       relyingPartyTrusted: true,
       credentialType: "Business Registration",
       requestedAttributes: [
@@ -1328,7 +1332,7 @@ export const SEED: DemoState = {
          wrong. */
       id: "vr-bob-earlier",
       relyingParty: "Bank of Bhutan",
-      relyingPartyDid: "did:indy:bhutan:BoB3nQ8mT5wK2xV7pL9dY",
+      relyingPartyDid: "did:polygon:0x42c7fe47af259e3e911a36578833f3beb2e50493",
       relyingPartyTrusted: true,
       credentialType: "Business Registration",
       requestedAttributes: ["registered_name", "registration_number", "entity_type"],
@@ -1346,7 +1350,7 @@ export const SEED: DemoState = {
          type, denied by counterparty. */
       id: "vr-druk",
       relyingParty: "Druk Trading House",
-      relyingPartyDid: "did:indy:bhutan:DTH9kV2mQ7wN4xT6pB8sL",
+      relyingPartyDid: "did:polygon:0x067c37a944b618effbd0dfe9f463e5f60e458b07",
       relyingPartyTrusted: false,
       credentialType: "Business Registration",
       requestedAttributes: ["registered_name", "registration_number", "registered_address"],
@@ -1362,7 +1366,7 @@ export const SEED: DemoState = {
     {
       id: "vr-bnsw-done",
       relyingParty: "Bhutan National Single Window",
-      relyingPartyDid: "did:indy:bhutan:BNSW6tL9nK3mQ8wV2xP5dB",
+      relyingPartyDid: "did:polygon:0xc70c2d3625bec5a34d5b3746b830d36f2525f163",
       relyingPartyTrusted: true,
       credentialType: "Business Registration",
       requestedAttributes: ["registered_name", "registration_number"],
@@ -1377,7 +1381,7 @@ export const SEED: DemoState = {
     {
       id: "vr-lapsed",
       relyingParty: "Bank of Bhutan",
-      relyingPartyDid: "did:indy:bhutan:BoB3nQ8mT5wK2xV7pL9dY",
+      relyingPartyDid: "did:polygon:0x42c7fe47af259e3e911a36578833f3beb2e50493",
       relyingPartyTrusted: true,
       credentialType: "Tax Clearance Certificate",
       requestedAttributes: ["registered_name", "tpn", "assessment_year"],
@@ -1685,7 +1689,7 @@ export const SEED: DemoState = {
       chain: [],
       checks: [],
       reasons: [
-        "The authority verification service could not be reached, so nothing could be checked.",
+        "The Authority Verification API could not be reached, so nothing could be checked.",
         "An unverifiable authority is treated as no authority.",
       ],
       decidedAt: day(0),
@@ -1755,7 +1759,7 @@ export const SEED: DemoState = {
       relationId: "rel-dorji",
       scopeVersion: 3,
       approvedById: "rinzin",
-      relyingPartyDid: "did:indy:bhutan:BNSW6tL9nK3mQ8wV2xP5dB",
+      relyingPartyDid: "did:polygon:0xc70c2d3625bec5a34d5b3746b830d36f2525f163",
       disclosedDigest: "sha256:a7f3c9e1",
       at: at(-14, "14:23"),
       prevHash: "sha256:c85a0b34",
@@ -1813,7 +1817,7 @@ export const SEED: DemoState = {
       id: "au-1",
       seq: 1,
       operation: "credential:accept",
-      summary: "Accepted the entity's Business Registration from the Registrar of Companies",
+      summary: "Accepted the entity's Business Registration from the Corporate Regulatory Authority",
       entity: "Norling Logistics Pvt. Ltd.",
       actorId: "rinzin",
       relationId: "rel-root",

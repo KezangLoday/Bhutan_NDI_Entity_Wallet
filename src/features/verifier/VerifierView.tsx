@@ -168,8 +168,8 @@ export function VerifierView() {
             File a customs declaration
           </h1>
           <p className="max-w-[62ch] text-[13.5px] leading-[1.65] text-muted">
-            This is a counterparty&rsquo;s own website. It asks the authority
-            verification service whether the person filing has the authority to
+            This is a counterparty&rsquo;s own website. It asks the NDI&rsquo;s
+            Authority Verification API whether the person filing has the authority to
             file, and renders the signed answer. It never sees the
             entity&rsquo;s credentials, and it learns nothing about the person
             beyond who acted.
@@ -291,7 +291,8 @@ export function VerifierView() {
         )}
 
         <p className="text-[12px] leading-[1.5] text-faint">
-          Prototype. There is no verification service behind this page —{" "}
+          Prototype. The Single Window is not live yet, and there is no
+          Authority Verification API behind this page —{" "}
           <Link href="/dashboard" className="ndi-plainlink text-muted">
             back to the console
           </Link>

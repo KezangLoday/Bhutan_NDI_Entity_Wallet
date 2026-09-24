@@ -48,7 +48,7 @@ const SIMULATED: { area: string; icon: IconName; rows: Row[] }[] = [
         needs: "The existing NDI wallet proof-request flow, wired to this console.",
       },
       {
-        shown: "The Registrar of Companies confirming a representative",
+        shown: "The Corporate Regulatory Authority confirming a representative",
         reality:
           "A fixture and a four-second delay. No register is queried, and the refusal is a button rather than an answer.",
         needs:
@@ -96,7 +96,20 @@ const SIMULATED: { area: string; icon: IconName; rows: Row[] }[] = [
         reality:
           "Derived live, in the browser, by a stand-in that walks the real chain and fails closed. The logic is genuine; the service is not, and the signature is a random string of the right shape.",
         needs:
-          "The authority verification service itself, independently scaled, plus a live status query on the revocation agent.",
+          "The Authority Verification API itself, independently scaled, plus a live status query on the revocation agent.",
+      },
+      {
+        /* The one row here about a counterparty rather than about NDI. It is
+           needed because the verifier page is drawn as the Single Window
+           convincingly enough — its own chrome, "not part of NDI Studio" — that
+           the natural conclusion is that BNSW exists and is ready to integrate.
+           It is neither yet, and delegation is fast-follow scope precisely
+           because it waits on a counterparty like this one. */
+        shown: "The Bhutan National Single Window checking an authority",
+        reality:
+          "The Single Window is not live yet — its main system was still being procured when this was built (August 2026). The page is a stand-in drawn as BNSW because that is the eventual counterparty. Customs today runs on the Department of Revenue & Customs' eCMS, which licenses clearing agents and is the likely interim integration.",
+        needs:
+          "BNSW itself, or an eCMS integration in the meantime — and an agreed service level with whichever it is for the Authority Verification API.",
       },
       {
         shown: "Revocation reaching a verifier within a minute",
@@ -235,7 +248,7 @@ export function WhatsRealView() {
             </h2>
             <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-body">
               There is no server, no database, no register integration, no
-              verification service and no wallet. There is no network layer at
+              Authority Verification API and no wallet. There is no network layer at
               all — the application makes no requests. Every organisation,
               person, credential, approval and decision you see lives in your
               browser&rsquo;s local storage and can be wiped with one button.
