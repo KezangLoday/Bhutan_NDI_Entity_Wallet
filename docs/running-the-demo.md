@@ -479,6 +479,12 @@ at, the four-link authority chain, and a signature.
 
 Switch to **Dorji** in the demo controls, then go to **Delegated authority**
 and press **Withdraw** on **Customs broker** — the *role*, not the capability.
+It is the top row, in bold, marked *2 depend on it*; the Declaration
+authority you just issued sits indented beneath it. Point at that before you
+click:
+
+> "The list is the chain. Everything indented under this row hangs off it.
+> Watch what withdrawing it does to them."
 
 **Do not rush the blast-radius panel.** It is computed from what actually
 depends on that role:
