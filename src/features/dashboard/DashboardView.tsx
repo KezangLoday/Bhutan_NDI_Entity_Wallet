@@ -32,7 +32,7 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
   const screenState = useScreenState("B1", ["has_tasks", "all_clear", "access_suspended"]);
 
   const name = firstName ?? currentPerson.name.split(" ")[0];
-  const isOwner = harness.persona === "rinzin";
+  const isOwner = harness.persona === "dorji";
 
   return (
     <AppShell>

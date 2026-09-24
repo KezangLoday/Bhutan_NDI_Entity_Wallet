@@ -15,7 +15,7 @@ import { useDemo } from "@/lib/demoStore";
  * Inbound requests for the entity to prove something about itself.
  *
  * These are portal tasks, not deep links, and the copy says so. The entity
- * has no phone: a relying party asking Norling Logistics for a proof cannot
+ * has no phone: a relying party asking Pelden Trading for a proof cannot
  * send a QR anywhere, so the request lands in the console for a controller to
  * answer on the entity's behalf. Keeping that distinct from the person-held
  * wallet flow is one of the two mental models the brief insists must not
@@ -43,7 +43,7 @@ export function VerificationRequestsView() {
         />
 
         <p className="max-w-[68ch] text-[13.5px] leading-[1.65] text-muted">
-          Relying parties asking Norling Logistics to prove something about
+          Relying parties asking Pelden Trading to prove something about
           itself. These arrive here rather than on anyone&rsquo;s phone — the
           entity has no device, so a controller answers on its behalf.
         </p>

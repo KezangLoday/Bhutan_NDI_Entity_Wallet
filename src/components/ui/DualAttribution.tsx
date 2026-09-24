@@ -3,7 +3,7 @@
 import { useDemo } from "@/lib/demoStore";
 
 /**
- * "Norling Logistics Pvt. Ltd. · acted by Dorji Wangchuk"
+ * "Pelden Trading Pvt. Ltd. · acted by Rinzin Dema"
  *
  * The display convention the whole product turns on, and the reason it is a
  * component rather than a string built at each call site: it appears on audit

@@ -13,11 +13,16 @@ import { FIELD_BLOCK_CLASS, FIELD_CLASS, LABEL_CLASS } from "@/components/ui/for
 import { Icon } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
 
+/* did:polygon leads because it is the one the NDI actually uses: the
+   verifiable data registry is anchored on Polygon/Ethereum. This list used to
+   open with did:indy, described as "anchored on the Bhutan NDI ledger" — which
+   is not the NDI's method, and the documentation review marks exactly that
+   example as an error to correct before anything goes to GovTech. The design is DID-method-agnostic, so the
+   other methods stay; they just do not claim to be the NDI's. */
 const METHODS = [
-  { id: "indy", label: "did:indy", hint: "Anchored on the Bhutan NDI ledger." },
+  { id: "polygon", label: "did:polygon", hint: "Anchored on Polygon — the NDI's verifiable data registry." },
   { id: "key", label: "did:key", hint: "Self-contained; no ledger write." },
   { id: "web", label: "did:web", hint: "Resolved from a domain you control." },
-  { id: "polygon", label: "did:polygon", hint: "Anchored on Polygon." },
 ];
 
 const KEY_TYPES = ["ed25519", "bls12381g2"];
@@ -30,7 +35,7 @@ const KEY_TYPES = ["ed25519", "bls12381g2"];
 export function CreateDidView() {
   const router = useRouter();
   const { addDid } = useDemo();
-  const [method, setMethod] = useState("indy");
+  const [method, setMethod] = useState("polygon");
   const [keyType, setKeyType] = useState("ed25519");
   const [alias, setAlias] = useState("");
 

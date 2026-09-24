@@ -80,7 +80,7 @@ export function FoundationalCredentialView() {
 
             <div className="flex flex-col gap-2">
               <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.025em] text-strong">
-                Norling Logistics is <span className="ndi-wave-text">verified</span>
+                Pelden Trading is <span className="ndi-wave-text">verified</span>
               </h1>
               <p className="mx-auto max-w-[54ch] text-[13.5px] leading-[1.65] text-muted">
                 The organisation now holds its registration as a credential in
@@ -119,7 +119,7 @@ export function FoundationalCredentialView() {
           Accept the organisation&rsquo;s registration
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
-          The Registrar of Companies is offering Norling Logistics a credential
+          The Corporate Regulatory Authority is offering Pelden Trading a credential
           for its own registration. This is the root of everything that
           follows.
         </p>
@@ -164,7 +164,7 @@ export function FoundationalCredentialView() {
                 Offered by
               </p>
               <p className="font-display text-[14.5px] font-semibold text-strong">
-                Registrar of Companies
+                Corporate Regulatory Authority
               </p>
               <p className="text-[12.5px] text-faint">
                 The register that just confirmed you
@@ -180,7 +180,7 @@ export function FoundationalCredentialView() {
             <dl className="mt-2.5 m-0 grid gap-x-6 gap-y-2 min-[641px]:grid-cols-2">
               {(
                 foundational?.attributes ?? [
-                  { name: "registered_name", value: "Norling Logistics Pvt. Ltd." },
+                  { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
                   { name: "registration_number", value: "CRA-2019-04477" },
                   { name: "entity_type", value: "Private limited company" },
                   { name: "registered_address", value: "Babesa, Thimphu, Bhutan" },

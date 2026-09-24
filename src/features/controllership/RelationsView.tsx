@@ -53,7 +53,7 @@ export function RelationsView() {
         />
 
         <p className="max-w-[68ch] text-[13.5px] leading-[1.65] text-muted">
-          Every person who may act for Norling Logistics, what they may do, and
+          Every person who may act for Pelden Trading, what they may do, and
           the legal basis it rests on. People whose authority has ended stay on
           the register — a list that hid them could not answer the question it
           exists for.

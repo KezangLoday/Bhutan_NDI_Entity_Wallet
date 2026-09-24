@@ -79,7 +79,7 @@ export function EntityProfileView() {
             { label: "Registered address", value: org?.location ?? "—" },
             {
               label: "Organisation DID",
-              value: "did:indy:bhutan:NrLg7pQ2vX9mKdT4wB6sZc",
+              value: "did:polygon:0x88047ff8975c42d148dfe267220f627281ce8a09",
               mono: true,
             },
           ]}
@@ -141,7 +141,7 @@ export function EntityProfileView() {
                   is individually broken.
                 </p>
                 <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                  It has to be reissued by the Registrar of Companies. Nothing
+                  It has to be reissued by the Corporate Regulatory Authority. Nothing
                   here can work around it.
                 </p>
               </div>

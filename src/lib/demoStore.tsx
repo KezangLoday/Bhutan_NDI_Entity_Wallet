@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { verifyAuthority, type VerificationRequestInput } from "./avs";
+import { INVITATION_DAYS } from "./deployment";
 import {
   SEED,
   type Attribute,
@@ -42,6 +43,30 @@ import {
 } from "./demoData";
 
 const STORAGE_KEY = "ndi-studio-demo";
+
+/**
+ * Bump this whenever a change to the SEED would leave a saved demo showing
+ * something now known to be wrong.
+ *
+ * Saved state is otherwise merged over the seed, which is right for additive
+ * changes — a new collection just appears — but wrong for corrections: a
+ * browser that ran the demo last week would keep the old values until someone
+ * pressed Reset, and the presenter is the one person who would not notice.
+ * A save from a different seed version is discarded and the demo starts
+ * fresh, which costs a presenter nothing they meant to keep.
+ *
+ *   1 — the original seed
+ *   2 — DIDs corrected from did:indy to did:polygon
+ *   3 — the running example: Pelden Trading, with Dorji as the director.
+ *       Dorji and Rinzin swapped roles, so a version-2 save that says
+ *       "driving as rinzin" meant the owner and would now mean the controller
+ *       — the exact silent wrongness this guard exists to prevent.
+ *   4 — Flow 1: people carry their membership role, and NDI's two platform
+ *       administrators exist. The merge over the seed is shallow, so a
+ *       version-3 save would bring back a people list with neither — an
+ *       empty Members page and no one to approve a designation.
+ */
+const SEED_VERSION = 4;
 
 /**
  * Appends one audit row, carrying the hash chain forward.
@@ -188,6 +213,33 @@ function applyPresentation(
 
 /** Today, as the seed writes dates. Anything created in a demo is dated now. */
 const today = () => new Date().toISOString().slice(0, 10);
+const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * A DID shaped like the method it claims to be.
+ *
+ * This used to be `${method}:bhutan:<random>` for every method, which gave
+ * did:polygon:bhutan:… and did:key:bhutan:… — shapes neither method uses.
+ * Nobody reads a new DID closely in a demo, but a DID that is visibly the
+ * wrong shape is the kind of detail an engineer in the room notices and then
+ * stops trusting the rest. Random, not derived from anything: there are no
+ * keys here to derive it from.
+ */
+const newDidId = (method: string): string => {
+  const hex = (n: number) =>
+    Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+  const base58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  switch (method) {
+    case "did:polygon":
+      return `did:polygon:0x${hex(40)}`;
+    case "did:key":
+      return `did:key:z6Mk${Array.from({ length: 44 }, () => base58[Math.floor(Math.random() * 58)]).join("")}`;
+    case "did:web":
+      return "did:web:issuer.bhutanndi.bt";
+    default:
+      return `${method}:${hex(32)}`;
+  }
+};
 const rid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 
 interface DemoActions {
@@ -318,6 +370,64 @@ interface DemoActions {
   /** An owner's decision on one. Upholding reinstates the authority. */
   decideAppeal: (id: string, outcome: "upheld_reinstated" | "rejected") => void;
 
+  /* ---- Account creation (FLOW-ONB-01) ----
+     Steps 1–8. Each maps to one step of the flow specification; nothing
+     here decides whether an address is acceptable — the view renders E1 and
+     E7 identically (S3), and the store records only what happened. */
+
+  /** Step 2: record a provisional account and "send" the verification mail. */
+  startSignup: (email: string) => void;
+  /** Resend the verification mail. Throttled by the view against S4. */
+  resendSignupMail: () => void;
+  /** Step 4–5: the verification link is opened. Returns false if it was already used (E3). */
+  consumeSignupLink: () => boolean;
+  /** Steps 6–8: name and password set, account created, session issued. */
+  completeSignup: (name: string) => void;
+  /** Adds an organisation to the signing-up account. Flow 2 and Kind M call it. */
+  addSignupMembership: (orgId: string, role: "Owner" | "Admin" | "Member") => void;
+  /** Where to go once the account exists — set by an invitation link (A1).
+   *  `email` pre-fills sign-up with the invited address, so the account is
+   *  created for the address the invitation was sent to. */
+  setSignupReturn: (path: string | null, email?: string) => void;
+  /** Throw the session away and start again from an empty sign-up. */
+  clearSignup: () => void;
+
+  /* ---- Invitations (FLOW-ONB-02) ----
+     The inviter and the approver are always the persona the console is
+     driven as — never a field on the form. That mirrors INV-2: who is acting
+     is derived from the session, and an id in the request is never
+     authority. Results name the flow's error ids so the screens can render
+     exactly the message the specification gives for each. */
+
+  /** Kind M — the owner invites a person into the organisation (step 1).
+   *  Not the inherited `inviteMember`, which belongs to the Studio users page
+   *  and adds a row with no invitation behind it. */
+  inviteToOrganisation: (input: { email: string; role: "Member" | "Admin" }) =>
+    | { ok: true; id: string }
+    | { ok: false; error: "E1" | "E3" };
+  /** Kind O — a platform admin proposes an organisation that does not exist yet. */
+  proposeOrganisation: (input: {
+    email: string;
+    legalName: string;
+    legalIdentity: string;
+    purpose: string;
+    needsSecondApproval: boolean;
+  }) => string;
+  /** Step 2 — a second administrator approves. Refuses self-approval (E11). */
+  approveInvitation: (id: string) => { ok: true } | { ok: false; error: "E11" };
+  /** The second administrator declines to send it. */
+  refuseInvitation: (id: string) => void;
+  /** Revoked by the inviter before acceptance (E5), or withdrawn before approval. */
+  withdrawInvitation: (id: string) => void;
+  /** Resend after a delivery failure (E8). The token stays the same. */
+  resendInvitation: (id: string) => void;
+  /** Steps 7–9 — accept, after re-checking the invitation is still good. */
+  acceptInvitation: (id: string) =>
+    | { ok: true }
+    | { ok: false; error: "E4" | "E5" | "E6" | "E7" };
+  /** A2 — the invitee declines. */
+  declineInvitation: (id: string) => void;
+
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
      and the state switcher, which are what make the demo runnable by someone
@@ -377,10 +487,14 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<DemoState>;
+        const saved = JSON.parse(raw) as { seedVersion?: number; state?: Partial<DemoState> };
         /* Merged over the seed rather than replacing it, so a state saved by an
-           older build that lacks a newer collection still loads. */
-        setState({ ...SEED, ...parsed });
+           older build that lacks a newer collection still loads. A save with
+           no version, or another version, predates a correction — see
+           SEED_VERSION — and is dropped. */
+        if (saved.seedVersion === SEED_VERSION && saved.state) {
+          setState({ ...SEED, ...saved.state });
+        }
       }
     } catch {
       /* Corrupt or unavailable storage just means the demo starts fresh. */
@@ -391,7 +505,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seedVersion: SEED_VERSION, state }));
     } catch {
       /* Over quota or private mode — the demo still works for this session. */
     }
@@ -440,7 +554,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
       addDid: ({ method, keyType, alias }) => {
         const did: Did = {
-          id: `${method}:bhutan:${Math.random().toString(36).slice(2, 24)}`,
+          id: newDidId(method),
           method,
           keyType,
           alias,
@@ -813,7 +927,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                 operation: "credential:accept" as const,
                 summary: `Accept ${offer.type} from ${offer.issuer}`,
                 requestedBy: s.harness.persona,
-                relationId: relation?.id ?? "rel-dorji",
+                relationId: relation?.id ?? "rel-rinzin",
                 scopeVersion: relation?.scope.version ?? 1,
                 targetId: offer.id,
                 targetRelyingParty: null,
@@ -854,7 +968,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
                 operation: "proof:present" as const,
                 summary: `Present ${request.credentialType} to ${request.relyingParty}`,
                 requestedBy: s.harness.persona,
-                relationId: relation?.id ?? "rel-dorji",
+                relationId: relation?.id ?? "rel-rinzin",
                 scopeVersion: relation?.scope.version ?? 1,
                 targetId: request.id,
                 targetRelyingParty: request.relyingParty,
@@ -1179,6 +1293,316 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             }),
           };
         }),
+
+      startSignup: (email) =>
+        setState((s) => ({
+          ...s,
+          /* A new sign-up replaces any earlier one: this is one browser, one
+             person at a time, and a half-finished session for a different
+             address is exactly what "change the address" throws away. The
+             return path survives, because an invitee who corrects their
+             address is still on their way back to the invitation. */
+          signup: {
+            email,
+            stage: "check_email",
+            sends: [Date.now()],
+            linkUsed: false,
+            name: "",
+            memberships: [],
+            returnTo: s.signup?.returnTo ?? null,
+            createdAt: null,
+          },
+        })),
+
+      resendSignupMail: () =>
+        setState((s) =>
+          s.signup
+            ? {
+                ...s,
+                /* A resend issues a fresh link, so the old one being used is
+                   no longer a reason to refuse — E2's "a new token is issued
+                   and the old one stays dead". */
+                signup: { ...s.signup, sends: [...s.signup.sends, Date.now()], linkUsed: false },
+              }
+            : s,
+        ),
+
+      consumeSignupLink: () => {
+        const current = stateRef.current.signup;
+        if (!current || current.linkUsed) return false;
+        setState((s) =>
+          s.signup
+            ? { ...s, signup: { ...s.signup, linkUsed: true, stage: "set_password" } }
+            : s,
+        );
+        return true;
+      },
+
+      completeSignup: (name) => {
+        setState((s) =>
+          s.signup
+            ? {
+                ...s,
+                signup: { ...s.signup, name, stage: "done", createdAt: today() },
+              }
+            : s,
+        );
+        /* Q5: the creation is recorded with its route. The password is not,
+           and never could be — it was never given to this store. */
+        log("Account created (self-service)");
+      },
+
+      addSignupMembership: (orgId, role) =>
+        setState((s) =>
+          s.signup && !s.signup.memberships.some((m) => m.orgId === orgId)
+            ? { ...s, signup: { ...s.signup, memberships: [...s.signup.memberships, { orgId, role }] } }
+            : s,
+        ),
+
+      setSignupReturn: (path, email) =>
+        setState((s) => ({
+          ...s,
+          /* An invitation arriving for a different address than the one in
+             progress starts a fresh session — the half-finished one belonged
+             to someone else. */
+          signup:
+            s.signup && (!email || s.signup.email === email || s.signup.email === "")
+            ? { ...s.signup, returnTo: path, email: email ?? s.signup.email }
+            : {
+                email: email ?? "",
+                stage: "check_email",
+                sends: [],
+                linkUsed: false,
+                name: "",
+                memberships: [],
+                returnTo: path,
+                createdAt: null,
+              },
+        })),
+
+      clearSignup: () => setState((s) => ({ ...s, signup: null })),
+
+      inviteToOrganisation: ({ email, role }) => {
+        const s0 = stateRef.current;
+        const inviter = s0.people.find((p) => p.id === s0.harness.persona);
+        /* E1 — the screen only offers the form to an owner or admin, but the
+           check is here too, because the screen is not the boundary. */
+        if (!inviter || (inviter.memberRole !== "Owner" && inviter.memberRole !== "Admin")) {
+          return { ok: false, error: "E1" };
+        }
+        const address = email.trim().toLowerCase();
+        /* E3 — already a member, or already invited and not yet answered. A
+           second live invitation to the same address would leave two links
+           that each grant membership. */
+        const duplicate =
+          s0.people.some((p) => p.email.toLowerCase() === address && p.memberRole) ||
+          s0.orgInvitations.some(
+            (i) =>
+              i.kind === "M" &&
+              i.email.toLowerCase() === address &&
+              (i.state === "PENDING" || i.state === "PENDING_APPROVAL"),
+          );
+        if (duplicate) return { ok: false, error: "E3" };
+        const id = rid("inv");
+        setState((s) => ({
+          ...s,
+          orgInvitations: [
+            {
+              id,
+              kind: "M",
+              email: email.trim(),
+              orgId: s.activeOrgId,
+              role,
+              legalName: null,
+              legalIdentity: null,
+              purpose: null,
+              needsSecondApproval: false,
+              invitedBy: s.harness.persona,
+              approvedBy: null,
+              createdAt: today(),
+              sentAt: today(),
+              expiresAt: inDays(INVITATION_DAYS.M),
+              state: "PENDING",
+              delivery: "delivered",
+              decidedAt: null,
+              acceptedName: null,
+            },
+            ...s.orgInvitations,
+          ],
+        }));
+        log(`Invitation sent to ${email.trim()} (member)`);
+        return { ok: true, id };
+      },
+
+      proposeOrganisation: ({ email, legalName, legalIdentity, purpose, needsSecondApproval }) => {
+        const id = rid("inv");
+        setState((s) => ({
+          ...s,
+          orgInvitations: [
+            {
+              id,
+              kind: "O",
+              email: email.trim(),
+              orgId: null,
+              role: null,
+              legalName,
+              legalIdentity,
+              purpose,
+              needsSecondApproval,
+              invitedBy: s.harness.persona,
+              approvedBy: null,
+              createdAt: today(),
+              /* A designation waiting on a second administrator has not been
+                 sent, and nothing about it reaches the invitee until it is
+                 (AC-04). */
+              sentAt: needsSecondApproval ? null : today(),
+              expiresAt: needsSecondApproval ? null : inDays(INVITATION_DAYS.O),
+              state: needsSecondApproval ? "PENDING_APPROVAL" : "PENDING",
+              delivery: needsSecondApproval ? "not_sent" : "delivered",
+              decidedAt: null,
+              acceptedName: null,
+            },
+            ...s.orgInvitations,
+          ],
+        }));
+        log(
+          needsSecondApproval
+            ? `Designation of ${legalName} proposed — awaiting a second administrator`
+            : `Invitation sent to ${email.trim()} to register ${legalName}`,
+        );
+        return id;
+      },
+
+      approveInvitation: (id) => {
+        const s0 = stateRef.current;
+        const inv = s0.orgInvitations.find((i) => i.id === id);
+        /* S2: proposer and approver must be distinct principals, and the
+           record cannot leave PENDING_APPROVAL while they are the same. The
+           screen shows the control disabled with the reason (UXD-03) — this
+           is the check that would hold even if it did not. The attempt is
+           recorded as a control failure, not silently ignored. */
+        if (!inv || inv.invitedBy === s0.harness.persona) {
+          log("Control failure — an administrator tried to approve their own designation");
+          return { ok: false, error: "E11" };
+        }
+        setState((s) => ({
+          ...s,
+          orgInvitations: s.orgInvitations.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  state: "PENDING",
+                  approvedBy: s.harness.persona,
+                  decidedAt: today(),
+                  sentAt: today(),
+                  expiresAt: inDays(INVITATION_DAYS.O),
+                  delivery: "delivered",
+                }
+              : i,
+          ),
+        }));
+        log(`Designation of ${inv.legalName} approved and sent`);
+        return { ok: true };
+      },
+
+      refuseInvitation: (id) =>
+        setState((s) => ({
+          ...s,
+          orgInvitations: s.orgInvitations.map((i) =>
+            i.id === id ? { ...i, state: "REFUSED", decidedAt: today(), approvedBy: s.harness.persona } : i,
+          ),
+        })),
+
+      withdrawInvitation: (id) =>
+        setState((s) => ({
+          ...s,
+          orgInvitations: s.orgInvitations.map((i) =>
+            i.id === id ? { ...i, state: "REVOKED", decidedAt: today() } : i,
+          ),
+        })),
+
+      resendInvitation: (id) =>
+        setState((s) => ({
+          ...s,
+          orgInvitations: s.orgInvitations.map((i) =>
+            i.id === id ? { ...i, delivery: "delivered", sentAt: today() } : i,
+          ),
+        })),
+
+      acceptInvitation: (id) => {
+        const s0 = stateRef.current;
+        const inv = s0.orgInvitations.find((i) => i.id === id);
+        if (!inv) return { ok: false, error: "E5" };
+        /* Step 8 re-checks everything at acceptance, not only at issue — an
+           invitation is not a bearer grant (S4). */
+        if (inv.state === "ACCEPTED") return { ok: false, error: "E7" };
+        if (inv.state === "REVOKED" || inv.state === "REFUSED" || inv.state === "PENDING_APPROVAL") {
+          return { ok: false, error: "E5" };
+        }
+        if (inv.state === "EXPIRED" || (inv.expiresAt !== null && inv.expiresAt < today())) {
+          return { ok: false, error: "E4" };
+        }
+        const inviter = s0.people.find((p) => p.id === inv.invitedBy);
+        const inviterStillMay =
+          inv.kind === "O"
+            ? Boolean(inviter)
+            : inviter?.memberRole === "Owner" || inviter?.memberRole === "Admin";
+        if (!inviterStillMay || inv.state === "VOID") {
+          setState((s) => ({
+            ...s,
+            orgInvitations: s.orgInvitations.map((i) => (i.id === id ? { ...i, state: "VOID" } : i)),
+          }));
+          return { ok: false, error: "E6" };
+        }
+        const account = s0.signup;
+        const name = account?.name || "New member";
+        setState((s) => {
+          const next = {
+            ...s,
+            orgInvitations: s.orgInvitations.map((i) =>
+              i.id === id
+                ? { ...i, state: "ACCEPTED" as const, decidedAt: today(), acceptedName: name }
+                : i,
+            ),
+          };
+          if (inv.kind !== "M" || !inv.orgId) return next;
+          /* Q4: a member at the named role, with no authority to act for the
+             entity. Their identity is not anchored — nothing has asked the
+             register about them — so act 2's person selector will offer
+             them and then refuse, which is the right answer. */
+          const person = {
+            id: "invitee",
+            name,
+            cid: "—",
+            email: inv.email,
+            title: inv.role === "Admin" ? "Administrator · joined by invitation" : "Member · joined by invitation",
+            cidVerified: false,
+            memberRole: inv.role ?? "Member",
+          };
+          return {
+            ...next,
+            people: [...next.people.filter((p) => p.id !== "invitee"), person],
+            signup: next.signup
+              ? {
+                  ...next.signup,
+                  memberships: next.signup.memberships.some((m) => m.orgId === inv.orgId)
+                    ? next.signup.memberships
+                    : [...next.signup.memberships, { orgId: inv.orgId, role: inv.role ?? "Member" }],
+                }
+              : next.signup,
+          };
+        });
+        log(`Invitation accepted by ${name}`);
+        return { ok: true };
+      },
+
+      declineInvitation: (id) =>
+        setState((s) => ({
+          ...s,
+          orgInvitations: s.orgInvitations.map((i) =>
+            i.id === id ? { ...i, state: "DECLINED", decidedAt: today() } : i,
+          ),
+        })),
 
       setPersona: (persona) =>
         setState((s) => ({ ...s, harness: { ...s.harness, persona } })),

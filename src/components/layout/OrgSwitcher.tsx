@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icons";
+import { PLATFORM_ADMINS } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 
 /**
@@ -14,9 +15,10 @@ import { useDemo } from "@/lib/demoStore";
  * stuck under.
  */
 export function OrgSwitcher() {
-  const { organizations, activeOrgId, setActiveOrg } = useDemo();
+  const { organizations, activeOrgId, setActiveOrg, harness } = useDemo();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
+  const isAdmin = PLATFORM_ADMINS.includes(harness.persona);
 
   const active = organizations.find((o) => o.id === activeOrgId) ?? organizations[0];
 
@@ -33,6 +35,19 @@ export function OrgSwitcher() {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  /* NDI's administrators act for the platform administration organisation
+     and nothing else, so there is nothing to switch to. The organisation
+     being acted in is still named — "never implied by context alone"
+     (UX-EW-01 §3.4) — it just is not a menu. */
+  if (isAdmin) {
+    return (
+      <span className="inline-flex h-10 max-w-[260px] items-center gap-2.5 rounded-[10px] border border-grid bg-[rgb(var(--tint)/0.03)] px-3.5 font-display text-[13px] font-medium text-body">
+        <Icon name="shieldCheck" size={15} strokeWidth={1.7} className="flex-none text-accent" />
+        <span className="hidden truncate min-[561px]:inline">Bhutan NDI · platform administration</span>
+      </span>
+    );
+  }
 
   return (
     <div className="relative" ref={wrap}>

@@ -56,7 +56,7 @@ export function AppealsView() {
 
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
-  const isOwner = harness.persona === "rinzin";
+  const isOwner = harness.persona === "dorji";
 
   /* An owner is looking at appeals against the entity; anyone else is looking
      at their own. */

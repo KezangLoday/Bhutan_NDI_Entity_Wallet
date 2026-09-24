@@ -1,5 +1,5 @@
 /**
- * Two flows, three cards. Passkeys were removed from the product, which took
- * the "how do you want to sign in" step out of both.
+ * The signed-out cards this component still owns. Sign-up moved to its own
+ * routes (FLOW-ONB-01); this was three steps and is now one.
  */
-export type AuthStep = "login" | "signup-email" | "signup-details";
+export type AuthStep = "login";

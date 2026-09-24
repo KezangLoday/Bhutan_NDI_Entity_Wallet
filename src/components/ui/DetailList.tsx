@@ -18,7 +18,7 @@ export interface DetailItem {
  * The split is a CONTAINER query, not a viewport one. This list is used both
  * across a full-width panel and inside a 380px rail, and keyed to the viewport
  * the rail version kept the two columns on a wide screen — which is how
- * "board-resolution-2026-05-18.pdf · NL/BR/2026/011" ended up broken over four
+ * "board-resolution-2026-05-18.pdf · PT/BR/2026/011" ended up broken over four
  * lines with the separator stranded on its own. What matters is the width of
  * the box the list is in, and that is exactly what a container query asks.
  */

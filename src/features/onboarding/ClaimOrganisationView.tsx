@@ -33,7 +33,7 @@ const ENTITY_TYPES = [
   {
     value: "company",
     label: "Private or public limited company",
-    register: "Registrar of Companies",
+    register: "Corporate Regulatory Authority",
     supported: true,
   },
   {
@@ -53,7 +53,7 @@ const ENTITY_TYPES = [
 /** What a search would return. Matched loosely so any sensible query finds it. */
 const MATCHES = [
   {
-    name: "Norling Logistics Pvt. Ltd.",
+    name: "Pelden Trading Pvt. Ltd.",
     registration: "CRA-2019-04477",
     address: "Babesa, Thimphu",
     incorporated: "2019",
@@ -70,7 +70,7 @@ export function ClaimOrganisationView() {
   ]);
 
   const [type, setType] = useState(ENTITY_TYPES[0]);
-  const [query, setQuery] = useState("Norling");
+  const [query, setQuery] = useState("Pelden");
   const [searched, setSearched] = useState(true);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<string | null>(MATCHES[0].name);

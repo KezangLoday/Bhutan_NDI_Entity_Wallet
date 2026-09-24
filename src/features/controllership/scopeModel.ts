@@ -12,12 +12,12 @@
  * Six were drafted before any of this existed, and three of them broke the
  * model that seemed obvious at the time:
  *
- *  1. "Dorji may present proofs using Business Registration credentials to
+ *  1. "Rinzin may present proofs using Business Registration credentials to
  *      BNSW and Bank of Bhutan, until 31 Dec 2026. Every presentation needs
  *      one approver."
  *      — fine. This is the shape everything else was measured against.
  *
- *  2. "Dorji may accept credential offers of any type, until 31 Dec 2026.
+ *  2. "Rinzin may accept credential offers of any type, until 31 Dec 2026.
  *      Accepting happens straight away, with no approver."
  *      — broke the first model. The approval clause is per operation, not per
  *      relation: accepting is automatic while presenting needs a signature.
@@ -25,12 +25,12 @@
  *      every operation agrees, which is the uncommon case. Hence one sentence
  *      per grant, and `describeRelation` returning a list.
  *
- *  3. "Rinzin may do anything the entity can do, with no end date."
+ *  3. "Dorji may do anything the entity can do, with no end date."
  *      — broke it again. Enumerating six operations, each "of any type, to
  *      any relying party", is technically the same information and useless to
  *      read. Full scope is a special case with its own sentence.
  *
- *  4. "Dorji may create connections with anyone, until 31 Dec 2026."
+ *  4. "Rinzin may create connections with anyone, until 31 Dec 2026."
  *      — fine, and confirmed that operations with no meaningful credential or
  *      relying-party dimension must not print empty clauses about them.
  *
@@ -44,7 +44,7 @@
  *      state where it cannot be missed rather than to bury a negation in the
  *      prose.
  *
- *  6. "Dorji may not present proofs to anyone else."
+ *  6. "Rinzin may not present proofs to anyone else."
  *      — the negative. Deliberately NOT generated: an authority is defined by
  *      what it permits, and a UI that tries to enumerate everything a person
  *      cannot do will be wrong the moment the operation list grows. The

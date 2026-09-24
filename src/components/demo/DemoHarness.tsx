@@ -41,9 +41,19 @@ export function DemoHarness() {
   const [open, setOpen] = useState(false);
 
   /* The auth screens are pre-sign-in and have no persona. Showing a switcher
-     there would suggest the choice matters before anyone is signed in. */
+     there would suggest the choice matters before anyone is signed in.
+     /welcome is signed in, but as the account being created in FLOW-ONB-01,
+     which is not a persona — the switcher would offer to become someone the
+     screen is not about. */
   const onAuthScreen =
-    pathname === "/" || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+    pathname === "/" ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/welcome") ||
+    pathname.startsWith("/verify-email-success") ||
+    /* The invitee opening their link is not a persona either: whether they
+       have an account at all is the question SCR-INV-04 is answering. */
+    pathname.startsWith("/invitation/");
 
   /** In story order, from the one list of who is drivable. The id is kept
    *  alongside so the switcher passes a PersonaId rather than a bare string. */
@@ -70,7 +80,7 @@ export function DemoHarness() {
      The panel is, in effect, gated anyway — `open` starts false, so nothing
      that reads persisted persona or act state can paint before the store has
      been read. The one thing worth waiting for is the act summary, which
-     would otherwise show act 1 as Rinzin for a frame before swapping to
+     would otherwise show act 1 as Dorji for a frame before swapping to
      whichever act the story was left on. */
   return (
     /* `ndi-demo-harness` insets the bar past the sidebar on desktop. The bar

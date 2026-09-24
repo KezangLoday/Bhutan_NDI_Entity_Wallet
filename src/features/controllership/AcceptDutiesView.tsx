@@ -142,7 +142,7 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
       <div className="relative z-[4]">
         <DetailList
           items={[
-            { label: "Granted by", value: "Norling Logistics Pvt. Ltd." },
+            { label: "Granted by", value: "Pelden Trading Pvt. Ltd." },
             { label: "Legal basis", value: legalBasisLabel(relation.legalBasis) },
             {
               label: "Signed instrument",
@@ -251,8 +251,8 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
                 </p>
                 <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
                   {isAddressee
-                    ? "You can now act for Norling Logistics within the authority below. You can see it at any time, but you cannot change it — only the owner can."
-                    : `${firstName} can now act for Norling Logistics within the authority below, and cannot change any of it.`}
+                    ? "You can now act for Pelden Trading within the authority below. You can see it at any time, but you cannot change it — only the owner can."
+                    : `${firstName} can now act for Pelden Trading within the authority below, and cannot change any of it.`}
                 </p>
                 {isAddressee ? (
                   <div className="mt-2">
@@ -300,7 +300,7 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
               {isAddressee ? "What you would be able to do" : `What ${firstName} would be able to do`}
             </h2>
             <p className="text-[12.5px] leading-[1.5] text-faint">
-              Acting for Norling Logistics Pvt. Ltd. — never as it. Every action
+              Acting for Pelden Trading Pvt. Ltd. — never as it. Every action
               is recorded as the entity&rsquo;s, carried out by you.
             </p>
           </div>
@@ -362,7 +362,7 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
               >
                 <Icon name="check" size={14} strokeWidth={2.2} className="mt-px flex-none" />
                 <span>
-                  Your question has gone to Rinzin Dema. This authority stays
+                  Your question has gone to Dorji Wangchuk. This authority stays
                   waiting until you decide — nothing expires while you ask.
                 </span>
               </p>
@@ -397,7 +397,7 @@ export function AcceptDutiesView({ relationId }: { relationId: string }) {
           onClose={() => setDeclineOpen(false)}
           tone="danger"
           title="Decline this authority?"
-          lead="Nothing will be granted and you will not be able to act for Norling Logistics. The owner will be told that you declined."
+          lead="Nothing will be granted and you will not be able to act for Pelden Trading. The owner will be told that you declined."
           consequences={[
             "No authority is granted to you",
             "The owner has to propose a new authority if this was a mistake",

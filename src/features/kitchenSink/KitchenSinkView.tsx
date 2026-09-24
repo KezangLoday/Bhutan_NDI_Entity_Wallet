@@ -63,7 +63,7 @@ export function KitchenSinkView() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dangerOpen, setDangerOpen] = useState(false);
 
-  const dorji = relations.find((r) => r.id === "rel-dorji");
+  const rinzin = relations.find((r) => r.id === "rel-rinzin");
   const root = relations.find((r) => r.isRootAuthority);
   const pass = decisions.find((d) => d.outcome === "PASS");
   const fail = decisions.find((d) => d.outcome === "FAIL");
@@ -136,11 +136,11 @@ export function KitchenSinkView() {
           title="Scope summary — read mode"
           note="One sentence per grant, each with its own approval clause. The wording comes from scopeModel.ts, which is a pure function."
         >
-          {dorji ? (
+          {rinzin ? (
             <ScopeSummary
-              personName={personById(dorji.personId).name}
-              scope={dorji.scope}
-              state={dorji.state}
+              personName={personById(rinzin.personId).name}
+              scope={rinzin.scope}
+              state={rinzin.state}
             />
           ) : null}
         </Section>
@@ -149,14 +149,14 @@ export function KitchenSinkView() {
           title="Scope summary — table mode, with authoring warnings"
           note="The same model as rows, for comparing an approval column down the page. Warnings are advisory and appear only while authoring."
         >
-          {dorji ? (
+          {rinzin ? (
             <ScopeSummary
-              personName={personById(dorji.personId).name}
+              personName={personById(rinzin.personId).name}
               scope={{
-                ...dorji.scope,
+                ...rinzin.scope,
                 /* Deliberately widened so the warnings have something to say. */
                 validUntil: null,
-                grants: dorji.scope.grants.map((g) =>
+                grants: rinzin.scope.grants.map((g) =>
                   g.operation === "proof:present"
                     ? { ...g, relyingParties: { mode: "any" as const }, approval: "AUTO" as const }
                     : g,
@@ -184,7 +184,7 @@ export function KitchenSinkView() {
           note="The entity leads, the person follows. Never one without the other."
         >
           <div className="flex flex-col gap-4">
-            <DualAttribution entity="Norling Logistics Pvt. Ltd." actorId="dorji" />
+            <DualAttribution entity="Pelden Trading Pvt. Ltd." actorId="rinzin" />
             {auditRow ? (
               <DualAttribution
                 entity={auditRow.entity}
@@ -193,7 +193,7 @@ export function KitchenSinkView() {
               />
             ) : null}
             <DualAttribution
-              entity="Norling Logistics Pvt. Ltd."
+              entity="Pelden Trading Pvt. Ltd."
               actorId="somebody-who-left"
               size="compact"
             />
@@ -334,7 +334,7 @@ export function KitchenSinkView() {
             open={confirmOpen}
             onClose={() => setConfirmOpen(false)}
             title="Send this authority for acceptance?"
-            lead="Dorji Wangchuk will be asked to review it and accept the duties that come with it. Nothing takes effect until he does."
+            lead="Rinzin Dema will be asked to review it and accept the duties that come with it. Nothing takes effect until she does."
             confirmLabel="Send for acceptance"
             onConfirm={() => setConfirmOpen(false)}
           />
@@ -346,8 +346,8 @@ export function KitchenSinkView() {
             title="Terminate this controllership?"
             lead="This cannot be undone. A new relation would have to be created and accepted from the beginning."
             consequences={[
-              "Dorji Wangchuk's sessions end immediately",
-              "Two approvals waiting on him are cancelled",
+              "Rinzin Dema's sessions end immediately",
+              "Two approvals waiting on her are cancelled",
               "One parked operation is declined rather than run",
               "Any authority issued under this relation stops verifying anywhere",
             ]}

@@ -35,7 +35,7 @@ export function HeldCredentialsView() {
         <PageHeader crumbs={[{ label: "Wallet" }, { label: "Held credentials" }]} title="What we hold" />
 
         <p className="max-w-[68ch] text-[13.5px] leading-[1.65] text-muted">
-          Credentials issued to Norling Logistics itself, held in the
+          Credentials issued to Pelden Trading itself, held in the
           entity&rsquo;s wallet. Nobody carries these on a device — they are
           presented from here, by a controller acting for the entity.
         </p>

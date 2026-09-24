@@ -63,7 +63,7 @@ you have five, show act 5 alone.
 
 ## The Act 1 walkthrough
 
-Act button **1**, as Rinzin. Four minutes, and it is the act that establishes
+Act button **1**, as Dorji. Four minutes, and it is the act that establishes
 the product is not self-certifying.
 
 ### 1 · Find the organisation — `/onboarding/claim`
@@ -77,7 +77,7 @@ confirms it, and civil society organisations are marked **not yet available**.
 > kind of organisation simply cannot register here. Better to say so than to
 > run a search that fails for reasons nobody can see."
 
-Leave Norling selected, press **Continue to identity check**.
+Leave Pelden selected, press **Continue to identity check**.
 
 ### 2 · The register check — the honest wait
 
@@ -87,15 +87,15 @@ Press **Start the identity check**.
 
 > "Every other wait here is about two seconds. This one is not, deliberately.
 > This is the moment the platform admits it cannot assert the company's
-> identity by itself and has to ask the Registrar of Companies. If that
+> identity by itself and has to ask the Corporate Regulatory Authority — the Registrar of Companies. If that
 > resolved instantly, the most important architectural fact about the whole
 > product would slide straight past you."
 
 Point at the two named stages:
 
-> "Two different things, shown as two things. Rinzin proving who she is, from
-> her own wallet. Then an institution deciding whether she speaks for the
-> company. Only one of those can refuse her."
+> "Two different things, shown as two things. Dorji proving who he is, from
+> his own wallet. Then an institution deciding whether he speaks for the
+> company. Only one of those can refuse him."
 
 Also point at the hand-off panel — **What you will share**, and the line
 saying the wallet never receives the organisation's keys.
@@ -103,7 +103,7 @@ saying the wallet never receives the organisation's keys.
 **Then show the refusal.** Reload and press **Show what happens if the
 register says no**.
 
-> "Her identity proved fine. The register just does not list her as a
+> "His identity proved fine. The register just does not list him as a
 > representative. That is a matter of record, not a bug here — and we cannot
 > override it. An organisation whose representative we could not establish is
 > exactly the organisation nobody should be able to register."
@@ -119,7 +119,7 @@ Run it again to success and continue. Point at **Why this one is different**:
 
 Press **Accept the registration**.
 
-> "*Norling Logistics is verified.* And this credential is the thing act five
+> "*Pelden Trading is verified.* And this credential is the thing act five
 > walks back up to. Remember it."
 
 ---
@@ -131,7 +131,7 @@ shown **straight after act 5**, while the revocation is fresh.
 
 Switch to **Pema** and open **Appeals**.
 
-> "She has just lost her role. Here is the notice, with the reason Rinzin
+> "She has just lost her role. Here is the notice, with the reason Dorji
 > actually typed, and a reference. She did not have to go looking for it."
 
 Type an answer in the box and press **Submit the appeal**.
@@ -140,10 +140,10 @@ Type an answer in the box and press **Submit the appeal**.
 > provisional until the governance framework settles them, which is why they
 > are text on a screen rather than a graphic anyone has to redraw."
 
-Switch to **Rinzin** and open **Appeals** again.
+Switch to **Dorji** and open **Appeals** again.
 
-> "Same object, different actions. She can uphold or reject. Pema was never
-> shown an uphold button and Rinzin was never shown a submission form."
+> "Same object, different actions. He can uphold or reject. Pema was never
+> shown an uphold button and Dorji was never shown a submission form."
 
 Press **Uphold and reinstate**.
 
@@ -158,17 +158,17 @@ passes.** The chain is whole because the link was restored.
 
 ## The Act 2 walkthrough
 
-Roughly six minutes. The story: Norling Logistics gives its operations
+Roughly six minutes. The story: Pelden Trading gives its new warehouse
 manager a narrow, specific authority, and he has to accept it before it means
 anything.
 
 ### 1 · Set up
 
 Demo controls → act button **2**. That puts you on
-`/controllership/relations/new` as **Rinzin Dema**, the managing director.
+`/controllership/relations/new` as **Dorji Wangchuk**, a director of the company.
 
-> "Rinzin runs Norling Logistics, a freight and customs clearance company.
-> She has just hired a warehouse manager, and he needs to be able to accept
+> "Dorji runs Pelden Trading, a trading company that imports and wholesales.
+> He has just hired a warehouse manager, Ugyen, who needs to be able to accept
 > credentials on the company's behalf. Not to *be* the company — to act for
 > it."
 
@@ -177,11 +177,11 @@ Demo controls → act button **2**. That puts you on
 Pick **Ugyen Phuntsho**, the warehouse manager — he holds nothing yet, which
 is why he is the one to watch an authority being built for. Choose **Entity
 consent**. Attach any file (the filename is all that is kept) and type a
-reference like `NL/BR/2026/014`.
+reference like `PT/BR/2026/014`.
 
-> Dorji is not in this list, deliberately: he already holds a controllership,
-> and a second one for the same person would leave two answers to "what may he
-> do". His is seeded active so act 3 can be shown on its own.
+> Rinzin is not in this list, deliberately: she already holds a controllership,
+> and a second one for the same person would leave two answers to "what may she
+> do". Hers is seeded active so act 3 can be shown on its own.
 
 Two things worth pointing at here:
 
@@ -238,10 +238,10 @@ Press **Send for acceptance**.
 You will land on a panel saying it has gone to Ugyen. Click **Open what Ugyen
 will see** (the button carries whoever you picked).
 
-**You will see a notice saying you are still signed in as Rinzin, and that only
+**You will see a notice saying you are still signed in as Dorji, and that only
 Ugyen can accept.** Do not skip past this — it is the moment the story turns:
 
-> "Rinzin cannot accept on his behalf. If she could, the acceptance record
+> "Dorji cannot accept on Ugyen's behalf. If an owner could, the acceptance record
 > would be worth nothing, and that record is the whole point."
 
 Click **Continue as Ugyen**. Everything on the page switches to the second
@@ -251,7 +251,7 @@ Now walk the acceptance screen top to bottom:
 
 - **The authority is first, and in full.** Before any duty, before any button.
   > "He is not agreeing to terms. He is reading exactly what he is being given,
-  > in the same sentences Rinzin just wrote."
+  > in the same sentences Dorji just wrote."
 - **Where it comes from** — the legal basis and the instrument.
 - **What he takes on** — five duties, in plain words. No statute numbers
   anywhere.
@@ -282,16 +282,16 @@ That is Act 2. Stop there.
 
 ## The Act 3 walkthrough
 
-About six minutes, as **Dorji**. The story: an ordinary working day, and the
+About six minutes, as **Rinzin**. The story: an ordinary working day, and the
 approval gate doing its job.
 
 ### 1 · The landing screen — act button **3**
 
-You arrive at `/dashboard` as Dorji.
+You arrive at `/dashboard` as Rinzin.
 
 > "This is what a controller sees on signing in. Not a chart — a list of what
-> is waiting. And on the right, a reminder of exactly what he is allowed to
-> do, every single time, so he never has to discover his own limits from a
+> is waiting. And on the right, a reminder of exactly what she is allowed to
+> do, every single time, so she never has to discover her own limits from a
 > refusal."
 
 Point at the ordering:
@@ -300,21 +300,21 @@ Point at the ordering:
 > Then relying parties who are waiting. Then offers, which nobody is waiting
 > on. Sorted by expiry, a lapsing offer would sit above a colleague."
 
-Note that **Dorji has no Approvals item in the sidebar** — his authority does
+Note that **Rinzin has no Approvals item in the sidebar** — her authority does
 not include deciding approvals.
 
 ### 2 · Accept an offer — the holder inbox
 
-Click the **Customs Broker Licence** offer.
+Click the **Business Licence** offer.
 
-> "Here is the thing the studio could never do before. Norling Logistics is
+> "Here is the thing the studio could never do before. Pelden Trading is
 > the *holder*. Somebody has offered the company a credential."
 
 Two things to point at:
 
 - **Every attribute in full**, before any button.
-  > "He is accepting these values. A screen that said 'Customs Broker Licence,
-  > 4 attributes' would be asking him to accept something he had not seen. And
+  > "She is accepting these values. A screen that said 'Business Licence,
+  > 4 attributes' would be asking her to accept something she had not seen. And
   > this is read from the offer itself, not from anything anyone typed."
 - **The issuer's trust-registry status.**
 
@@ -330,13 +330,13 @@ panel, held apart from the table:
 
 Go to **Offers** and open **Fleet Insurance Certificate**.
 
-> "This is a normal event, not an error. His authority covers Business
-> Registration and Customs Broker Licence. Insurance was not granted."
+> "This is a normal event, not an error. Her authority covers Business
+> Registration and Business Licence. Insurance was not granted."
 
 Point at the only action available:
 
 > "One next step, and it routes to the owner. There is deliberately no way for
-> him to widen his own authority from here — this is exactly the moment
+> her to widen her own authority from here — this is exactly the moment
 > somebody would reach for that, and it must not exist."
 
 ### 4 · Least disclosure — `Bank of Bhutan is asking for a proof`
@@ -348,9 +348,9 @@ Two are ticked.
 
 > "The bank asked for five. Only two are actually needed, and those are the
 > only two ticked. Least disclosure is not a warning here — it is the state
-> the screen opens in. He has to consciously add anything else."
+> the screen opens in. She has to consciously add anything else."
 
-Tick **registered_address**. A note appears saying he is going beyond what is
+Tick **registered_address**. A note appears saying she is going beyond what is
 needed.
 
 > "Worth having a reason you could give out loud."
@@ -358,23 +358,23 @@ needed.
 Untick it. Point at the counter — **Disclosing 2 of 5 requested** — then press
 **Send for approval**.
 
-> "His authority lets him present to the bank, but not without an approver.
+> "Her authority lets her present to the bank, but not without an approver.
 > So nothing goes out."
 
-### 5 · The approval — switch to Rinzin
+### 5 · The approval — switch to Dorji
 
-Switch persona to **Rinzin Dema** and open **Approvals**.
+Switch persona to **Dorji Wangchuk** and open **Approvals**.
 
-> "Now the gate. Note that Dorji never saw this queue — he cannot approve his
+> "Now the gate. Note that Rinzin never saw this queue — she cannot approve her
 > own work."
 
 Open the presentation. Three things to show:
 
 - **The attributes, struck through where withheld.**
-  > "She is approving the disclosure, not the request. If she only saw 'present
-  > to Bank of Bhutan' she would not know what was going out."
+  > "He is approving the disclosure, not the request. If he only saw 'present
+  > to Bank of Bhutan' he would not know what was going out."
 - **The fingerprint** — "what you would sign".
-  > "That covers this exact operation. Signing it from her phone commits her to
+  > "That covers this exact operation. Signing it from his phone commits him to
   > this and nothing else. If any detail changed, the fingerprint changes."
 - **The authority it was done under**, with the scope version.
 
@@ -383,7 +383,7 @@ goes out.
 
 ### 6 · The record — `Controllership → Audit`
 
-> "Norling Logistics, acted by Dorji Wangchuk, approved by Rinzin Dema. Three
+> "Pelden Trading, acted by Rinzin Dema, approved by Dorji Wangchuk. Three
 > questions an investigation actually asks — on whose behalf, by whose hand, on
 > whose authority — and no single-name log can answer any of them."
 
@@ -411,7 +411,7 @@ thing in the demo** — if you are short on time, cut Act 2 and show this.
 
 ### 1 · Issue the authority — act button **4**
 
-You land on `/delegated-authority/new` as Rinzin. The form is prefilled with a
+You land on `/delegated-authority/new` as Dorji. The form is prefilled with a
 sensible capability, so you can talk rather than type.
 
 Point at the right-hand panel — **What a counterparty reads**:
@@ -448,9 +448,16 @@ Press **Simulate Pema accepting**, then **See it checked at a counterparty**.
 **Stop and point out the chrome.** No sidebar, no NDI logo, different colours,
 and a line reading *Not part of NDI Studio*.
 
-> "We have left the product. This is the Single Window's own website. It is a
-> different organisation's system, and it is about to check Pema's authority
-> without asking Norling Logistics anything."
+> "We have left the product. This stands in for the Single Window's own
+> website — a different organisation's system — and it is about to check
+> Pema's authority without asking Pelden Trading anything."
+
+**Say plainly that BNSW is not live yet** if anyone from customs, trade or
+GovTech is in the room — they will know. Its main system is still being
+procured; customs today runs on DRC's eCMS, which is the likely interim
+counterparty. That is also why delegation is fast-follow rather than first
+release: it waits on a counterparty being ready. The page footer and
+`/whats-real` both say so.
 
 Leave the value at `420000`. Press **Submit declaration**.
 
@@ -470,15 +477,21 @@ at, the four-link authority chain, and a signature.
 
 ### 3 · The FAIL — the moment the demo exists for
 
-Switch to **Rinzin** in the demo controls, then go to **Delegated authority**
+Switch to **Dorji** in the demo controls, then go to **Delegated authority**
 and press **Withdraw** on **Customs broker** — the *role*, not the capability.
+It is the top row, in bold, marked *2 depend on it*; the Declaration
+authority you just issued sits indented beneath it. Point at that before you
+click:
+
+> "The list is the chain. Everything indented under this row hangs off it.
+> Watch what withdrawing it does to them."
 
 **Do not rush the blast-radius panel.** It is computed from what actually
 depends on that role:
 
-> "It is telling her that Declaration authority — the thing she issued five
-> minutes ago — stops working too. Because it hangs off this. She is not
-> withdrawing one credential, she is withdrawing a branch."
+> "It is telling him that Declaration authority — the thing he issued five
+> minutes ago — stops working too. Because it hangs off this. He is not
+> withdrawing one credential, he is withdrawing a branch."
 
 Type a reason. Point out that it is required:
 
@@ -558,9 +571,9 @@ Worth showing:
 
 Demo controls → **Driving as**. Four people:
 
-- **Rinzin Dema** — owner. Sees everything, including Controllership and
+- **Dorji Wangchuk** — owner. Sees everything, including Controllership and
   Delegated authority.
-- **Dorji Wangchuk** — controller. Sees Wallet. **No Controllership group at
+- **Rinzin Dema** — controller. Sees Wallet. **No Controllership group at
   all.**
 - **Pema Choden** — clearing agent. Sees almost nothing; she works through her
   own phone wallet and a counterparty's website.
@@ -568,15 +581,15 @@ Demo controls → **Driving as**. Four people:
   which is exactly why he is the one to build an authority for. Before that,
   his wallet correctly says he has no authority here.
 
-Switch from Rinzin to Dorji with the sidebar visible and point at it:
+Switch from Dorji to Rinzin with the sidebar visible and point at it:
 
-> "The Controllership section is not greyed out for him. It is not there.
-> A disabled menu item would tell him that administering his own authority is
-> something he might do — which is exactly the idea this product cannot
-> afford him to have."
+> "The Controllership section is not greyed out for her. It is not there.
+> A disabled menu item would tell her that administering her own authority is
+> something she might do — which is exactly the idea this product cannot
+> afford her to have."
 
-Dorji also has no **Approvals** item, because his authority does not include
-deciding approvals. That is read from his actual grant, not from a role list.
+Rinzin also has no **Approvals** item, because her authority does not include
+deciding approvals. That is read from her actual grant, not from a role list.
 
 ---
 
@@ -608,7 +621,7 @@ only long one is act 1's register check, and that length is the point.
 Be straightforward. The honest version lands better than a hedge:
 
 > "The screens are real and the model behind them is real. Nothing underneath
-> is — no register integration, no verification service, no server enforcing
+> is — no register integration, no Authority Verification API, no server enforcing
 > any of this. It is a frontend prototype whose job is to make us agree on what
 > the product should be before anyone builds it."
 
