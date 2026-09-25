@@ -8,14 +8,14 @@ import { PLATFORM_ADMINS } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 
 /**
- * Which organization the workspace is showing, and how to change it.
+ * Which organisation the workspace is showing, and its settings.
  *
  * Closes on outside click and on Escape: it is a menu over the whole app, and
  * one that only closes by clicking its own trigger is a menu people end up
  * stuck under.
  */
 export function OrgSwitcher() {
-  const { organizations, activeOrgId, setActiveOrg, harness } = useDemo();
+  const { organizations, activeOrgId, harness } = useDemo();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const isAdmin = PLATFORM_ADMINS.includes(harness.persona);
@@ -55,12 +55,12 @@ export function OrgSwitcher() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         className="ndi-hairline-btn inline-flex h-10 max-w-[220px] items-center gap-2.5 rounded-[10px] border border-grid bg-[rgb(var(--tint)/0.03)] px-3.5 font-display text-[13px] font-medium text-body"
       >
         <Icon name="building" size={15} strokeWidth={1.7} className="flex-none text-accent" />
         <span className="hidden truncate min-[561px]:inline">
-          {active ? active.name : "Select organization"}
+          {active ? active.name : "No organisation"}
         </span>
         <Icon
           name="chevronDown"
@@ -73,8 +73,8 @@ export function OrgSwitcher() {
 
       {open ? (
         <div
-          role="listbox"
-          aria-label="Organizations"
+          role="menu"
+          aria-label="Organisation"
           className="absolute right-0 top-[calc(100%+8px)] z-[70] w-[268px] rounded-xl border p-1.5"
           style={{
             borderColor: "var(--border-grid)",
@@ -83,62 +83,39 @@ export function OrgSwitcher() {
               "0 20px 48px rgb(var(--shade) / 0.45), inset 0 1px 0 rgb(var(--gloss) / 0.06)",
           }}
         >
-          {organizations.length ? (
-            organizations.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                role="option"
-                aria-selected={o.id === active?.id}
-                onClick={() => {
-                  setActiveOrg(o.id);
-                  setOpen(false);
-                }}
-                className="ndi-navrow flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13px]"
-                data-active={o.id === active?.id ? "1" : "0"}
+          {/* One organisation, shown rather than offered. The Entity Wallet
+              is one business's wallet; there is nothing to switch to and no
+              "create another" — an organisation arrives through onboarding,
+              confirmed by a register, not from a menu. */}
+          {active ? (
+            <div className="flex items-center gap-2.5 px-3 py-2.5 text-[13px]">
+              <span
+                className="inline-flex h-7 w-7 flex-none items-center justify-center rounded-lg border border-grid font-display text-[12px] font-semibold text-[var(--text-on-mint)]"
+                style={{ background: "var(--grad-mint)" }}
               >
-                <span
-                  className="inline-flex h-7 w-7 flex-none items-center justify-center rounded-lg border border-grid font-display text-[12px] font-semibold text-[var(--text-on-mint)]"
-                  style={{ background: "var(--grad-mint)" }}
-                >
-                  {o.name.slice(0, 1)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate">{o.name}</span>
-                  <span className="block text-[11px] text-faint">{o.role}</span>
-                </span>
-                {o.id === active?.id ? (
-                  <Icon name="check" size={15} strokeWidth={2.2} className="flex-none" />
-                ) : null}
-              </button>
-            ))
+                {active.name.slice(0, 1)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-body">{active.name}</span>
+                <span className="block text-[11px] text-faint">{active.role}</span>
+              </span>
+            </div>
           ) : (
-            <p className="px-3 py-3 text-[13px] leading-[1.5] text-muted">
-              No organizations yet. Create one to start issuing credentials.
-            </p>
+            <p className="px-3 py-3 text-[13px] leading-[1.5] text-muted">No organisation yet.</p>
           )}
 
           <div className="my-1.5 h-px bg-[var(--border-subtle)]" />
 
-          <Link
-            href="/create-organization"
-            onClick={() => setOpen(false)}
-            className="ndi-navrow flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13px]"
-            data-active="0"
-          >
-            <Icon name="plus" size={15} strokeWidth={2} className="flex-none text-accent" />
-            Create organization
-          </Link>
-
           {active ? (
             <Link
               href="/dashboard/profile"
+              role="menuitem"
               onClick={() => setOpen(false)}
               className="ndi-navrow flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13px]"
               data-active="0"
             >
               <Icon name="settings" size={15} strokeWidth={1.8} className="flex-none text-accent" />
-              Organization settings
+              Organisation settings
             </Link>
           ) : null}
         </div>

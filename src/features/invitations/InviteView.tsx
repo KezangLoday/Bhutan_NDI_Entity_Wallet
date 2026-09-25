@@ -12,7 +12,7 @@ import { Panel } from "@/components/ui/Panel";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { FIELD_BLOCK_CLASS, FIELD_CLASS, LABEL_CLASS } from "@/components/ui/formStyles";
 import { Icon } from "@/components/ui/icons";
-import { INVITATION_DAYS, SELF_SERVICE_SIGNUP_ENABLED } from "@/lib/deployment";
+import { INVITATION_DAYS } from "@/lib/deployment";
 import { PLATFORM_ADMINS } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 import { LOCAL_MS } from "@/lib/demoTiming";
@@ -67,6 +67,7 @@ export function InviteView({ kind }: { kind: "M" | "O" }) {
   const [legalIdentity, setLegalIdentity] = useState("");
   const [purpose, setPurpose] = useState<"foundational" | "business">("foundational");
   const [purposeDetail, setPurposeDetail] = useState("");
+  const selfService = harness.selfServiceSignup;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<Sent | null>(null);
@@ -282,21 +283,33 @@ export function InviteView({ kind }: { kind: "M" | "O" }) {
                       </label>
                       <label
                         className={`flex items-start gap-3 rounded-[12px] border border-grid px-3.5 py-3 ${
-                          SELF_SERVICE_SIGNUP_ENABLED ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                          selfService ? "cursor-not-allowed opacity-60" : "cursor-pointer"
                         }`}
                       >
                         <input
                           type="radio"
                           name="purpose"
                           checked={purpose === "business"}
-                          onChange={() => setPurpose("business")}
-                          disabled={SELF_SERVICE_SIGNUP_ENABLED}
+                          onChange={() => {
+                            setPurpose("business");
+                            /* The invited route in the demo is Pelden's, so
+                               an empty form starts with it — the presenter
+                               is not typing a company on stage. The address
+                               is one no account holds yet, so the invitee
+                               goes through account creation (A1). */
+                            if (!email && !legalName && !legalIdentity) {
+                              setEmail("director@peldentrading.bt");
+                              setLegalName("Pelden Trading Pvt. Ltd.");
+                              setLegalIdentity("Private limited company, CRA-2019-04477");
+                            }
+                          }}
+                          disabled={selfService}
                           className="mt-1"
                         />
                         <span className="flex flex-col gap-0.5">
                           <span className="text-[13.5px] font-medium text-body">To register as an ordinary business</span>
                           <span className="text-[12.5px] leading-[1.5] text-faint">
-                            {SELF_SERVICE_SIGNUP_ENABLED
+                            {selfService
                               ? "Not needed here: businesses sign up for themselves while self-service sign-up is switched on."
                               : "Used only while self-service sign-up is off. No second administrator needed."}
                           </span>
@@ -358,7 +371,9 @@ export function InviteView({ kind }: { kind: "M" | "O" }) {
                     </p>
                     <p className="flex items-start gap-2.5 text-[13.5px] leading-[1.6] text-body">
                       <Icon name="close" size={14} strokeWidth={2.4} className="mt-[5px] flex-none" style={{ color: "var(--text-faint)" }} />
-                      It won&rsquo;t be able to issue anything until its designation is activated.
+                      {purpose === "foundational"
+                        ? "It won't be able to issue anything until its designation is activated."
+                        : "It will hold credentials and prove things about itself, but not issue any — that needs endorsement later."}
                     </p>
                     {purpose === "foundational" ? (
                       <p className="rounded-[10px] border border-grid px-3.5 py-3 text-[12.5px] leading-[1.55] text-body" style={{ background: "rgb(var(--tint) / 0.04)" }}>

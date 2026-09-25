@@ -39,12 +39,6 @@ export function OrganizationsView() {
                 value={query}
                 onChange={setQuery}
               />
-              <Link href="/create-organization">
-                <GradientButton className="h-11">
-                  <Icon name="plus" size={16} strokeWidth={2} />
-                  Create
-                </GradientButton>
-              </Link>
             </>
           }
         />
@@ -130,17 +124,14 @@ export function OrganizationsView() {
               message={
                 q
                   ? "Nothing here matches what you typed."
-                  : "An organization owns the schemas, credential definitions and connections you issue under. Create one to get started."
+                  : "An organization owns the schemas, credential definitions and connections you issue under. It is registered once, through onboarding, and confirmed by a register."
               }
               action={
                 q ? (
                   <HairlineButton onClick={() => setQuery("")}>Clear search</HairlineButton>
                 ) : (
-                  <Link href="/create-organization">
-                    <GradientButton>
-                      <Icon name="plus" size={16} strokeWidth={2} />
-                      Create organization
-                    </GradientButton>
+                  <Link href="/onboarding">
+                    <GradientButton>Register your organisation</GradientButton>
                   </Link>
                 )
               }

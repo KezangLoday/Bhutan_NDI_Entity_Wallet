@@ -9,13 +9,15 @@ import { HairlineButton } from "@/components/ui/HairlineButton";
 import { Panel } from "@/components/ui/Panel";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Icon } from "@/components/ui/icons";
+import { REGISTER_LISTINGS } from "@/lib/demoData";
 import { ROUND_TRIP_MS } from "@/lib/demoTiming";
 import { useDemo } from "@/lib/demoStore";
 
 import { OnboardingShell } from "./OnboardingShell";
+import { kindOf } from "./orgKinds";
 
 /**
- * A3 — accept the entity's foundational credential. The milestone.
+ * A4 — accept the entity's foundational credential. The milestone.
  *
  * WHY THIS IS ITS OWN SCREEN RATHER THAN A STEP IN A SETUP WIZARD
  *
@@ -31,12 +33,23 @@ import { OnboardingShell } from "./OnboardingShell";
  * way to accept a credential before any controllership exists — a chicken and
  * egg the design resolves explicitly, and the screen should not pretend it
  * was not there.
+ *
+ * TWO WAYS IN, ONE MILESTONE
+ *
+ * The person arrives either having chosen an organisation the register
+ * listed, or with a manual review NDI approved. Whoever issues the
+ * credential in the second case is still open for Gate 2 — the register
+ * never confirmed the pair — so the prototype names NDI as the issuer after
+ * a review rather than implying the register vouched for something it did
+ * not. An arrival with neither is sent back: the credential is the reward
+ * for a confirmation, and a screen reached by URL must not hand it out.
  */
 export function FoundationalCredentialView() {
   const router = useRouter();
-  const { heldCredentials } = useDemo();
+  const { heldCredentials, orgOnboarding, manualReviews, signup, hydrated, completeOrgOnboarding, setActiveOrg, setPersona } =
+    useDemo();
 
-  const screenState = useScreenState("A3", [
+  const screenState = useScreenState("A4", [
     "offer_ready",
     "issuing",
     "verified",
@@ -46,6 +59,14 @@ export function FoundationalCredentialView() {
   const [stage, setStage] = useState<"offer" | "issuing" | "done">("offer");
 
   const foundational = heldCredentials.find((c) => c.isFoundational);
+
+  const listing = REGISTER_LISTINGS.find((l) => l.ref === orgOnboarding?.selectedRef);
+  const review = manualReviews.find((m) => m.id === orgOnboarding?.reviewId && m.state === "APPROVED");
+  const kind = kindOf(orgOnboarding?.kind);
+  const legalName = listing?.legalName ?? review?.legalName ?? "Pelden Trading Pvt. Ltd.";
+  const shortName = legalName.replace(/ Pvt\. Ltd\.$/, "");
+  const issuer = review ? "Bhutan NDI" : (kind.register ?? "Bhutan NDI");
+  const confirmed = Boolean(listing || review || orgOnboarding?.completed);
 
   const shown =
     screenState === "issuing"
@@ -58,12 +79,48 @@ export function FoundationalCredentialView() {
 
   const accept = () => {
     setStage("issuing");
-    setTimeout(() => setStage("done"), ROUND_TRIP_MS);
+    setTimeout(() => {
+      completeOrgOnboarding();
+      setStage("done");
+    }, ROUND_TRIP_MS);
   };
+
+  /* An account that came through sign-up goes back to its list of
+     organisations, which now has this one on it (SCR-ONB-05). Run without
+     one, the story's console is the natural next room. */
+  const accountDone = signup?.stage === "done";
+  const goOn = () => {
+    if (accountDone) {
+      router.push("/welcome");
+      return;
+    }
+    setActiveOrg("org-pelden");
+    setPersona("dorji");
+    router.push("/dashboard");
+  };
+
+  if (hydrated && !confirmed && screenState === "offer_ready") {
+    return (
+      <OnboardingShell current={3}>
+        <Panel>
+          <div className="relative z-[4] flex flex-col gap-3">
+            <p className="font-display text-[15px] font-semibold text-strong">Choose your organisation first</p>
+            <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+              The registration is offered once the register — or a reviewer at NDI — has confirmed
+              you represent the organisation.
+            </p>
+            <div>
+              <HairlineButton onClick={() => router.push("/onboarding")}>Start adding an organisation</HairlineButton>
+            </div>
+          </div>
+        </Panel>
+      </OnboardingShell>
+    );
+  }
 
   if (shown === "done") {
     return (
-      <OnboardingShell current={2}>
+      <OnboardingShell current={3}>
         <Panel>
           <div className="relative z-[4] flex flex-col items-center gap-4 py-6 text-center">
             <span
@@ -80,7 +137,7 @@ export function FoundationalCredentialView() {
 
             <div className="flex flex-col gap-2">
               <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.025em] text-strong">
-                Pelden Trading is <span className="ndi-wave-text">verified</span>
+                {shortName} is <span className="ndi-wave-text">verified</span>
               </h1>
               <p className="mx-auto max-w-[54ch] text-[13.5px] leading-[1.65] text-muted">
                 The organisation now holds its registration as a credential in
@@ -91,8 +148,8 @@ export function FoundationalCredentialView() {
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2.5">
-              <GradientButton onClick={() => router.push("/dashboard")}>
-                Go to the console
+              <GradientButton onClick={goOn}>
+                {accountDone ? "Back to your organisations" : "Go to the console"}
                 <Icon name="arrowRight" size={15} strokeWidth={2} />
               </GradientButton>
               <HairlineButton onClick={() => router.push("/controllership/relations/new")}>
@@ -113,15 +170,14 @@ export function FoundationalCredentialView() {
   }
 
   return (
-    <OnboardingShell current={2}>
+    <OnboardingShell current={3}>
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.025em] text-strong">
           Accept the organisation&rsquo;s registration
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
-          The Corporate Regulatory Authority is offering Pelden Trading a credential
-          for its own registration. This is the root of everything that
-          follows.
+          {issuer} is offering {shortName} a credential for its own registration. This is the
+          root of everything that follows.
         </p>
       </div>
 
@@ -140,7 +196,7 @@ export function FoundationalCredentialView() {
                 The credential could not be issued
               </p>
               <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                The registrar confirmed you, but issuing the credential itself
+                {review ? "NDI approved the review" : "The register confirmed you"}, but issuing the credential itself
                 failed. The organisation exists and you hold its root
                 authority — it simply cannot prove anything about itself until
                 this is issued, so nothing else will work yet.
@@ -164,10 +220,10 @@ export function FoundationalCredentialView() {
                 Offered by
               </p>
               <p className="font-display text-[14.5px] font-semibold text-strong">
-                Corporate Regulatory Authority
+                {issuer}
               </p>
               <p className="text-[12.5px] text-faint">
-                The register that just confirmed you
+                {review ? `Following its review, ${review.reference}` : "The register that just confirmed you"}
               </p>
             </div>
             <StatusPill status="verified" label="On the trust registry" />
@@ -179,12 +235,10 @@ export function FoundationalCredentialView() {
             </p>
             <dl className="mt-2.5 m-0 grid gap-x-6 gap-y-2 min-[641px]:grid-cols-2">
               {(
-                foundational?.attributes ?? [
-                  { name: "registered_name", value: "Pelden Trading Pvt. Ltd." },
-                  { name: "registration_number", value: "CRA-2019-04477" },
-                  { name: "entity_type", value: "Private limited company" },
-                  { name: "registered_address", value: "Babesa, Thimphu, Bhutan" },
-                  { name: "incorporation_date", value: "2019-08-14" },
+                (!review && foundational?.attributes) || [
+                  { name: "registered_name", value: legalName },
+                  { name: "registration_number", value: review?.registrationNumber ?? "CRA-2019-04477" },
+                  { name: "entity_type", value: listing?.entityType ?? kind.label },
                   { name: "status", value: "Active" },
                 ]
               ).map((attribute) => (

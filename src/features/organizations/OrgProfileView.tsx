@@ -51,13 +51,10 @@ export function OrgProfileView() {
             <EmptyState
               icon="building"
               title="No organization yet"
-              message="Create an organization to get a workspace with schemas, connections and a wallet."
+              message="Register your organisation to give it a wallet of its own."
               action={
-                <Link href="/create-organization">
-                  <GradientButton>
-                    <Icon name="plus" size={16} strokeWidth={2} />
-                    Create organization
-                  </GradientButton>
+                <Link href="/onboarding">
+                  <GradientButton>Register your organisation</GradientButton>
                 </Link>
               }
             />

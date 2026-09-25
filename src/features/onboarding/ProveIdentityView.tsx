@@ -5,50 +5,49 @@ import { useEffect, useRef, useState } from "react";
 
 import { useScreenState } from "@/components/demo/screenState";
 import { GradientButton } from "@/components/ui/GradientButton";
+import { HairlineButton } from "@/components/ui/HairlineButton";
 import { Panel } from "@/components/ui/Panel";
 import { WalletHandoff, type HandoffStatus } from "@/components/ui/WalletHandoff";
 import { Icon } from "@/components/ui/icons";
-import { REGISTER_CHECK_MS, SKIP_AFTER_MS, WALLET_HANDOFF_MS } from "@/lib/demoTiming";
+import { useDemo } from "@/lib/demoStore";
+import { SKIP_AFTER_MS, WALLET_HANDOFF_MS } from "@/lib/demoTiming";
 
 import { OnboardingShell } from "./OnboardingShell";
+import { kindOf } from "./orgKinds";
 
 /**
- * A2 — prove who you are, then let the register decide whether you speak for
- * the organisation. Two steps, and the second is the one that matters.
+ * Flow 2 step 2 — the representative proves who they are, from their own
+ * NDI Wallet.
  *
- * THIS SCREEN GETS THE HONEST WAIT
+ * ONLY THE PERSON, NOT YET THE ORGANISATION
  *
- * Every other wait in this demo is compressed to about two seconds. This one
- * is not, deliberately: it is the moment the platform admits it cannot assert
- * the organisation's identity by itself and has to ask somebody else. If it
- * resolved instantly, the single most important architectural fact about the
- * product — that the register is the authority and we are not — would slide
- * past unnoticed. One screen in the demo should show what depending on an
- * external body actually feels like, and this is that screen.
+ * This screen used to prove the person and then check them against a
+ * company they had typed in. Under list-then-select it does only the first:
+ * who you are is established here, and the register is asked what you
+ * represent on the next screen, with your identity taken from this proof —
+ * never from a field (GovTech requirements §6.1).
  *
- * The two stages are shown as two stages, not one spinner. Answering a proof
- * request is a person doing something; the register check is an institution
- * doing something. Collapsing them into a single "verifying…" would hide
- * which one is slow and, worse, which one can refuse you.
+ * WHERE PROXY SIGN-UP IS CAUGHT
  *
- * THE REFUSAL IS THE POINT OF THE SCREEN
- *
- * "We could not confirm that you represent this organisation" has to be
- * graceful, specific, and impossible to mistake for a technical fault — a
- * person who has just been told they are not a registered representative
- * needs to know it is a matter of record, not a bug, and what to do about it.
- * That case gets as much room as the success.
+ * Sign-up cannot tell a director from their accountant typing (UXD-09), so
+ * SCR-ONB-01 warns that the account must match the person named here. This
+ * is where that is enforced: identity anchoring is the real control, and it
+ * fails in the right place — with the proof in hand, before anything is
+ * registered. The refusal is walkable, not just a state in the switcher,
+ * because "what if someone else signed up for them?" is the question the
+ * room asks.
  */
-type Stage = "idle" | "wallet" | "register" | "confirmed" | "not_representative" | "expired";
+type Stage = "idle" | "wallet" | "proved" | "mismatch" | "expired";
 
 export function ProveIdentityView() {
   const router = useRouter();
+  const { signup, orgOnboarding, recordIdentityProof } = useDemo();
+
   const screenState = useScreenState("A2", [
     "awaiting_scan",
     "waiting_for_wallet",
-    "verifying_against_register",
-    "confirmed",
-    "not_a_representative",
+    "proved",
+    "name_mismatch",
     "expired",
   ]);
 
@@ -56,42 +55,37 @@ export function ProveIdentityView() {
   const [skippable, setSkippable] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  /* Timers outlive the component if a presenter navigates mid-wait, and a
-     setState after unmount is both a warning and a bug waiting to happen. */
-  useEffect(
-    () => () => {
-      timers.current.forEach(clearTimeout);
-    },
-    [],
-  );
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  const start = (outcome: "confirmed" | "not_representative") => {
+  const accountName = signup?.stage === "done" ? signup.name : null;
+  /* The wallet in this prototype answers as whoever holds the account — or
+     as Dorji, the story's director, when the flow is run without one. The
+     mismatch path answers as somebody else on purpose. */
+  const provedName = accountName || "Dorji Wangchuk";
+  const kind = kindOf(orgOnboarding?.kind);
+
+  const start = (outcome: "proved" | "mismatch") => {
     setSkippable(false);
     setStage("wallet");
     timers.current.push(setTimeout(() => setSkippable(true), SKIP_AFTER_MS));
     timers.current.push(
       setTimeout(() => {
-        setStage("register");
-        timers.current.push(setTimeout(() => setStage(outcome), REGISTER_CHECK_MS));
+        setStage(outcome);
+        if (outcome === "proved") recordIdentityProof(provedName);
       }, WALLET_HANDOFF_MS),
     );
   };
 
-  /* The switcher drives the stage directly, so every face is reachable
-     without sitting through the waits. */
   const forced: Stage | null =
     screenState === "awaiting_scan"
       ? null
       : screenState === "waiting_for_wallet"
         ? "wallet"
-        : screenState === "verifying_against_register"
-          ? "register"
-          : screenState === "confirmed"
-            ? "confirmed"
-            : screenState === "not_a_representative"
-              ? "not_representative"
-              : "expired";
-
+        : screenState === "proved"
+          ? "proved"
+          : screenState === "name_mismatch"
+            ? "mismatch"
+            : "expired";
   const shown = forced ?? stage;
 
   const handoffStatus: HandoffStatus =
@@ -99,150 +93,75 @@ export function ProveIdentityView() {
       ? "awaiting_scan"
       : shown === "wallet"
         ? "waiting"
-        : shown === "register"
-          ? "verifying"
-          : shown === "confirmed"
-            ? "confirmed"
-            : shown === "expired"
-              ? "expired"
-              : "failed";
+        : shown === "proved"
+          ? "confirmed"
+          : shown === "expired"
+            ? "expired"
+            : "failed";
 
   return (
     <OnboardingShell current={1}>
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.025em] text-strong">
-          Prove that you represent Pelden Trading
+          Prove who you are
         </h1>
         <p className="max-w-[64ch] text-[13.5px] leading-[1.65] text-muted">
-          Two things have to be true: that you are who you say you are, and
-          that the register lists you as a representative of this organisation.
-          You prove the first. The Corporate Regulatory Authority answers the second —
-          we do not decide it, and we cannot.
+          Scan the code with your Bhutan NDI Wallet. It tells us who you are, so that
+          {kind.register
+            ? ` the ${kind.register} can be asked which organisations it lists you as representing.`
+            : " NDI knows exactly who is asking it to review the organisation."}{" "}
+          Nothing about any organisation is asked yet.
         </p>
       </div>
 
       <Panel>
         <WalletHandoff
           value="ndi-onboarding-proof"
-          title="Answer the proof request in your wallet"
-          purpose="Your foundational credential establishes who you are, so the register can be asked about you by name."
+          title="Prove who you are with your NDI Wallet"
+          purpose="Your citizen credential establishes who you are. Nothing else is asked for."
           sharing={[
+            "Your full name, as it appears on your citizen credential",
             "Your citizenship number, to the platform only",
-            "Your full name, as it appears on your foundational credential",
           ]}
           status={handoffStatus}
           statusDetail={
-            shown === "register"
-              ? "Asking the Corporate Regulatory Authority whether you are a registered representative of Pelden Trading. This is a real lookup against an external body, and it takes as long as it takes."
-              : shown === "not_representative"
-                ? "The register does not list you as a representative of this organisation."
-                : undefined
+            shown === "mismatch"
+              ? "The identity you proved does not match the person this account belongs to."
+              : undefined
           }
           onRetry={() => setStage("idle")}
-          onCancel={() => router.push("/onboarding/claim")}
+          onSimulateScan={() => start("proved")}
+          onCancel={() => router.push("/onboarding")}
           onSkip={
-            skippable && (shown === "wallet" || shown === "register")
-              ? () => setStage("confirmed")
+            skippable && shown === "wallet"
+              ? () => {
+                  timers.current.forEach(clearTimeout);
+                  setStage("proved");
+                  recordIdentityProof(provedName);
+                }
               : undefined
           }
         />
       </Panel>
 
-      {/* ---- The two stages, named ---- */}
-      <Panel>
-        <div className="relative z-[4] flex flex-col gap-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-            Where this is up to
-          </p>
-          <ol className="m-0 flex list-none flex-col gap-3 p-0">
-            <StageRow
-              label="You prove who you are"
-              detail="Answered from your own wallet."
-              state={
-                shown === "wallet" || shown === "idle"
-                  ? shown === "wallet"
-                    ? "active"
-                    : "waiting"
-                  : shown === "expired"
-                    ? "failed"
-                    : "done"
-              }
-            />
-            <StageRow
-              label="The register confirms you represent the organisation"
-              detail="Asked of the Corporate Regulatory Authority. The platform never asserts this itself."
-              state={
-                shown === "register"
-                  ? "active"
-                  : shown === "confirmed"
-                    ? "done"
-                    : shown === "not_representative"
-                      ? "failed"
-                      : "waiting"
-              }
-            />
-          </ol>
-        </div>
-      </Panel>
-
-      {/* ---- Outcomes ---- */}
-      {shown === "not_representative" ? (
-        <Panel>
-          <div className="relative z-[4] flex items-start gap-3">
-            <Icon
-              name="close"
-              size={18}
-              strokeWidth={2.2}
-              className="mt-0.5 flex-none"
-              style={{ color: "var(--ndi-danger)" }}
-            />
-            <div className="flex flex-col gap-2">
-              <p className="font-display text-[14.5px] font-semibold text-strong">
-                We could not confirm that you represent Pelden Trading
-              </p>
-              <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                Your identity was proved — that part worked. But the Corporate Regulatory Authority
-                does not currently list you as a representative of
-                this organisation, so nothing can be registered in its name.
-              </p>
-              <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                This is a matter of record rather than a fault here. If the
-                register is out of date, it has to be corrected with the
-                Corporate Regulatory Authority first — we cannot override it, and an organisation
-                whose representative we could not establish is exactly the
-                organisation nobody should be able to register.
-              </p>
-              <p className="max-w-[62ch] text-[12.5px] leading-[1.5] text-faint">
-                Nothing has been created and nothing about you has been kept.
-              </p>
-            </div>
-          </div>
-        </Panel>
-      ) : null}
-
-      {shown === "confirmed" ? (
+      {shown === "proved" ? (
         <Panel>
           <div className="relative z-[4] flex flex-col gap-3">
             <div className="flex items-start gap-3">
-              <Icon
-                name="check"
-                size={18}
-                strokeWidth={2.4}
-                className="mt-0.5 flex-none text-accent"
-              />
+              <Icon name="check" size={18} strokeWidth={2.4} className="mt-0.5 flex-none text-accent" />
               <div className="flex flex-col gap-1">
                 <p className="font-display text-[14.5px] font-semibold text-strong">
-                  The register confirms you
+                  You&rsquo;ve proved you are {provedName}
                 </p>
                 <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                  You are listed as a representative of Pelden Trading Pvt.
-                  Ltd. A wallet has been created for the organisation, and you
-                  hold its root authority.
+                  {kind.register
+                    ? `Next, the ${kind.register} is asked which organisations it lists you as representing.`
+                    : "Next, tell NDI about the organisation and send what shows you represent it."}
                 </p>
               </div>
             </div>
             <div>
-              <GradientButton onClick={() => router.push("/onboarding/foundational")}>
+              <GradientButton onClick={() => router.push("/onboarding/choose")}>
                 Continue
                 <Icon name="arrowRight" size={15} strokeWidth={2} />
               </GradientButton>
@@ -251,74 +170,41 @@ export function ProveIdentityView() {
         </Panel>
       ) : null}
 
+      {shown === "mismatch" ? (
+        <Panel>
+          <div className="relative z-[4] flex items-start gap-3">
+            <Icon name="close" size={18} strokeWidth={2.2} className="mt-0.5 flex-none" style={{ color: "var(--ndi-danger)" }} />
+            <div className="flex flex-col gap-2">
+              <p className="font-display text-[14.5px] font-semibold text-strong">
+                This proof is for someone else
+              </p>
+              <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+                The wallet that answered belongs to Karma Dorji, but this account belongs to{" "}
+                {accountName ?? "someone else"}. An organisation has to be added by the person who
+                represents it, from their own account.
+              </p>
+              <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+                If you were helping someone, they need to create their own account and add the
+                organisation themselves. Nothing has been registered and nothing about either of
+                you has been kept.
+              </p>
+            </div>
+          </div>
+        </Panel>
+      ) : null}
+
       {shown === "idle" ? (
         <div className="flex flex-wrap items-center gap-2.5">
-          <GradientButton onClick={() => start("confirmed")}>
-            <Icon name="fingerprint" size={15} strokeWidth={2} />
-            Start the identity check
-          </GradientButton>
-          {/* The refusal has to be walkable, not just reachable through the
-              state switcher — an audience asks "what if it says no?" and the
-              answer should be a click, not a description. */}
+          <HairlineButton onClick={() => router.push("/onboarding")}>Back</HairlineButton>
           <button
             type="button"
-            onClick={() => start("not_representative")}
+            onClick={() => start("mismatch")}
             className="ndi-plainlink text-[12.5px] font-medium text-muted"
           >
-            Show what happens if the register says no
+            Show what happens if someone else&rsquo;s wallet answers
           </button>
         </div>
       ) : null}
     </OnboardingShell>
-  );
-}
-
-function StageRow({
-  label,
-  detail,
-  state,
-}: {
-  label: string;
-  detail: string;
-  state: "waiting" | "active" | "done" | "failed";
-}) {
-  return (
-    <li className="flex items-start gap-3">
-      <span
-        aria-hidden="true"
-        className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border"
-        style={{
-          borderColor:
-            state === "failed"
-              ? "rgb(225 73 62 / 0.45)"
-              : state === "waiting"
-                ? "var(--border-grid)"
-                : "var(--ndi-mint-40)",
-          background:
-            state === "failed"
-              ? "rgb(225 73 62 / 0.12)"
-              : state === "waiting"
-                ? "transparent"
-                : "var(--ndi-mint-12)",
-        }}
-      >
-        {state === "active" ? (
-          <Icon name="refresh" size={12} strokeWidth={2.4} className="animate-spin text-accent" />
-        ) : state === "done" ? (
-          <Icon name="check" size={12} strokeWidth={3} className="text-accent" />
-        ) : state === "failed" ? (
-          <Icon name="close" size={12} strokeWidth={3} style={{ color: "var(--ndi-danger)" }} />
-        ) : null}
-      </span>
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span
-          className="font-display text-[13.5px] font-medium leading-[1.4]"
-          style={{ color: state === "waiting" ? "var(--text-faint)" : "var(--text-body)" }}
-        >
-          {label}
-        </span>
-        <span className="text-[12.5px] leading-[1.5] text-faint">{detail}</span>
-      </span>
-    </li>
   );
 }

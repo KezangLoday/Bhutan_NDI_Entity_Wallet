@@ -10,7 +10,6 @@ import { GradientButton } from "@/components/ui/GradientButton";
 import { FIELD_BLOCK_CLASS, FIELD_CLASS, LABEL_CLASS } from "@/components/ui/formStyles";
 import { Icon } from "@/components/ui/icons";
 import { SecureSignInScene } from "@/components/ui/scenes";
-import { SELF_SERVICE_SIGNUP_ENABLED } from "@/lib/deployment";
 import { useDemo } from "@/lib/demoStore";
 import { LOCAL_MS } from "@/lib/demoTiming";
 
@@ -53,7 +52,7 @@ const INDISTINGUISHABLE = "We couldn't continue with that address. Try signing i
 
 export function SignUpView() {
   const router = useRouter();
-  const { signup, people, startSignup, hydrated } = useDemo();
+  const { signup, people, startSignup, hydrated, harness } = useDemo();
 
   const forced = useScreenState("SCR-ONB-01", [
     "default",
@@ -73,11 +72,14 @@ export function SignUpView() {
     if (hydrated && signup?.email) setEmail(signup.email);
   }, [hydrated, signup?.email]);
 
-  const disabled = forced === "disabled" || !SELF_SERVICE_SIGNUP_ENABLED;
+  const fromInvitation = Boolean(signup?.returnTo);
+  /* With self-service off, the public route stops here — but an invitee
+     sent to create an account (FLOW-ONB-02 A1) still gets through. P3
+     switches off the open door, not the one an invitation opens. */
+  const disabled = forced === "disabled" || (!harness.selfServiceSignup && !fromInvitation);
   const loading = busy || forced === "loading";
   const shownError = forced === "error" ? INDISTINGUISHABLE : error;
   const offline = forced === "offline";
-  const fromInvitation = Boolean(signup?.returnTo);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();

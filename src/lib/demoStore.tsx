@@ -15,6 +15,7 @@ import { verifyAuthority, type VerificationRequestInput } from "./avs";
 import { INVITATION_DAYS } from "./deployment";
 import {
   SEED,
+  firstRunState,
   type Attribute,
   type AuthorityKind,
   type BulkUpload,
@@ -38,6 +39,7 @@ import {
   type Schema,
   type Scope,
   type ScopeFilter,
+  type OrgKind,
   type Verification,
   type VerificationDecision,
 } from "./demoData";
@@ -65,8 +67,14 @@ const STORAGE_KEY = "ndi-studio-demo";
  *       administrators exist. The merge over the seed is shallow, so a
  *       version-3 save would bring back a people list with neither — an
  *       empty Members page and no one to approve a designation.
+ *   5 — Flow 2 as list-then-select. The switcher key "A3" moved from the
+ *       registration screen to the new choose-your-organisation screen, so a
+ *       version-4 save holding an A3 override of "verified" would force the
+ *       new screen into a state it does not have.
+ *   6 — one organisation. A version-5 save would bring back the inherited
+ *       Bhutan NDI and Royal University rows the seed no longer has.
  */
-const SEED_VERSION = 4;
+const SEED_VERSION = 6;
 
 /**
  * Appends one audit row, carrying the hash chain forward.
@@ -428,6 +436,32 @@ interface DemoActions {
   /** A2 — the invitee declines. */
   declineInvitation: (id: string) => void;
 
+  /* ---- Organisation onboarding (Flow 2) ----
+     Opt in, prove who you are, pick from what the register lists, receive
+     the registration. The register's answers are fixtures; what the person
+     chose and proved is state. */
+
+  /** Step 1 — the person opts in and says what kind of organisation. Starts afresh. */
+  startOrgOnboarding: (kind: OrgKind, invitationId?: string) => void;
+  /** Step 2 — the wallet proof was answered. The name comes from the credential. */
+  recordIdentityProof: (name: string) => void;
+  /** Step 3 — the person picked one of the organisations the register listed. */
+  selectOrganisation: (ref: string) => void;
+  /** No match — ask NDI to review instead. Returns the case id. */
+  submitManualReview: (input: {
+    legalName: string;
+    registrationNumber: string;
+    evidence: string[];
+    note: string;
+    registerAnswer: string;
+  }) => string;
+  /** A platform admin decides a case. A refusal needs a reason. */
+  decideManualReview: (id: string, approve: boolean, reason?: string) => void;
+  /** Steps 5–6 — registration accepted, holder capability switched on. */
+  completeOrgOnboarding: () => void;
+  /** Leaves the first-run state for the story's lived-in one (acts 2–6). */
+  restoreStoryState: () => void;
+
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
      and the state switcher, which are what make the demo runnable by someone
@@ -440,6 +474,8 @@ interface DemoActions {
   setRunnerOpen: (open: boolean) => void;
   /** Force one screen into one of its states, for review. */
   setStateOverride: (screen: string, state: string | null) => void;
+  /** The deployment's self-service sign-up setting, switched for the demo. */
+  setSelfServiceSignup: (on: boolean) => void;
   clearStateOverrides: () => void;
 
   resetDemo: () => void;
@@ -1604,6 +1640,123 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           ),
         })),
 
+      startOrgOnboarding: (kind, invitationId) =>
+        setState((s) => ({
+          ...s,
+          orgOnboarding: {
+            kind,
+            provedName: null,
+            selectedRef: null,
+            reviewId: null,
+            completed: false,
+            invitationId: invitationId ?? null,
+          },
+        })),
+
+      recordIdentityProof: (name) =>
+        setState((s) => ({
+          ...s,
+          orgOnboarding: {
+            ...(s.orgOnboarding ?? {
+              kind: "company",
+              selectedRef: null,
+              reviewId: null,
+              completed: false,
+              invitationId: null,
+            }),
+            provedName: name,
+          },
+        })),
+
+      selectOrganisation: (ref) =>
+        setState((s) => (s.orgOnboarding ? { ...s, orgOnboarding: { ...s.orgOnboarding, selectedRef: ref } } : s)),
+
+      submitManualReview: ({ legalName, registrationNumber, evidence, note, registerAnswer }) => {
+        const id = rid("mr");
+        setState((s) => {
+          /* Continues the seeded numbering: two cases on file, so the next is 0143. */
+          const n = 141 + s.manualReviews.length;
+          return {
+            ...s,
+            manualReviews: [
+              {
+                id,
+                reference: `MR-${new Date().getFullYear()}-0${n}`,
+                kind: s.orgOnboarding?.kind ?? "company",
+                legalName,
+                registrationNumber,
+                applicantName: s.orgOnboarding?.provedName ?? "Unknown applicant",
+                /* The wallet in this prototype always answers as Dorji — the
+                   proof is a fixture — so the masked CID is his. */
+                applicantCid: "•••• •••• 4821",
+                registerAnswer,
+                evidence,
+                note,
+                submittedAt: today(),
+                state: "UNDER_REVIEW",
+                reviewerId: null,
+                decidedAt: null,
+                reason: null,
+              },
+              ...s.manualReviews,
+            ],
+            orgOnboarding: s.orgOnboarding ? { ...s.orgOnboarding, reviewId: id } : s.orgOnboarding,
+          };
+        });
+        log(`Manual review requested for ${legalName}`);
+        return id;
+      },
+
+      decideManualReview: (id, approve, reason) =>
+        setState((s) => ({
+          ...s,
+          manualReviews: s.manualReviews.map((m) =>
+            m.id === id
+              ? {
+                  ...m,
+                  state: approve ? "APPROVED" : "REFUSED",
+                  reviewerId: s.harness.persona,
+                  decidedAt: today(),
+                  reason: approve ? null : (reason ?? null),
+                }
+              : m,
+          ),
+        })),
+
+      completeOrgOnboarding: () => {
+        /* Lands on Pelden's first day, not on the story's three-months-in
+           seed — see firstRunState. Nothing is logged to the activity feed
+           for the same reason: nothing has been done in the console yet. */
+        setState((s) => ({
+          ...firstRunState(s),
+          orgOnboarding: s.orgOnboarding ? { ...s.orgOnboarding, completed: true } : s.orgOnboarding,
+          /* The account that did this now belongs to the organisation, as its
+             owner — the first row of SCR-ONB-05's list. */
+          signup:
+            s.signup && s.signup.stage === "done" && !s.signup.memberships.some((m) => m.orgId === "org-pelden")
+              ? { ...s.signup, memberships: [...s.signup.memberships, { orgId: "org-pelden", role: "Owner" }] }
+              : s.signup,
+        }));
+      },
+
+      restoreStoryState: () =>
+        setState((s) => {
+          if (!s.firstRun) return s;
+          /* Everything the first-run state emptied comes back from the seed.
+             What the presenter did in the onboarding flows is kept: the
+             account, the review cases, and any invitation they sent. */
+          const seeded = new Set(SEED.orgInvitations.map((i) => i.id));
+          return {
+            ...SEED,
+            signup: s.signup,
+            orgOnboarding: s.orgOnboarding,
+            manualReviews: s.manualReviews,
+            orgInvitations: [...s.orgInvitations.filter((i) => !seeded.has(i.id)), ...SEED.orgInvitations],
+            harness: s.harness,
+            firstRun: false,
+          };
+        }),
+
       setPersona: (persona) =>
         setState((s) => ({ ...s, harness: { ...s.harness, persona } })),
 
@@ -1611,6 +1764,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
       setRunnerOpen: (runnerOpen) =>
         setState((s) => ({ ...s, harness: { ...s.harness, runnerOpen } })),
+
+      setSelfServiceSignup: (selfServiceSignup) =>
+        setState((s) => ({ ...s, harness: { ...s.harness, selfServiceSignup } })),
 
       setStateOverride: (screen, override) =>
         setState((s) => {

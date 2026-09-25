@@ -35,6 +35,21 @@
   --ndi-mint-25: rgba(90, 201, 148, 0.25);
   --ndi-mint-40: rgba(90, 201, 148, 0.4);
 
+  /* ---- The wallet scan card ------------------------------ */
+  /* Mirrors the NDI integration page every relying party embeds, so the
+     console's hand-off looks like the one people meet on other sites. The QR
+     paper and ink never follow the theme: a code has to be dark-on-light to
+     scan, and a dark-mode QR is the classic way to ship one that doesn't.
+     Store badges are black in both themes, as the stores require; in dark
+     they need an outline or they vanish into the card. */
+  --scan-card: var(--surface-raised);
+  --qr-paper: #ffffff;
+  --qr-ink: #0c111b;
+  --ndi-mark-disc: var(--ndi-teal);
+  --store-badge: #000000;
+  --store-badge-ink: #ffffff;
+  --store-badge-edge: rgba(255, 255, 255, 0.28);
+
   /* ---- Semantic status ----------------------------------- */
   --ndi-success: #5ac994;
   --ndi-info: #4aa3ff;
@@ -221,6 +236,8 @@
   --surface-hover: #e4ecea;
   --surface-glass: rgba(29, 125, 87, 0.06);
   --surface-glass-strong: rgba(29, 125, 87, 0.12);
+  --scan-card: #f6f7f7;
+  --store-badge-edge: transparent;
 
   --fill-panel: linear-gradient(
     158deg,

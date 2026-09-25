@@ -168,7 +168,9 @@ export function ReviewInvitationView({ id }: { id: string }) {
               <p className="m-0 flex items-start gap-2.5 text-[13.5px] leading-[1.6] text-body">
                 <Icon name="close" size={14} strokeWidth={2.4} className="mt-[5px] flex-none" style={{ color: "var(--text-faint)" }} />
                 {inv?.kind === "O"
-                  ? `${target} won't be able to issue anything until NDI activates its designation.`
+                  ? inv.needsSecondApproval
+                    ? `${target} won't be able to issue anything until NDI activates its designation.`
+                    : `This doesn't confirm ${target} by itself — the register is still asked to confirm you represent it.`
                   : `This does not let you act for ${target}. If that's needed, they'll set it up separately.`}
               </p>
             </div>

@@ -15,6 +15,8 @@
  * review flagged that method as wrong for the NDI.)
  */
 
+import { SELF_SERVICE_SIGNUP_ENABLED } from "./deployment";
+
 export type LedgerKind = "AnonCreds" | "W3C";
 export type CredentialState = "offered" | "accepted" | "declined" | "revoked";
 export type VerificationState = "requested" | "verified" | "declined" | "expired";
@@ -684,6 +686,121 @@ export interface OrgInvitation {
   acceptedName: string | null;
 }
 
+/* ================================================================== */
+/* Onboarding — Flow 2 (organisation onboarding, holder)               */
+/* ================================================================== */
+
+/** Which register can vouch for you depends on what kind of thing you are. */
+export type OrgKind = "company" | "licensed" | "cso";
+
+/**
+ * Flow 2 in progress — one organisation being added by one representative.
+ *
+ * LIST, THEN SELECT
+ *
+ * The representative proves who they are first, and the register returns
+ * the organisations it lists them against, to pick from (GovTech
+ * requirements §6.1, item 1b — decided 24 Sep 2026). Nobody types a
+ * registration number to claim a company: the person's identity comes from
+ * the wallet proof, never from a field, and the organisation is a selection
+ * — an opaque reference the register handed back — not an identifier someone
+ * could guess. `selectedRef` holds that reference and nothing more.
+ */
+export interface OrgOnboarding {
+  kind: OrgKind;
+  /** The name the citizen credential gave when the proof was answered. */
+  provedName: string | null;
+  /** The register's opaque reference for the organisation chosen. */
+  selectedRef: string | null;
+  /** Set when the register listed nothing and the person asked NDI to review. */
+  reviewId: string | null;
+  /** Registration accepted, holder capability on (Flow 2 step 6). */
+  completed: boolean;
+  /**
+   * Set when the organisation was named by an NDI invitation (FLOW-ONB-02
+   * Kind O) rather than chosen from the register's list. The register is
+   * then asked to confirm that one pair — the person, and the organisation
+   * the invitation names — instead of listing.
+   */
+  invitationId: string | null;
+}
+
+/**
+ * Flow 2's fallback when the register cannot match — decided 24 Sep 2026:
+ * manual review, not a dead end (Flow catalogue, Flow 1 edge cases).
+ *
+ * HOLDER is "automatic where a register answers; otherwise NDI review"
+ * (Flow 1 design §8). So a case carries what the register actually said —
+ * the reason it is here at all — beside what the person claims and the
+ * evidence they gave, and the reviewer's decision is recorded with their
+ * name. Until it is approved the organisation stays an ordinary one: it can
+ * hold nothing.
+ */
+/**
+ * What the register returns for an authenticated representative: the
+ * organisations it lists them against. A fixture — no register is queried.
+ *
+ * Two rows, because a list of one does not show that this is a choice, and
+ * because the second row is the case worth seeing: an organisation already on
+ * the platform, registered by another director. Registering it again would be
+ * re-onboarding, which the Flow 1 design calls a defect wherever it appears —
+ * the way in for a second director is an invitation from the first.
+ */
+export interface RegisterListing {
+  /** Opaque — the register's reference, not a registration number. */
+  ref: string;
+  legalName: string;
+  registrationNumber: string;
+  entityType: string;
+  /** What the register says this person is to the organisation. */
+  capacity: string;
+  /** Already registered on the platform by someone else. */
+  onPlatform: boolean;
+}
+
+export const REGISTER_LISTINGS: RegisterListing[] = [
+  {
+    ref: "cra:rep:7f3a91c2",
+    legalName: "Pelden Trading Pvt. Ltd.",
+    registrationNumber: "CRA-2019-04477",
+    entityType: "Private limited company",
+    capacity: "Director",
+    onPlatform: false,
+  },
+  {
+    ref: "cra:rep:1c90e44b",
+    legalName: "Druk Valley Hardware Pvt. Ltd.",
+    registrationNumber: "CRA-2023-11802",
+    entityType: "Private limited company",
+    capacity: "Director",
+    onPlatform: true,
+  },
+];
+
+export type ReviewState = "UNDER_REVIEW" | "APPROVED" | "REFUSED";
+
+export interface ManualReview {
+  id: string;
+  /** What the applicant is given to quote. */
+  reference: string;
+  kind: OrgKind;
+  legalName: string;
+  registrationNumber: string;
+  applicantName: string;
+  /** Masked. Proved from the applicant's wallet before they got this far. */
+  applicantCid: string;
+  /** What the register returned — why an automatic decision was not possible. */
+  registerAnswer: string;
+  evidence: string[];
+  note: string;
+  submittedAt: string;
+  state: ReviewState;
+  reviewerId: PersonId | null;
+  decidedAt: string | null;
+  /** Required on refusal, so the applicant is told why. */
+  reason: string | null;
+}
+
 export interface HarnessState {
   /** Who the console is being driven as. Decides what is *absent*. */
   persona: PersonaId;
@@ -697,6 +814,14 @@ export interface HarnessState {
    * state you cannot reach is a state you cannot review.
    */
   stateOverrides: Record<string, string>;
+  /**
+   * FLOW-ONB-01 P3, as the deployment would set it. Held here rather than
+   * only in deployment.ts so the demo can show both ways onto the platform:
+   * on, businesses sign up for themselves; off, NDI invites each one
+   * (FLOW-ONB-02 Kind O). It is scaffolding — a deployment setting, not
+   * something any user of the product could change.
+   */
+  selfServiceSignup: boolean;
 }
 
 export interface DemoState {
@@ -736,6 +861,14 @@ export interface DemoState {
   /* ---- Onboarding ---- */
   signup: SignupSession | null;
   orgInvitations: OrgInvitation[];
+  orgOnboarding: OrgOnboarding | null;
+  manualReviews: ManualReview[];
+  /**
+   * True from the moment onboarding completes until the story jumps past
+   * act 1: the console is showing Pelden on its first day (`firstRunState`),
+   * not the three-months-in seed.
+   */
+  firstRun: boolean;
 
   harness: HarnessState;
 }
@@ -930,28 +1063,11 @@ export const SEED: DemoState = {
       location: "Babesa, Thimphu, Bhutan",
       visibility: "private",
     },
-    {
-      id: "org-ndi",
-      name: "Bhutan NDI",
-      description: "National Digital Identity programme office.",
-      role: "Owner",
-      members: 4,
-      createdAt: "2026-02-20",
-      website: "https://www.bhutanndi.com",
-      location: "Thimphu, Bhutan",
-      visibility: "public",
-    },
-    {
-      id: "org-rub",
-      name: "Royal University of Bhutan",
-      description: "Issues degree credentials to graduating students.",
-      role: "Admin",
-      members: 2,
-      createdAt: "2026-03-30",
-      website: "https://www.rub.edu.bt",
-      location: "Thimphu, Bhutan",
-      visibility: "public",
-    },
+    /* Only the one. The inherited Studio seed carried two more (Bhutan NDI
+       and the Royal University) so its switcher had something to switch
+       between; in an Entity Wallet demo they read as "one account runs
+       several businesses", which is not a thing this product offers and not
+       a question the room should be left asking. */
   ],
   members: [
     {
@@ -2040,6 +2156,49 @@ export const SEED: DemoState = {
   /* Nobody is part-way through signing up when the demo starts. */
   signup: null,
 
+  orgOnboarding: null,
+
+  manualReviews: [
+    {
+      /* A licensed business whose licence the register could not find —
+         BLMIS records for older licences are not all digitised. Waiting in
+         the queue so the reviewer's screen opens with a real decision on
+         it, rather than on an empty state. */
+      id: "mr-yangchen",
+      reference: "MR-2026-0142",
+      kind: "licensed",
+      legalName: "Yangchen Handicrafts",
+      registrationNumber: "BL-PARO-2011-0387",
+      applicantName: "Yangchen Tshomo",
+      applicantCid: "•••• •••• 5190",
+      registerAnswer: "The Ministry of Industry, Commerce & Employment found no licence under that number.",
+      evidence: ["trade-licence-2011-scan.pdf", "renewal-receipt-2025.pdf"],
+      note: "Licence issued in Paro in 2011 on paper and renewed every year since. The renewal receipt carries the same number.",
+      submittedAt: day(-1),
+      state: "UNDER_REVIEW",
+      reviewerId: null,
+      decidedAt: null,
+      reason: null,
+    },
+    {
+      id: "mr-karma",
+      reference: "MR-2026-0119",
+      kind: "company",
+      legalName: "Karma Tours & Treks Pvt. Ltd.",
+      registrationNumber: "CRA-2024-02291",
+      applicantName: "Karma Lhamo",
+      applicantCid: "•••• •••• 7726",
+      registerAnswer: "The Corporate Regulatory Authority listed no companies for this person.",
+      evidence: ["certificate-of-incorporation.pdf", "board-resolution-appointing-director.pdf"],
+      note: "Appointed director in August; the register had not been updated when I applied.",
+      submittedAt: day(-19),
+      state: "APPROVED",
+      reviewerId: "kinley",
+      decidedAt: day(-17),
+      reason: null,
+    },
+  ],
+
   orgInvitations: [
     {
       /* History, not a demo step: how Ugyen came to be a member at all.
@@ -2113,10 +2272,129 @@ export const SEED: DemoState = {
     },
   ],
 
+  firstRun: false,
+
   harness: {
     persona: "dorji",
     act: 0,
     runnerOpen: false,
     stateOverrides: {},
+    selfServiceSignup: SELF_SERVICE_SIGNUP_ENABLED,
   },
 };
+
+/**
+ * Pelden Trading on the day it is registered — what completing Flow 2 leaves
+ * behind, in place of the months of history the story's seed carries.
+ *
+ * WHY ONBOARDING DOES NOT LAND ON THE SEED
+ *
+ * The seed is Pelden three months in: Rinzin appointed, credentials held,
+ * approvals parked, an authority issued to Pema and revoked. Arriving at that
+ * dashboard straight from registering the company told the room the opposite
+ * of what act 1 says — that an organisation which existed thirty seconds ago
+ * already had a past. A first-run console is empty except for the two things
+ * onboarding actually produced: the registration it accepted, and Dorji's
+ * root authority to act for it.
+ *
+ * WHAT IS KEPT, AND WHY
+ *
+ * - The foundational credential and the root relation, dated today.
+ * - The organisation's own DID, because provisioning its wallet made it.
+ * - Two audit rows for the registration and the acceptance. The dashboard
+ *   shows no activity — nothing has been done in the console — but an audit
+ *   trail that did not record the organisation coming into existence would
+ *   be a trail with a hole at the top.
+ * - Everything on the NDI side (invitations NDI issued, review cases), and
+ *   the people, so the persona switcher still works — though nobody but
+ *   Dorji is a member yet, and nobody else holds any authority.
+ *
+ * Acts 2–6 need the lived-in state, so the story runner restores it when it
+ * jumps past act 1 (see `restoreStoryState` in the store).
+ */
+export function firstRunState(s: DemoState): DemoState {
+  const today = day(0);
+  const foundational = SEED.heldCredentials.find((c) => c.isFoundational);
+  const root = SEED.relations.find((r) => r.isRootAuthority);
+  const entity = SEED.organizations[0];
+  return {
+    ...s,
+    activeOrgId: entity.id,
+    organizations: [{ ...entity, members: 1, createdAt: today }],
+    schemas: [],
+    credDefs: [],
+    dids: SEED.dids.slice(0, 1),
+    connections: [],
+    credentials: [],
+    verifications: [],
+    members: [],
+    certificates: [],
+    invitations: [],
+    ecosystems: [],
+    ecosystemMembers: [],
+    ecosystemInvitations: [],
+    bulkUploads: [],
+    bulkRecords: [],
+    apiKeys: [],
+    activity: [],
+    people: SEED.people.map((p) =>
+      p.id === "dorji" ? p : { ...p, memberRole: undefined },
+    ),
+    relations: root
+      ? [
+          {
+            ...root,
+            scope: { ...root.scope, validFrom: today },
+            createdAt: today,
+            acceptedAt: today,
+            activatedAt: today,
+          },
+        ]
+      : [],
+    heldCredentials: foundational ? [{ ...foundational, receivedAt: today }] : [],
+    offers: [],
+    verificationRequests: [],
+    parkedOperations: [],
+    delegatedAuthorities: [],
+    decisions: [],
+    auditEntries: [
+      {
+        id: "au-onb-2",
+        seq: 2,
+        operation: "credential:accept",
+        summary: "Accepted Business Registration under the bootstrap authority",
+        entity: entity.name,
+        actorId: "dorji",
+        relationId: root?.id ?? null,
+        scopeVersion: 1,
+        approvedById: null,
+        relyingPartyDid: null,
+        disclosedDigest: null,
+        at: new Date().toISOString(),
+        prevHash: "sha256:9b2e07c4",
+        rowHash: "sha256:3f81d6a0",
+      },
+      {
+        id: "au-onb-1",
+        seq: 1,
+        operation: "entity:register",
+        summary: "Registered, confirmed by the register — Dorji Wangchuk as director",
+        entity: entity.name,
+        actorId: "dorji",
+        relationId: null,
+        scopeVersion: null,
+        approvedById: null,
+        relyingPartyDid: null,
+        disclosedDigest: null,
+        at: new Date().toISOString(),
+        prevHash: "sha256:00000000",
+        rowHash: "sha256:9b2e07c4",
+      },
+    ],
+    appeals: [],
+    /* Only what NDI issued: an organisation that exists today has sent no
+       member invitations. */
+    orgInvitations: s.orgInvitations.filter((i) => i.kind === "O"),
+    firstRun: true,
+  };
+}

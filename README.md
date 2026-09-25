@@ -65,9 +65,17 @@ holding delegated authority; counterparties are Bank of Bhutan and BNSW.
 Act 5 is the centre of the demo: a PASS beside a FAIL-with-a-reason on the same
 chain explains delegated authority better than any diagram.
 
+Beside the story, the demo carries the two flows up for Gate 2 — **Flow 1**
+(create an account, invite a member, invite an agency under dual control) and
+**Flow 2** (add an organisation, by either of its two routes — signing up
+and adding it yourself, or being invited by NDI to register it when
+self-service sign-up is off — with NDI manual review when the register
+can't match). Demo controls
+→ **Walk a flow** starts each one as the right person.
+
 **Presenting it? Read [`docs/running-the-demo.md`](docs/running-the-demo.md)** —
-what is built, the act-by-act script, and what to say when someone asks whether
-any of it is real.
+what is built, the act-by-act script, the Gate 2 flow walks, and what to say
+when someone asks whether any of it is real.
 
 Full spine, per-screen build depth and slice order: **[`docs/demo-plan.md`](docs/demo-plan.md)**.
 Standing engineering rules: **[`CLAUDE.md`](CLAUDE.md)**.
@@ -187,7 +195,9 @@ before any walkthrough:
 
 | Shown | Reality |
 |---|---|
-| A government register confirming a representative | Fixture plus an authored delay. No register integration exists. |
+| A government register listing the organisations a person represents | Two fixed rows plus an authored delay. No register integration exists. |
+| NDI manually reviewing an organisation the register could not match | A queue in browser storage. Uploaded files are reduced to their names. |
+| Verification and invitation emails | Nothing is sent. A dashed prototype panel stands in for the inbox. |
 | Approval-as-signature from a personal wallet | Fixture. The QR is a deliberate non-scannable stand-in (`QrPlaceholder`). |
 | Revocation propagating to a verifier | Fixture. Nothing propagates anywhere. |
 | The Bhutan National Single Window as a verifier | A stand-in page drawn as BNSW. The Single Window is not live yet — still in procurement as of August 2026; customs runs on DRC's eCMS today. |

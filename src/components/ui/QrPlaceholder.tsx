@@ -24,7 +24,13 @@ const FINDERS = [
   [0, GRID - 7],
 ];
 
-export function QrPlaceholder({ value }: { value: string | null }) {
+/**
+ * `bare` draws only the code, for a frame that supplies its own paper — the
+ * wallet scan card — and leaves the centre clear for the NDI mark, the way the
+ * real integration's codes do (error correction is what lets a real code lose
+ * its middle and still scan).
+ */
+export function QrPlaceholder({ value, bare = false }: { value: string | null; bare?: boolean }) {
   if (!value) {
     return (
       <div
@@ -46,8 +52,32 @@ export function QrPlaceholder({ value }: { value: string | null }) {
   for (let y = 0; y < GRID; y += 1) {
     for (let x = 0; x < GRID; x += 1) {
       if (inFinder(x, y)) continue;
+      if (bare && x >= 7 && x < GRID - 7 && y >= 7 && y < GRID - 7) continue;
       if (hash(value, y * GRID + x) % 100 < 46) cells.push({ x, y });
     }
+  }
+
+  if (bare) {
+    return (
+      <svg
+        viewBox={`0 0 ${GRID} ${GRID}`}
+        className="block h-auto w-full"
+        role="img"
+        aria-label="Bhutan NDI Wallet QR code"
+        shapeRendering="crispEdges"
+      >
+        {cells.map((c) => (
+          <rect key={`${c.x}-${c.y}`} x={c.x} y={c.y} width="1" height="1" style={{ fill: "var(--qr-ink)" }} />
+        ))}
+        {FINDERS.map(([fx, fy]) => (
+          <g key={`${fx}-${fy}`}>
+            <rect x={fx} y={fy} width="7" height="7" style={{ fill: "var(--qr-ink)" }} />
+            <rect x={fx + 1} y={fy + 1} width="5" height="5" style={{ fill: "var(--qr-paper)" }} />
+            <rect x={fx + 2} y={fy + 2} width="3" height="3" style={{ fill: "var(--qr-ink)" }} />
+          </g>
+        ))}
+      </svg>
+    );
   }
 
   return (
