@@ -48,6 +48,23 @@ const SIMULATED: { area: string; icon: IconName; rows: Row[] }[] = [
         needs: "The existing NDI wallet proof-request flow, wired to this console.",
       },
       {
+        shown: "The root administrator recognised by their address",
+        reality:
+          "A fixed address in the demo data. Anyone typing it in this browser becomes root — there is no deployment secret and no second factor.",
+        needs: "Root seeded by the deployment itself, with a hardware-backed second factor on that account.",
+      },
+      {
+        shown: "Platform admins, access requests and their decisions",
+        reality:
+          "Invitations, requests and approvals live in your browser. \"Only root can make an admin\" and \"only an admin can decide\" are checked by the demo store, which is not a boundary.",
+        needs: "Role checks and the audit of every decision enforced by the platform's services.",
+      },
+      {
+        shown: "Issuer logos on credential cards",
+        reality: "Initials in a seal. No real agency or bank logo is used.",
+        needs: "Issuer display metadata, including logos, from the trust registry.",
+      },
+      {
         shown: "Self-service sign-up switched on or off",
         reality:
           "A demo control, so both ways onto the platform can be shown. In the product it is a deployment setting nobody using the console can change.",

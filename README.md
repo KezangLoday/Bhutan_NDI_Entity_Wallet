@@ -74,7 +74,10 @@ can't match). Demo controls
 → **Walk a flow** starts each one as the right person.
 
 **New to it? Press Guided demo** (bottom-left of any screen): it walks the
-whole story on screen and tells you what to press at each step.
+whole story on screen and tells you what to press at each step — starting
+with NDI's root administrator setting up the platform, then Bank of Bhutan
+(already an issuer and verifier) being invited to an Entity Wallet, then
+Pelden Trading signing up for one.
 
 **Presenting it? Read [`docs/running-the-demo.md`](docs/running-the-demo.md)** —
 what is built, the act-by-act script, the Gate 2 flow walks, and what to say

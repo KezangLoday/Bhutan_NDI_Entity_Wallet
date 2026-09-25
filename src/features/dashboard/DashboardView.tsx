@@ -10,6 +10,8 @@ import { Panel } from "@/components/ui/Panel";
 import { WaveBanner } from "@/components/ui/WaveBanner";
 import { Icon } from "@/components/ui/icons";
 import { NeedsAttention } from "@/features/wallet/NeedsAttention";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { PELDEN } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 
 /**
@@ -24,7 +26,7 @@ import { useDemo } from "@/lib/demoStore";
  * owner — what has happened.
  */
 export function DashboardView({ firstName }: { firstName?: string } = {}) {
-  const { organizations, activity, currentPerson, harness, firstRun } = useDemo();
+  const { organizations, activeOrgId, accessRequests, activity, currentPerson, harness, firstRun } = useDemo();
 
   /* The suspended face is a §9 global rather than a fixture state: a
      controller whose authority is pulled mid-session must hit an explained
@@ -32,7 +34,86 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
   const screenState = useScreenState("B1", ["has_tasks", "all_clear", "access_suspended"]);
 
   const name = firstName ?? currentPerson.name.split(" ")[0];
-  const isOwner = harness.persona === "dorji";
+  const org = organizations.find((o) => o.id === activeOrgId);
+  const orgName = org?.name ?? "The organisation";
+  /* Pelden's owner gets the owner's dashboard: granting authority, the
+     history. The feed and the first-day steps are Pelden's alone. */
+  const isOwner = harness.persona === "dorji" && activeOrgId === PELDEN;
+  const holder = Boolean(org?.capabilities.includes("holder"));
+
+  /* An organisation on NDI without an Entity Wallet — Bank of Bhutan
+     before it asks. Its dashboard is about what it already does, with the
+     way to a wallet beside it rather than a wallet it does not have. */
+  if (!holder) {
+    const request = accessRequests.find((a) => a.orgId === activeOrgId && a.capability === "holder");
+    const walletStatus =
+      request?.state === "PENDING"
+        ? { status: "requested", label: "Requested — waiting for NDI" }
+        : request?.state === "APPROVED"
+          ? { status: "invited", label: "Approved — invitation sent" }
+          : { status: "not_set_up", label: "Not set up" };
+    return (
+      <AppShell>
+        <div className="flex flex-col gap-5">
+          <WaveBanner
+            eyebrow="— Dashboard"
+            title={
+              <>
+                Welcome back, <span className="ndi-wave-text ndi-wave-tight">{name}</span>
+              </>
+            }
+            lead={`${orgName} issues and verifies credentials on the Bhutan NDI network.`}
+            action={
+              <Link href="/entity-wallet">
+                <GradientButton>
+                  <Icon name="wallet" size={16} strokeWidth={2} />
+                  {request ? "See the Entity Wallet request" : "Get an Entity Wallet"}
+                </GradientButton>
+              </Link>
+            }
+          />
+          <div className="grid gap-5 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+            <Panel>
+              <div className="relative z-[4] flex flex-col gap-3">
+                <h2 className="m-0 font-display text-[15px] font-semibold text-strong">What {orgName} does on NDI</h2>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {org?.capabilities.includes("issuer") ? (
+                    <li className="flex items-center justify-between gap-3 text-[13.5px] text-body">
+                      Issues credentials
+                      <Link href="/credentials/issue" className="ndi-plainlink text-[12.5px] font-medium text-accent">
+                        Issue one
+                      </Link>
+                    </li>
+                  ) : null}
+                  {org?.capabilities.includes("verifier") ? (
+                    <li className="flex items-center justify-between gap-3 text-[13.5px] text-body">
+                      Verifies credentials
+                      <Link href="/verification" className="ndi-plainlink text-[12.5px] font-medium text-accent">
+                        Verify
+                      </Link>
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            </Panel>
+            <Panel>
+              <div className="relative z-[4] flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="m-0 font-display text-[15px] font-semibold text-strong">Entity Wallet</h2>
+                  <StatusPill status={walletStatus.status} label={walletStatus.label} />
+                </div>
+                <p className="m-0 text-[13px] leading-[1.6] text-muted">
+                  A wallet of {orgName}&rsquo;s own, holding the credentials issued to it — its
+                  registration, its licences — with named people acting for it. Asked for from NDI;
+                  what it issues and verifies stays as it is.
+                </p>
+              </div>
+            </Panel>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -44,17 +125,24 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
           eyebrow="— Dashboard"
           title={
             <>
-              {firstRun ? "Welcome" : "Welcome back"},{" "}
+              {firstRun && isOwner ? "Welcome" : "Welcome back"},{" "}
               <span className="ndi-wave-text ndi-wave-tight">{name}</span>
             </>
           }
           lead={
-            firstRun
-              ? `${organizations[0]?.name ?? "Your organisation"} is verified and holds its registration. Nothing has happened here yet.`
-              : `${organizations[0]?.name ?? "The organisation"}'s wallet — what needs you, and what you may do for it.`
+            firstRun && isOwner
+              ? `${orgName} is verified and holds its registration. Nothing has happened here yet.`
+              : `${orgName}'s wallet — what needs you, and what you may do for it.`
           }
           action={
-            isOwner ? (
+            activeOrgId !== PELDEN ? (
+              <Link href="/wallet/credentials">
+                <GradientButton>
+                  <Icon name="credentials" size={16} strokeWidth={2} />
+                  See what it holds
+                </GradientButton>
+              </Link>
+            ) : isOwner ? (
               <Link href="/controllership/relations/new">
                 <GradientButton>
                   <Icon name="userCheck" size={16} strokeWidth={2} />

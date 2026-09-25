@@ -39,14 +39,16 @@ export function DemoHarness() {
     restoreStoryState,
     setSelfServiceSignup,
     setGuideStep,
+    startDayZero,
     hydrated,
   } = useDemo();
 
-  /* The guided demo always starts from a clean slate: it begins with
-     somebody signing up, and a demo someone else half-ran would contradict
-     the first thing it says. */
+  /* The guided demo always starts from the platform's day zero: it begins
+     before any business, with root setting NDI up, and a demo someone else
+     half-ran would contradict the first thing it says. */
   const startGuide = () => {
     resetDemo();
+    startDayZero();
     setGuideStep(0);
     setOpen(false);
   };
@@ -73,7 +75,9 @@ export function DemoHarness() {
    *  alongside so the switcher passes a PersonaId rather than a bare string. */
   const personas = PERSONAS.flatMap((id) => {
     const person = people.find((p) => p.id === id);
-    return person ? [{ id, person }] : [];
+    /* Nobody without an account can be driven as: on the platform's day
+       zero that is almost everyone, and they appear as they sign up. */
+    return person && person.hasAccount !== false ? [{ id, person }] : [];
   });
 
   const act = actByNumber(harness.act);
@@ -209,6 +213,10 @@ export function DemoHarness() {
                     key={f.route}
                     type="button"
                     onClick={() => {
+                      if (f.dayZero) {
+                        resetDemo();
+                        startDayZero();
+                      }
                       if (f.persona) setPersona(f.persona);
                       if (f.selfService !== undefined) setSelfServiceSignup(f.selfService);
                       setOpen(false);

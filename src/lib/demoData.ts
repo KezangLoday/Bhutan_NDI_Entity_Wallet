@@ -78,6 +78,22 @@ export interface Verification {
   requestedAt: string;
 }
 
+/**
+ * What an organisation may do on the NDI platform. Three separate grants,
+ * held in any combination:
+ *
+ * - issuer / verifier — the platform's existing product. Bank of Bhutan has
+ *   both: it issues account credentials and checks proofs at the counter.
+ * - holder — the Entity Wallet: the organisation holds credentials issued to
+ *   *it*, and people act for it under scoped authority.
+ *
+ * They arrive by different doors (Flow 1: tiered access). A company that
+ * signs up for itself gets holder and nothing else; an organisation already
+ * issuing on NDI asks for holder and is invited to it; issuer and verifier
+ * are granted by an NDI platform admin on request.
+ */
+export type OrgCapability = "issuer" | "verifier" | "holder";
+
 export interface Organization {
   id: string;
   name: string;
@@ -88,6 +104,11 @@ export interface Organization {
   website?: string;
   location?: string;
   visibility: "public" | "private";
+  capabilities: OrgCapability[];
+  /** Who belongs to it — decides whose switcher it appears in. */
+  memberIds: PersonId[];
+  /** Its name on the register, when that differs from how it is known. */
+  legalName?: string;
 }
 
 /** An invitation to join an ecosystem, as opposed to an organization. */
@@ -209,7 +230,16 @@ export type PersonId = string;
  * selector offers only people it then refuses, and the act cannot be
  * completed at all.
  */
-export type PersonaId = "dorji" | "rinzin" | "pema" | "ugyen" | "invitee" | "tshering" | "kinley";
+export type PersonaId =
+  | "dorji"
+  | "rinzin"
+  | "pema"
+  | "ugyen"
+  | "invitee"
+  | "yeshey"
+  | "root"
+  | "tshering"
+  | "kinley";
 
 /** The drivable personas, in story order. One list, so the harness, the nav
  *  and the acceptance screen cannot disagree about who exists.
@@ -222,10 +252,42 @@ export type PersonaId = "dorji" | "rinzin" | "pema" | "ugyen" | "invitee" | "tsh
  *  form, and their record only exists once they have accepted. The harness
  *  shows a persona only while its person exists, so the invitee appears the
  *  moment there is one. */
-export const PERSONAS: PersonaId[] = ["dorji", "rinzin", "pema", "ugyen", "invitee", "tshering", "kinley"];
+export const PERSONAS: PersonaId[] = [
+  "dorji",
+  "rinzin",
+  "pema",
+  "ugyen",
+  "invitee",
+  "yeshey",
+  "root",
+  "tshering",
+  "kinley",
+];
 
 /** NDI's own administrators — not members of any business on the platform. */
 export const PLATFORM_ADMINS: PersonaId[] = ["tshering", "kinley"];
+
+/**
+ * NDI's root administrator — seeded once by the deployment (Flow 1
+ * preconditions: "at least one Root Admin exists"), never onboarded. They
+ * sign up and sign in like anyone, and the platform recognises the address.
+ */
+export const ROOT_ADMIN: PersonaId = "root";
+
+/**
+ * The story's entity. Wallet records without an `orgId` are its — the seed
+ * was written when it was the only wallet — and `inOrg` is the one place
+ * that assumption lives.
+ */
+export const PELDEN = "org-pelden";
+export const inOrg =
+  (orgId: string) =>
+  (x: { orgId?: string }): boolean =>
+    (x.orgId ?? PELDEN) === orgId;
+
+/** Whether someone administers the platform: root, or an admin root invited. */
+export const isPlatformAdmin = (person: { platformRole?: "root" | "admin" } | undefined) =>
+  person?.platformRole === "root" || person?.platformRole === "admin";
 
 export interface Person {
   id: PersonId;
@@ -248,6 +310,18 @@ export interface Person {
    * NDI's administrators belong to no business at all.
    */
   memberRole?: "Owner" | "Admin" | "Member";
+  /**
+   * NDI's own staff: root (seeded by the deployment) or an admin root
+   * invited. Independent of memberRole — an administrator belongs to no
+   * business.
+   */
+  platformRole?: "root" | "admin";
+  /**
+   * False until the person has created their account. Absent means they
+   * have one. It is what lets the platform's day zero exist at all: the
+   * people are known to the story before any of them has signed up.
+   */
+  hasAccount?: boolean;
 }
 
 /**
@@ -319,6 +393,8 @@ export interface Instrument {
 
 export interface ControllershipRelation {
   id: string;
+  /** The entity it is authority over. Absent means Pelden Trading. */
+  orgId?: string;
   personId: PersonId;
   legalBasis: LegalBasis;
   instrument: Instrument | null;
@@ -343,6 +419,8 @@ export interface CredentialAttribute {
  *  entity issued to somebody else. */
 export interface HeldCredential {
   id: string;
+  /** Whose wallet it is in. Absent means Pelden Trading's. */
+  orgId?: string;
   type: string;
   issuer: string;
   issuerDid: string;
@@ -363,6 +441,8 @@ export type ScopeDecision = "allowed" | "out_of_scope" | "requires_approval";
 
 export interface CredentialOffer {
   id: string;
+  /** Whose wallet it was offered to. Absent means Pelden Trading's. */
+  orgId?: string;
   type: string;
   issuer: string;
   issuerDid: string;
@@ -383,6 +463,8 @@ export interface CredentialOffer {
  */
 export interface VerificationRequestTask {
   id: string;
+  /** Whose wallet was asked. Absent means Pelden Trading's. */
+  orgId?: string;
   relyingParty: string;
   relyingPartyDid: string;
   relyingPartyTrusted: boolean;
@@ -422,6 +504,8 @@ export interface ApprovalSignature {
  */
 export interface ParkedOperation {
   id: string;
+  /** Whose operation it is. Absent means Pelden Trading's. */
+  orgId?: string;
   /** Issuing delegated authority parks like anything else, but it is an
    *  Owner action rather than one of the Controller operations. */
   operation: ControllerOperation | "authority:issue";
@@ -641,7 +725,19 @@ export interface SignupSession {
  * (POL-CAP, §1.1): a foundational issuer needs it, an ordinary business
  * invited to register does not. So it is a field, not a property of Kind O.
  */
-export type InvitationKind = "M" | "O";
+/**
+ * M and O are FLOW-ONB-02's two kinds. Two more arrived with the platform's
+ * own setup, and the flow specification does not name them yet (raise at
+ * Gate 2):
+ *
+ * - A — root invites a platform administrator. Root holds every grant, so
+ *   there is nobody above to approve it.
+ * - W — a platform admin invites the owner of an organisation already on
+ *   NDI (an issuer or verifier) to set up its Entity Wallet, after
+ *   reviewing its request. The organisation exists; what the invitation
+ *   carries is the holder capability, still subject to the register check.
+ */
+export type InvitationKind = "M" | "O" | "A" | "W";
 
 export type OrgInvitationState =
   | "PENDING_APPROVAL" // Kind O, waiting on a second administrator. Not sent.
@@ -756,6 +852,8 @@ export interface RegisterListing {
   capacity: string;
   /** Already registered on the platform by someone else. */
   onPlatform: boolean;
+  /** Only reached through an invitation naming it, never listed by person. */
+  invitedOnly?: boolean;
 }
 
 export const REGISTER_LISTINGS: RegisterListing[] = [
@@ -775,7 +873,42 @@ export const REGISTER_LISTINGS: RegisterListing[] = [
     capacity: "Director",
     onPlatform: true,
   },
+  {
+    /* Found only by name, from an invitation that names it — it is not
+       among what the register lists against Dorji. */
+    ref: "cra:rep:5b21de07",
+    legalName: "Bank of Bhutan Ltd.",
+    registrationNumber: "CRA-1997-00112",
+    entityType: "Public limited company",
+    capacity: "Chief executive's delegate",
+    onPlatform: false,
+    invitedOnly: true,
+  },
 ];
+
+/**
+ * An organisation asking NDI for more access — an Entity Wallet, or the
+ * right to issue or verify. Reviewed by a platform admin, whose decision is
+ * recorded with their name (rule 9: the decision is the server's; here, a
+ * fixture or an admin's click, never the requester's screen deciding).
+ */
+export interface AccessRequest {
+  id: string;
+  orgId: string;
+  capability: OrgCapability;
+  requestedBy: PersonId;
+  /** Printed as-is: the requester may be nobody the demo can be driven as. */
+  requesterName: string;
+  requesterEmail: string;
+  note: string;
+  submittedAt: string;
+  state: "PENDING" | "APPROVED" | "DECLINED";
+  decidedBy: PersonId | null;
+  decidedAt: string | null;
+  reason: string | null;
+  /** For an Entity Wallet: the invitation approving it sent. */
+  invitationId: string | null;
+}
 
 export type ReviewState = "UNDER_REVIEW" | "APPROVED" | "REFUSED";
 
@@ -869,6 +1002,7 @@ export interface DemoState {
   orgInvitations: OrgInvitation[];
   orgOnboarding: OrgOnboarding | null;
   manualReviews: ManualReview[];
+  accessRequests: AccessRequest[];
   /**
    * True from the moment onboarding completes until the story jumps past
    * act 1: the console is showing Pelden on its first day (`firstRunState`),
@@ -1068,12 +1202,46 @@ export const SEED: DemoState = {
       website: "https://www.peldentrading.bt",
       location: "Babesa, Thimphu, Bhutan",
       visibility: "private",
+      /* Holder only: it signed up for itself, so it has an Entity Wallet and
+         no issuing or verifying on the network. */
+      capabilities: ["holder"],
+      memberIds: ["dorji", "rinzin", "ugyen", "pema", "invitee", "sonam", "karma", "tenzin"],
     },
-    /* Only the one. The inherited Studio seed carried two more (Bhutan NDI
-       and the Royal University) so its switcher had something to switch
-       between; in an Entity Wallet demo they read as "one account runs
-       several businesses", which is not a thing this product offers and not
-       a question the room should be left asking. */
+    {
+      /* Already on NDI as an issuer and verifier long before the Entity
+         Wallet existed — it issues account credentials and checks proofs at
+         the counter. Three months into the story it also holds an Entity
+         Wallet, which it asked NDI for and was invited to (the second way
+         onto the Entity Wallet). Each organisation appears only in its own
+         people's switcher, so Pelden's never shows it. */
+      id: "org-bob",
+      name: "Bank of Bhutan",
+      legalName: "Bank of Bhutan Ltd.",
+      description: "Commercial bank. Issues account credentials and verifies customers on NDI.",
+      role: "Owner",
+      members: 3,
+      createdAt: "2024-02-12",
+      website: "https://www.bob.bt",
+      location: "Norzin Lam, Thimphu, Bhutan",
+      visibility: "public",
+      capabilities: ["issuer", "verifier", "holder"],
+      memberIds: ["yeshey"],
+    },
+    {
+      /* Another existing NDI customer, here only so the platform admin's
+         queue holds a request that is not about the Entity Wallet — a
+         company asking to verify as well as issue. */
+      id: "org-tashicell",
+      name: "Tashi InfoComm Ltd.",
+      description: "Mobile network operator. Issues SIM-registration credentials.",
+      role: "Owner",
+      members: 2,
+      createdAt: "2025-03-04",
+      location: "Thimphu, Bhutan",
+      visibility: "public",
+      capabilities: ["issuer"],
+      memberIds: [],
+    },
   ],
   members: [
     {
@@ -1315,6 +1483,7 @@ export const SEED: DemoState = {
       email: "tshering.yangzom@ndi.bt",
       title: "Platform admin · Bhutan NDI",
       cidVerified: true,
+      platformRole: "admin",
     },
     {
       id: "kinley",
@@ -1323,10 +1492,61 @@ export const SEED: DemoState = {
       email: "kinley.wangdi@ndi.bt",
       title: "Platform admin · Bhutan NDI",
       cidVerified: true,
+      platformRole: "admin",
+    },
+    {
+      /* NDI's root administrator. Seeded by the deployment, so never
+         onboarded: signs up with this address and is recognised. */
+      id: "root",
+      name: "Chimi Wangmo",
+      cid: "•••• •••• 1002",
+      email: "chimi.wangmo@ndi.bt",
+      title: "Root administrator · Bhutan NDI",
+      cidVerified: true,
+      platformRole: "root",
+    },
+    {
+      /* Bank of Bhutan's owner on the platform — an account that has
+         existed since the bank started issuing on NDI. */
+      id: "yeshey",
+      name: "Yeshey Choden",
+      cid: "•••• •••• 7731",
+      email: "yeshey.choden@bob.bt",
+      title: "Head of digital banking · Bank of Bhutan",
+      cidVerified: true,
     },
   ],
 
   relations: [
+    {
+      /* Yeshey's root authority over Bank of Bhutan's Entity Wallet, from
+         when the bank set it up. */
+      id: "rel-bob-root",
+      orgId: "org-bob",
+      personId: "yeshey",
+      legalBasis: "entity_consent",
+      instrument: {
+        fileName: "board-resolution-bob-2026-06.pdf",
+        hash: "sha256:7d0e5a91c3b24f68a0e1d97c52b8f3a4e6c10d29b7f5a8e3",
+        reference: "BOB/BR/2026/022",
+      },
+      scope: {
+        version: 1,
+        validFrom: day(-70),
+        validUntil: null,
+        grants: [
+          { operation: "credential:receive", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "credential:accept", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "credential:list", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+          { operation: "proof:present", credentialTypes: { mode: "any" }, relyingParties: { mode: "any" }, approval: "AUTO" },
+        ],
+      },
+      state: "ACTIVE",
+      isRootAuthority: true,
+      createdAt: day(-70),
+      acceptedAt: day(-70),
+      activatedAt: day(-70),
+    },
     {
       /* The Owner's own relation. Full scope, no expiry — the root everything
          else is granted out of, and the reason the scope grammar needs a
@@ -1476,6 +1696,26 @@ export const SEED: DemoState = {
       ],
       isFoundational: true,
       receivedAt: day(-112),
+      expiresAt: null,
+      status: "active",
+    },
+    {
+      /* Bank of Bhutan's own registration, in its own wallet. */
+      id: "hc-bob-registration",
+      orgId: "org-bob",
+      type: "Business Registration",
+      issuer: "Corporate Regulatory Authority",
+      issuerDid: "did:polygon:0xe58a0aa81d2ec2fb904f800d2699123052be5913",
+      issuerTrusted: true,
+      attributes: [
+        { name: "registered_name", value: "Bank of Bhutan Ltd." },
+        { name: "registration_number", value: "CRA-1997-00112" },
+        { name: "entity_type", value: "Public limited company" },
+        { name: "registered_address", value: "Norzin Lam, Thimphu, Bhutan" },
+        { name: "status", value: "Active" },
+      ],
+      isFoundational: true,
+      receivedAt: day(-70),
       expiresAt: null,
       status: "active",
     },
@@ -2190,6 +2430,40 @@ export const SEED: DemoState = {
 
   orgOnboarding: null,
 
+  accessRequests: [
+    {
+      /* History: how Bank of Bhutan came to have an Entity Wallet. */
+      id: "ar-bob-wallet",
+      orgId: "org-bob",
+      capability: "holder",
+      requestedBy: "yeshey",
+      requesterName: "Yeshey Choden",
+      requesterEmail: "yeshey.choden@bob.bt",
+      note: "We'd like the bank to hold its own registration and licences, and to present them to correspondents.",
+      submittedAt: day(-74),
+      state: "APPROVED",
+      decidedBy: "tshering",
+      decidedAt: day(-73),
+      reason: null,
+      invitationId: "inv-bob-wallet",
+    },
+    {
+      id: "ar-tashicell-verify",
+      orgId: "org-tashicell",
+      capability: "verifier",
+      requestedBy: "tashicell-owner",
+      requesterName: "Pem Dorji",
+      requesterEmail: "pem.dorji@tashicell.bt",
+      note: "We want to check customers' citizen credentials in-store before issuing a SIM, instead of photocopying CIDs.",
+      submittedAt: day(-1),
+      state: "PENDING",
+      decidedBy: null,
+      decidedAt: null,
+      reason: null,
+      invitationId: null,
+    },
+  ],
+
   manualReviews: [
     {
       /* A licensed business whose licence the register could not find —
@@ -2232,6 +2506,27 @@ export const SEED: DemoState = {
   ],
 
   orgInvitations: [
+    {
+      /* History: the invitation that set up Bank of Bhutan's Entity Wallet. */
+      id: "inv-bob-wallet",
+      kind: "W",
+      email: "yeshey.choden@bob.bt",
+      orgId: "org-bob",
+      role: null,
+      legalName: "Bank of Bhutan Ltd.",
+      legalIdentity: "Public limited company, CRA-1997-00112",
+      purpose: "Entity Wallet for an organisation already issuing and verifying on NDI.",
+      needsSecondApproval: false,
+      invitedBy: "tshering",
+      approvedBy: null,
+      createdAt: day(-73),
+      sentAt: day(-73),
+      expiresAt: day(-43),
+      state: "ACCEPTED",
+      delivery: "delivered",
+      decidedAt: day(-70),
+      acceptedName: "Yeshey Choden",
+    },
     {
       /* History, not a demo step: how Ugyen came to be a member at all.
          Membership came first and authority separately, later — which is
@@ -2347,33 +2642,33 @@ export const SEED: DemoState = {
  */
 export function firstRunState(s: DemoState): DemoState {
   const today = day(0);
-  const foundational = SEED.heldCredentials.find((c) => c.isFoundational);
-  const root = SEED.relations.find((r) => r.isRootAuthority);
-  const entity = SEED.organizations[0];
+  const foundational = SEED.heldCredentials.filter(inOrg(PELDEN)).find((c) => c.isFoundational);
+  const root = SEED.relations.filter(inOrg(PELDEN)).find((r) => r.isRootAuthority);
+  const entity = SEED.organizations.find((o) => o.id === PELDEN)!;
   return {
     ...s,
     activeOrgId: entity.id,
-    organizations: [{ ...entity, members: 1, createdAt: today }],
-    schemas: [],
-    credDefs: [],
-    dids: SEED.dids.slice(0, 1),
-    connections: [],
-    credentials: [],
-    verifications: [],
-    members: [],
-    certificates: [],
-    invitations: [],
-    ecosystems: [],
-    ecosystemMembers: [],
-    ecosystemInvitations: [],
-    bulkUploads: [],
-    bulkRecords: [],
-    apiKeys: [],
+    /* Other organisations are untouched — Bank of Bhutan's day is not
+       Pelden's first one. The issuer/verifier collections (schemas,
+       credentials issued…) stay for the same reason: they are the issuers',
+       and Pelden, a holder only, never sees them. */
+    organizations: [
+      { ...entity, members: 1, createdAt: today },
+      ...s.organizations.filter((o) => o.id !== PELDEN),
+    ],
     activity: [],
-    people: SEED.people.map((p) =>
-      p.id === "dorji" ? p : { ...p, memberRole: undefined },
+    /* Nobody but Dorji is a member yet. The platform's own people keep
+       whatever the story has given them — an admin root invited stays one. */
+    people: s.people.map((p) =>
+      p.id === "dorji"
+        ? { ...p, memberRole: "Owner", hasAccount: true }
+        : isPlatformAdmin(p) || !entity.memberIds.includes(p.id)
+          ? p
+          : { ...p, memberRole: undefined },
     ),
-    relations: root
+    relations: [
+      ...s.relations.filter((r) => !inOrg(PELDEN)(r)),
+      ...(root
       ? [
           {
             ...root,
@@ -2383,10 +2678,14 @@ export function firstRunState(s: DemoState): DemoState {
             activatedAt: today,
           },
         ]
-      : [],
-    heldCredentials: foundational ? [{ ...foundational, receivedAt: today }] : [],
-    offers: [],
-    verificationRequests: [],
+      : []),
+    ],
+    heldCredentials: [
+      ...s.heldCredentials.filter((c) => !inOrg(PELDEN)(c)),
+      ...(foundational ? [{ ...foundational, receivedAt: today }] : []),
+    ],
+    offers: s.offers.filter((o) => !inOrg(PELDEN)(o)),
+    verificationRequests: s.verificationRequests.filter((v) => !inOrg(PELDEN)(v)),
     parkedOperations: [],
     delegatedAuthorities: [],
     decisions: [],
@@ -2427,7 +2726,62 @@ export function firstRunState(s: DemoState): DemoState {
     appeals: [],
     /* Only what NDI issued: an organisation that exists today has sent no
        member invitations. */
-    orgInvitations: s.orgInvitations.filter((i) => i.kind === "O"),
+    orgInvitations: s.orgInvitations.filter((i) => i.kind !== "M"),
     firstRun: true,
+  };
+}
+
+/**
+ * The Entity Wallet's day zero — the state the guided demo starts from.
+ *
+ * WHY THE STORY STARTS BEFORE ANY BUSINESS
+ *
+ * Nobody can bring an organisation onto the Entity Wallet until NDI has
+ * people to review it, and NDI has none until its root administrator has
+ * invited them. So the platform is shown being set up first: root signs up
+ * (seeded by the deployment, never onboarded), invites a platform admin, and
+ * only then does any organisation get on — Bank of Bhutan by invitation,
+ * Pelden by signing up.
+ *
+ * WHAT ALREADY EXISTS ON DAY ZERO
+ *
+ * The NDI platform itself is not new. Bank of Bhutan and Tashi InfoComm
+ * have issued and verified on it for years, so they are here — without an
+ * Entity Wallet. Everyone else is known to the story but has no account:
+ * `hasAccount: false` keeps them out of the persona switcher until they
+ * sign up or accept an invitation. Pelden does not exist yet.
+ */
+export function dayZeroState(seed: DemoState): DemoState {
+  const existing = seed.organizations
+    .filter((o) => o.id !== PELDEN)
+    .map((o) => ({ ...o, capabilities: o.capabilities.filter((c) => c !== "holder") }));
+  return {
+    ...seed,
+    activeOrgId: "org-bob",
+    organizations: existing,
+    activity: [],
+    people: seed.people.map((p) =>
+      p.id === "yeshey"
+        ? p
+        : { ...p, hasAccount: false, memberRole: undefined, platformRole: p.platformRole === "root" ? "root" : undefined },
+    ),
+    relations: [],
+    heldCredentials: [],
+    offers: [],
+    verificationRequests: [],
+    parkedOperations: [],
+    delegatedAuthorities: [],
+    decisions: [],
+    auditEntries: [],
+    appeals: [],
+    signup: null,
+    orgInvitations: [],
+    orgOnboarding: null,
+    manualReviews: [],
+    /* One request already waiting, so the new admin's queue is not only the
+       one the story is about to send. */
+    accessRequests: seed.accessRequests.filter((a) => a.state === "PENDING"),
+    firstRun: true,
+    harness: { ...seed.harness, persona: "yeshey" },
   };
 }

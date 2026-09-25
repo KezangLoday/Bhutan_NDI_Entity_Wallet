@@ -41,7 +41,7 @@ type Stage = "idle" | "wallet" | "proved" | "mismatch" | "expired";
 
 export function ProveIdentityView() {
   const router = useRouter();
-  const { signup, orgOnboarding, recordIdentityProof } = useDemo();
+  const { signup, orgOnboarding, orgInvitations, people, recordIdentityProof } = useDemo();
 
   const screenState = useScreenState("A2", [
     "awaiting_scan",
@@ -61,7 +61,11 @@ export function ProveIdentityView() {
   /* The wallet in this prototype answers as whoever holds the account — or
      as Dorji, the story's director, when the flow is run without one. The
      mismatch path answers as somebody else on purpose. */
-  const provedName = accountName || "Dorji Wangchuk";
+  /* Invited to an organisation already on NDI, the invitee has had an
+     account for years — the wallet answers as them. */
+  const invitation = orgInvitations.find((i) => i.id === orgOnboarding?.invitationId);
+  const invitee = invitation?.kind === "W" ? people.find((p) => p.email === invitation.email) : undefined;
+  const provedName = invitee?.name || accountName || "Dorji Wangchuk";
   const kind = kindOf(orgOnboarding?.kind);
 
   const start = (outcome: "proved" | "mismatch") => {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icons";
-import { PLATFORM_ADMINS } from "@/lib/demoData";
+import { isPlatformAdmin } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 
 /**
@@ -15,12 +15,15 @@ import { useDemo } from "@/lib/demoStore";
  * stuck under.
  */
 export function OrgSwitcher() {
-  const { organizations, activeOrgId, harness } = useDemo();
+  const { organizations, activeOrgId, harness, currentPerson } = useDemo();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
-  const isAdmin = PLATFORM_ADMINS.includes(harness.persona);
+  const isAdmin = isPlatformAdmin(currentPerson);
 
-  const active = organizations.find((o) => o.id === activeOrgId) ?? organizations[0];
+  /* Only the organisations this person belongs to — Yeshey never sees
+     Pelden, Dorji never sees the bank. */
+  const mine = organizations.filter((o) => o.memberIds.includes(harness.persona));
+  const active = mine.find((o) => o.id === activeOrgId) ?? mine[0] ?? organizations.find((o) => o.id === activeOrgId);
 
   useEffect(() => {
     if (!open) return;

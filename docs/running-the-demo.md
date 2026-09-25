@@ -15,9 +15,32 @@ switches you to the right person when the story changes hands. **Next** and
 **Back** move between steps (and take you to the right screen), **Take me
 there** brings you back if you wander off, and the chevron minimises it.
 
-Nine chapters, about 28 steps: create an account, register the organisation,
-give someone authority, a controller's working day, authority in a person's
-wallet, checked where it's used, recourse, and where to go next. The rest of
+Eleven chapters, 46 steps. It starts before any business, on the platform's
+day zero:
+
+1. **Set up the platform** — NDI's root administrator, Chimi Wangmo, signs up
+   (the deployment already knows the address as root, so there is nothing to
+   onboard) and invites Tshering as the first platform admin. Until an admin
+   exists, adding an organisation is closed, and says why.
+2. **Bank of Bhutan asks for a wallet** — an organisation already issuing
+   and verifying on NDI asks for an Entity Wallet; Tshering approves, which
+   *invites* its owner Yeshey; she proves who she is, the register confirms
+   the bank, and it holds its registration. What it issues and verifies is
+   untouched.
+3. **A new company signs up** — Dorji, and then Pelden Trading, the self-service
+   way. Pelden gets an Entity Wallet and nothing else: no issuing, no
+   verifying.
+
+Then Pelden's story: give someone authority, a controller's working day,
+authority in a person's wallet, checked where it's used, recourse, and where
+to go next.
+
+**Three kinds of access, in any mix.** Issue, verify, hold (the Entity
+Wallet). The sidebar follows what the organisation you're in may do — Bank
+of Bhutan's shows Issuance and Verification beside its Wallet; Pelden's shows
+only the Wallet. Credentials are drawn as cards with the issuer's seal, and
+an entity wallet holds whatever is issued to it — Pelden's holds a Bank of
+Bhutan account credential beside its registration and permits. The rest of
 this document is the long version — the same story with more to say at each
 point, plus the Gate 2 flows the guide doesn't cover.
 

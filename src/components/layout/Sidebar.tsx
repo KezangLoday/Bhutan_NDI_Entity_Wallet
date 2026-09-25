@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
-import { PLATFORM_ADMINS, type PersonaId } from "@/lib/demoData";
+import { isPlatformAdmin, type OrgCapability, type PersonaId } from "@/lib/demoData";
 
 interface NavChild {
   label: string;
@@ -34,6 +34,17 @@ interface NavItem {
   /** Off-app destinations, which get the external-link treatment. */
   external?: boolean;
   personas?: PersonaId[];
+  /**
+   * What the organisation being worked in must be able to do for the item
+   * to exist. Read from the organisation's capabilities, the way the
+   * Approvals row reads the person's scope: Pelden holds, so it has a
+   * Wallet and no issuing; Bank of Bhutan issues and verifies, and has a
+   * Wallet only once it has set one up. `"no-holder"` is the way in to
+   * asking for one.
+   */
+  needs?: OrgCapability | "no-holder";
+  /** Only for NDI's own administrators (root and the admins root made). */
+  platform?: "admin" | "root";
 }
 
 const OWNER: PersonaId[] = ["dorji"];
@@ -43,14 +54,19 @@ const OWNER: PersonaId[] = ["dorji"];
    A member who has just accepted an invitation is in the same position:
    they can see the organisation, and the wallet tells them they cannot act
    for it (FLOW-ONB-02 AC-08). */
-const OPERATES: PersonaId[] = ["dorji", "rinzin", "ugyen", "invitee"];
+const OPERATES: PersonaId[] = ["dorji", "rinzin", "ugyen", "invitee", "yeshey"];
+/* An organisation's owner — Dorji for Pelden, Yeshey for Bank of Bhutan. */
+const ORG_OWNERS: PersonaId[] = ["dorji", "yeshey"];
 /* Everyone who belongs to, or works with, Pelden Trading — which is everyone
    except NDI's own administrators, who belong to no business on the
    platform and have nothing in its workspace to see. */
 const PELDEN: PersonaId[] = ["dorji", "rinzin", "pema", "ugyen", "invitee"];
+/* Everyone who works in some organisation's console — Pelden's people and
+   Bank of Bhutan's owner. */
+const ANY_ORG: PersonaId[] = [...PELDEN, "yeshey"];
 
 const PRIMARY: NavItem[] = [
-  { label: "Dashboard", icon: "dashboard", href: "/dashboard", personas: PELDEN },
+  { label: "Dashboard", icon: "dashboard", href: "/dashboard", personas: ANY_ORG },
 
   /* ---- NDI administration ------------------------------------------------
      Only for the platform's own administrators. Their whole console is this
@@ -59,13 +75,19 @@ const PRIMARY: NavItem[] = [
   {
     label: "NDI administration",
     icon: "shieldCheck",
-    personas: PLATFORM_ADMINS,
+    platform: "admin",
     children: [
+      { label: "Organisations", href: "/admin/organisations", icon: "building" },
       { label: "Invitations", href: "/admin/invitations", icon: "mail" },
       { label: "Approvals", href: "/admin/approvals", icon: "userCheck" },
       { label: "Manual review", href: "/admin/reviews", icon: "fileText" },
     ],
   },
+  /* Root's alone: making administrators. */
+  { label: "Platform admins", icon: "users", href: "/admin/team", platform: "root" },
+
+  /* For an organisation already on NDI without a wallet: the way to ask. */
+  { label: "Entity Wallet", icon: "wallet", href: "/entity-wallet", personas: ORG_OWNERS, needs: "no-holder" },
 
   /* ---- Entity wallet ---------------------------------------------------
      The entity-wallet groups sit directly under Dashboard, above the
@@ -83,6 +105,7 @@ const PRIMARY: NavItem[] = [
     label: "Wallet",
     icon: "wallet",
     personas: OPERATES,
+    needs: "holder",
     children: [
       /* First, deliberately: a Controller's first question on signing in is
          what they are allowed to do, not what the entity happens to hold. */
@@ -116,14 +139,22 @@ const PRIMARY: NavItem[] = [
   /* Pema's only reason to open the console at all. */
   { label: "Appeals", icon: "shieldAlert", href: "/appeals", personas: PELDEN },
 
-  /* The inherited Studio issuer/verifier items (Users, Connections,
-     Credentials, Schemas, Trust, Ecosystems, Billing) used to follow here,
-     with the Studio's own invitations and developer settings in a block
-     below. They are gone from the nav because this console is one
-     organisation's Entity Wallet: issuing and verifying on the network is a
-     different product, and an entity only reaches it through endorsement
-     (Flow 4), which is not in this demo. The routes still exist for anyone
-     who types them; nothing in the story links there. */
+  /* ---- Issuing and verifying — the platform's existing product ----
+     Shown only for an organisation that may do them, which Pelden may not:
+     it signed up for an Entity Wallet and nothing else. Bank of Bhutan
+     issues and verifies, so its owner sees these beside its wallet. */
+  {
+    label: "Issuance",
+    icon: "issue",
+    personas: ORG_OWNERS,
+    needs: "issuer",
+    children: [
+      { label: "Issue a credential", href: "/credentials/issue", icon: "issue" },
+      { label: "Issued credentials", href: "/credentials", icon: "credentials" },
+      { label: "Schemas", href: "/schemas", icon: "layers" },
+    ],
+  },
+  { label: "Verification", icon: "verify", href: "/verification", personas: ORG_OWNERS, needs: "verifier" },
 ];
 
 const SECONDARY: NavItem[] = [
@@ -139,8 +170,11 @@ interface SidebarProps {
 
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { harness, relations } = useDemo();
+  const { harness, relations, currentPerson, organizations, activeOrgId } = useDemo();
   const persona = harness.persona;
+  const org = organizations.find((o) => o.id === activeOrgId);
+  const can = (c: OrgCapability) => Boolean(org?.capabilities.includes(c));
+  const platformAdmin = isPlatformAdmin(currentPerson);
 
   /* Whether this person's active relation grants approval:decide. Read from
      the relation, not decided here — the scope is the fixture the server
@@ -155,6 +189,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
   const visible = (items: NavItem[]) =>
     items.filter((item) => {
+      if (item.platform === "root") return currentPerson.platformRole === "root";
+      if (item.platform === "admin") return platformAdmin;
+      /* NDI's administrators belong to no business: none of a business's
+         workspace is theirs to see. */
+      if (platformAdmin) return false;
+      if (item.needs === "no-holder" && can("holder")) return false;
+      if (item.needs && item.needs !== "no-holder" && !can(item.needs)) return false;
       if (item.label === "Approvals") return canDecideApprovals;
       return !item.personas || item.personas.includes(persona);
     });

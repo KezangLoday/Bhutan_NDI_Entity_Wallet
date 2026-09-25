@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { inOrg } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 
 import { formatDate } from "@/features/controllership/scopeModel";
@@ -21,10 +22,11 @@ import { formatDate } from "@/features/controllership/scopeModel";
  * between a tax certificate and an insurance policy misstates what it is.
  */
 export function HeldCredentialsView() {
-  const { heldCredentials } = useDemo();
+  const { heldCredentials, activeOrgId, organizations } = useDemo();
+  const orgName = organizations.find((o) => o.id === activeOrgId)?.name.replace(/ Pvt\. Ltd\.$/, "") ?? "The organisation";
 
   const variant = useScreenState("B3", ["populated", "empty"]);
-  const all = variant === "empty" ? [] : heldCredentials;
+  const all = variant === "empty" ? [] : heldCredentials.filter(inOrg(activeOrgId));
 
   const foundational = all.find((c) => c.isFoundational);
   const rest = all.filter((c) => !c.isFoundational);
@@ -35,14 +37,19 @@ export function HeldCredentialsView() {
         <PageHeader crumbs={[{ label: "Wallet" }, { label: "Held credentials" }]} title="What we hold" />
 
         <p className="max-w-[68ch] text-[13.5px] leading-[1.65] text-muted">
-          Credentials issued to Pelden Trading itself, held in the
+          Credentials issued to {orgName} itself, held in the
           entity&rsquo;s wallet. Nobody carries these on a device — they are
           presented from here, by a controller acting for the entity.
         </p>
 
         {foundational ? (
           <Panel>
-            <div className="relative z-[4] grid gap-5 min-[901px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] min-[901px]:items-start">
+            {/* Side by side only when the panel itself is wide enough — the
+                guide's rail can take a third of a laptop screen, and a
+                viewport breakpoint squeezed the details into a column one
+                word wide. */}
+            <div className="@container relative z-[4]">
+            <div className="grid gap-5 @min-[820px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] @min-[820px]:items-start">
               <CredentialCard
                 type={foundational.type}
                 issuer={foundational.issuer}
@@ -73,6 +80,7 @@ export function HeldCredentialsView() {
                   ))}
                 </dl>
               </div>
+            </div>
             </div>
           </Panel>
         ) : null}

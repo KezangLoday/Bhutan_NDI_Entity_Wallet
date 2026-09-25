@@ -18,6 +18,11 @@ import { LOCAL_MS, REGISTER_CHECK_MS, ROUND_TRIP_MS, SKIP_AFTER_MS } from "@/lib
 import { OnboardingShell } from "./OnboardingShell";
 import { kindOf } from "./orgKinds";
 
+/* What the register lists against a person. An organisation reached only
+   by an invitation naming it (Bank of Bhutan's) is looked up by name, and
+   never appears in anyone's list. */
+const LISTED = REGISTER_LISTINGS.filter((l) => !l.invitedOnly);
+
 type Stage = "looking_up" | "listed" | "none_found" | "register_unavailable" | "confirming" | "provisioning" | "review_form";
 
 /**
@@ -108,7 +113,7 @@ function ChooseOrganisation() {
 
   const [stage, setStage] = useState<Stage>(kind.register && !refused ? "looking_up" : "review_form");
   const [skippable, setSkippable] = useState(false);
-  const [choice, setChoice] = useState<string>(REGISTER_LISTINGS.find((l) => !l.onPlatform)?.ref ?? "");
+  const [choice, setChoice] = useState<string>(LISTED.find((l) => !l.onPlatform)?.ref ?? "");
   const [reviewReason, setReviewReason] = useState<"none" | "not_listed" | "no_register">(
     kind.register ? "none" : "no_register",
   );
@@ -206,7 +211,7 @@ function ChooseOrganisation() {
     reviewReason === "no_register"
       ? "No register can confirm this kind of organisation automatically."
       : reviewReason === "not_listed"
-        ? `The ${register} listed ${REGISTER_LISTINGS.length} organisations for this person, but not this one.`
+        ? `The ${register} listed ${LISTED.length} organisations for this person, but not this one.`
         : `The ${register} listed no organisations for this person.`;
 
   const submit = () => {
@@ -297,9 +302,9 @@ function ChooseOrganisation() {
           <Panel>
             <fieldset className="relative z-[4] m-0 flex flex-col gap-2 border-0 p-0">
               <legend className={`${LABEL_CLASS} mb-2 p-0`}>
-                The {register} lists you against {REGISTER_LISTINGS.length} organisations
+                The {register} lists you against {LISTED.length} organisations
               </legend>
-              {REGISTER_LISTINGS.map((l) => {
+              {LISTED.map((l) => {
                 const on = choice === l.ref;
                 return (
                   <label
