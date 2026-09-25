@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { useScreenState } from "@/components/demo/screenState";
 import { GradientButton } from "@/components/ui/GradientButton";
+import { CredentialCard } from "@/components/ui/CredentialCard";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { Panel } from "@/components/ui/Panel";
 import { StatusPill } from "@/components/ui/StatusPill";
@@ -229,9 +230,13 @@ export function FoundationalCredentialView() {
             <StatusPill status="verified" label="On the trust registry" />
           </div>
 
+          {/* The credential as it will sit in the organisation's wallet — a
+              card with the issuer's seal — then exactly what it says. */}
+          <CredentialCard type="Business Registration" issuer={issuer} foundational size="lg" status="offered" />
+
           <div className="rounded-[12px] border border-grid px-3.5 py-3">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-              Business Registration
+              What it says
             </p>
             <dl className="mt-2.5 m-0 grid gap-x-6 gap-y-2 min-[641px]:grid-cols-2">
               {(

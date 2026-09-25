@@ -1480,6 +1480,27 @@ export const SEED: DemoState = {
       status: "active",
     },
     {
+      /* Not everything an entity holds comes from government. A bank issues
+         the company its account as a credential too — the same wallet holds
+         both, as any NDI wallet would, and presenting it is how Pelden proves
+         to a supplier where payment goes without sending a bank letter. */
+      id: "hc-bank",
+      type: "Business Current Account",
+      issuer: "Bank of Bhutan",
+      issuerDid: "did:polygon:0xa2a4e362eb3f8494b23536454137d49265f1725c",
+      issuerTrusted: true,
+      attributes: [
+        { name: "account_holder", value: "Pelden Trading Pvt. Ltd." },
+        { name: "account_number", value: "•••• •••• 4417" },
+        { name: "branch", value: "Thimphu main branch" },
+        { name: "opened_on", value: day(-104) },
+      ],
+      isFoundational: false,
+      receivedAt: day(-104),
+      expiresAt: null,
+      status: "active",
+    },
+    {
       id: "hc-tax",
       type: "Tax Clearance Certificate",
       issuer: "Department of Revenue & Customs",

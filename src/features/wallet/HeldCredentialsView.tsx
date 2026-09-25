@@ -2,17 +2,17 @@
 
 import { useScreenState } from "@/components/demo/screenState";
 import { AppShell } from "@/components/layout/AppShell";
-import { DataTable } from "@/components/ui/DataTable";
+import { CredentialCard } from "@/components/ui/CredentialCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { StatusPill } from "@/components/ui/StatusPill";
-import { Icon } from "@/components/ui/icons";
 import { useDemo } from "@/lib/demoStore";
 
 import { formatDate } from "@/features/controllership/scopeModel";
 
 /**
- * B3 — what the entity holds. A register, at the depth the plan asks for.
+ * B3 — what the entity holds, drawn as the cards a wallet shows.
  *
  * The one thing it does beyond listing: the foundational credential is
  * visually separated rather than sorted to the top of the same table. It is
@@ -42,75 +42,67 @@ export function HeldCredentialsView() {
 
         {foundational ? (
           <Panel>
-            <div className="relative z-[4] flex flex-col gap-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px] border border-grid"
-                    style={{ background: "var(--ndi-mint-12)" }}
-                  >
-                    <Icon name="shieldCheck" size={17} strokeWidth={1.9} className="text-accent" />
-                  </span>
+            <div className="relative z-[4] grid gap-5 min-[901px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] min-[901px]:items-start">
+              <CredentialCard
+                type={foundational.type}
+                issuer={foundational.issuer}
+                status={foundational.status}
+                foundational
+                size="lg"
+              />
+              <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex flex-col gap-0.5">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-                      Root of trust
-                    </p>
-                    <p className="font-display text-[15px] font-semibold text-strong">
-                      {foundational.type}
-                    </p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">Root of trust</p>
                     <p className="text-[12.5px] leading-[1.5] text-faint">
-                      Issued by {foundational.issuer} · received{" "}
-                      {formatDate(foundational.receivedAt)}
+                      Issued by {foundational.issuer} · received {formatDate(foundational.receivedAt)}
                     </p>
                   </div>
+                  <StatusPill status={foundational.status} />
                 </div>
-                <StatusPill status={foundational.status} />
+                <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
+                  Everything else the entity holds, and every authority it has delegated, traces back
+                  to this. If it lapses, nothing below it verifies anywhere.
+                </p>
+                <dl className="m-0 grid gap-x-6 gap-y-2 min-[641px]:grid-cols-2">
+                  {foundational.attributes.map((attribute) => (
+                    <div key={attribute.name} className="flex flex-col gap-0.5">
+                      <dt className="text-[12px] text-faint">{attribute.name.replace(/_/g, " ")}</dt>
+                      <dd className="m-0 text-[13px] text-body">{attribute.value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
-
-              <p className="max-w-[62ch] text-[13px] leading-[1.6] text-muted">
-                Everything else the entity holds, and every authority it has
-                delegated, traces back to this. If it lapses, nothing below it
-                verifies anywhere.
-              </p>
-
-              <dl className="m-0 grid gap-x-6 gap-y-2 min-[641px]:grid-cols-2">
-                {foundational.attributes.map((attribute) => (
-                  <div key={attribute.name} className="flex flex-col gap-0.5">
-                    <dt className="text-[12px] text-faint">
-                      {attribute.name.replace(/_/g, " ")}
-                    </dt>
-                    <dd className="m-0 text-[13px] text-body">{attribute.value}</dd>
-                  </div>
-                ))}
-              </dl>
             </div>
           </Panel>
         ) : null}
 
-        <Panel padded={false}>
-          <DataTable
-            columns={["Credential", "Issuer", "Received", "Expires", "Status"]}
-            empty={{
-              icon: "credentials",
-              title: variant === "empty" ? "The wallet is empty" : "Nothing else held yet",
-              message:
-                "Credentials offered to the entity appear under Offers. Accepting one puts it here.",
-            }}
-          >
-            {rest.map((credential) => (
-              <tr key={credential.id}>
-                <td className="text-body">{credential.type}</td>
-                <td>{credential.issuer}</td>
-                <td>{formatDate(credential.receivedAt)}</td>
-                <td>{credential.expiresAt ? formatDate(credential.expiresAt) : "—"}</td>
-                <td>
-                  <StatusPill status={credential.status} />
-                </td>
-              </tr>
-            ))}
-          </DataTable>
-        </Panel>
+        {rest.length ? (
+          <section aria-labelledby="held-rest" className="flex flex-col gap-3">
+            <h2 id="held-rest" className="m-0 font-display text-[15px] font-semibold text-strong">
+              Everything else it holds
+            </h2>
+            <ul className="m-0 grid list-none gap-5 p-0 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
+              {rest.map((credential) => (
+                <li key={credential.id} className="flex flex-col gap-2">
+                  <CredentialCard type={credential.type} issuer={credential.issuer} status={credential.status} />
+                  <p className="m-0 text-[12.5px] leading-[1.5] text-faint">
+                    Received {formatDate(credential.receivedAt)}
+                    {credential.expiresAt ? ` · expires ${formatDate(credential.expiresAt)}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <Panel padded={false}>
+            <EmptyState
+              icon="credentials"
+              title={variant === "empty" ? "The wallet is empty" : "Nothing else held yet"}
+              message="Credentials offered to the entity appear under Offers. Accepting one puts it here."
+            />
+          </Panel>
+        )}
       </div>
     </AppShell>
   );
