@@ -13,7 +13,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { FIELD_BLOCK_CLASS, FIELD_CLASS, LABEL_CLASS } from "@/components/ui/formStyles";
 import { Icon } from "@/components/ui/icons";
 import { INVITATION_DAYS } from "@/lib/deployment";
-import { PLATFORM_ADMINS } from "@/lib/demoData";
+import { isPlatformAdmin } from "@/lib/demoData";
 import { useDemo } from "@/lib/demoStore";
 import { LOCAL_MS } from "@/lib/demoTiming";
 
@@ -75,7 +75,7 @@ export function InviteView({ kind }: { kind: "M" | "O" }) {
   const permitted =
     kind === "M"
       ? currentPerson.memberRole === "Owner" || currentPerson.memberRole === "Admin"
-      : PLATFORM_ADMINS.includes(harness.persona);
+      : isPlatformAdmin(currentPerson);
 
   const back = kind === "M" ? "/members" : "/admin/invitations";
   const loading = busy || forced === "loading";

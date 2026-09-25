@@ -5,11 +5,12 @@ import { useState } from "react";
 
 import { useScreenState } from "@/components/demo/screenState";
 import { GradientButton } from "@/components/ui/GradientButton";
+import { CredentialCard } from "@/components/ui/CredentialCard";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { Panel } from "@/components/ui/Panel";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Icon } from "@/components/ui/icons";
-import { REGISTER_LISTINGS } from "@/lib/demoData";
+import { PELDEN, REGISTER_LISTINGS, inOrg } from "@/lib/demoData";
 import { ROUND_TRIP_MS } from "@/lib/demoTiming";
 import { useDemo } from "@/lib/demoStore";
 
@@ -46,8 +47,17 @@ import { kindOf } from "./orgKinds";
  */
 export function FoundationalCredentialView() {
   const router = useRouter();
-  const { heldCredentials, orgOnboarding, manualReviews, signup, hydrated, completeOrgOnboarding, setActiveOrg, setPersona } =
-    useDemo();
+  const {
+    heldCredentials,
+    orgOnboarding,
+    orgInvitations,
+    manualReviews,
+    signup,
+    hydrated,
+    completeOrgOnboarding,
+    setActiveOrg,
+    setPersona,
+  } = useDemo();
 
   const screenState = useScreenState("A4", [
     "offer_ready",
@@ -58,13 +68,21 @@ export function FoundationalCredentialView() {
 
   const [stage, setStage] = useState<"offer" | "issuing" | "done">("offer");
 
-  const foundational = heldCredentials.find((c) => c.isFoundational);
-
   const listing = REGISTER_LISTINGS.find((l) => l.ref === orgOnboarding?.selectedRef);
+  /* Pelden's own registration supplies the full attribute list when Pelden
+     is the organisation; anyone else's is drawn from what the register
+     returned. */
+  const foundational =
+    !listing || listing.legalName.startsWith("Pelden")
+      ? heldCredentials.filter(inOrg(PELDEN)).find((c) => c.isFoundational)
+      : undefined;
+  /* An organisation already on NDI, invited to its wallet (kind W), goes to
+     its own console afterwards — not to an account's organisation list. */
+  const walletInvite = orgInvitations.find((i) => i.id === orgOnboarding?.invitationId && i.kind === "W");
   const review = manualReviews.find((m) => m.id === orgOnboarding?.reviewId && m.state === "APPROVED");
   const kind = kindOf(orgOnboarding?.kind);
   const legalName = listing?.legalName ?? review?.legalName ?? "Pelden Trading Pvt. Ltd.";
-  const shortName = legalName.replace(/ Pvt\. Ltd\.$/, "");
+  const shortName = legalName.replace(/ (Pvt\. )?Ltd\.$/, "");
   const issuer = review ? "Bhutan NDI" : (kind.register ?? "Bhutan NDI");
   const confirmed = Boolean(listing || review || orgOnboarding?.completed);
 
@@ -88,8 +106,13 @@ export function FoundationalCredentialView() {
   /* An account that came through sign-up goes back to its list of
      organisations, which now has this one on it (SCR-ONB-05). Run without
      one, the story's console is the natural next room. */
-  const accountDone = signup?.stage === "done";
+  const accountDone = signup?.stage === "done" && !walletInvite;
   const goOn = () => {
+    if (walletInvite?.orgId) {
+      setActiveOrg(walletInvite.orgId);
+      router.push("/dashboard");
+      return;
+    }
     if (accountDone) {
       router.push("/welcome");
       return;
@@ -229,15 +252,19 @@ export function FoundationalCredentialView() {
             <StatusPill status="verified" label="On the trust registry" />
           </div>
 
+          {/* The credential as it will sit in the organisation's wallet — a
+              card with the issuer's seal — then exactly what it says. */}
+          <CredentialCard type="Business Registration" issuer={issuer} foundational size="lg" status="offered" />
+
           <div className="rounded-[12px] border border-grid px-3.5 py-3">
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-              Business Registration
+              What it says
             </p>
             <dl className="mt-2.5 m-0 grid gap-x-6 gap-y-2 min-[641px]:grid-cols-2">
               {(
                 (!review && foundational?.attributes) || [
                   { name: "registered_name", value: legalName },
-                  { name: "registration_number", value: review?.registrationNumber ?? "CRA-2019-04477" },
+                  { name: "registration_number", value: review?.registrationNumber ?? listing?.registrationNumber ?? "CRA-2019-04477" },
                   { name: "entity_type", value: listing?.entityType ?? kind.label },
                   { name: "status", value: "Active" },
                 ]

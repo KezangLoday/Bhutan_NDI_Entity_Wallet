@@ -12,7 +12,7 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { Icon } from "@/components/ui/icons";
 import { FIELD_BLOCK_CLASS, FIELD_CLASS, LABEL_CLASS } from "@/components/ui/formStyles";
 import { useDemo } from "@/lib/demoStore";
-import type { LegalBasis } from "@/lib/demoData";
+import { PELDEN, isPlatformAdmin, type LegalBasis } from "@/lib/demoData";
 
 import { legalBasisHint, legalBasisLabel } from "./scopeModel";
 
@@ -36,7 +36,7 @@ const BASES: LegalBasis[] = ["entity_consent", "court_order", "governance_prescr
 
 export function CreateRelationView() {
   const router = useRouter();
-  const { people, relations, addRelation } = useDemo();
+  const { people, relations, organizations, addRelation } = useDemo();
 
   const state = useScreenState("C2", ["draft", "person_not_verified", "missing_instrument"]);
 
@@ -51,7 +51,14 @@ export function CreateRelationView() {
   const spokenFor = new Set(
     relations.filter((r) => r.state !== "TERMINATED" && r.state !== "EXPIRED").map((r) => r.personId),
   );
-  const candidates = people.filter((p) => !spokenFor.has(p.id));
+  /* Only people connected to Pelden. NDI's administrators and other
+     organisations' staff are in the platform's people list too, and a
+     picker that offered the bank's head of digital as Pelden's controller
+     would be proposing something nobody should be able to ask for. */
+  const pelden = organizations.find((o) => o.id === PELDEN);
+  const candidates = people.filter(
+    (p) => !spokenFor.has(p.id) && !isPlatformAdmin(p) && (pelden?.memberIds.includes(p.id) ?? true),
+  );
 
   const forceUnverified = state === "person_not_verified";
   const forceMissingInstrument = state === "missing_instrument";

@@ -14,8 +14,13 @@ import {
 import { verifyAuthority, type VerificationRequestInput } from "./avs";
 import { INVITATION_DAYS } from "./deployment";
 import {
+  PELDEN,
+  ROOT_ADMIN,
   SEED,
+  dayZeroState,
   firstRunState,
+  inOrg,
+  isPlatformAdmin,
   type Attribute,
   type AuthorityKind,
   type BulkUpload,
@@ -73,8 +78,14 @@ const STORAGE_KEY = "ndi-studio-demo";
  *       new screen into a state it does not have.
  *   6 — one organisation. A version-5 save would bring back the inherited
  *       Bhutan NDI and Royal University rows the seed no longer has.
+ *   7 — the activity feed is Pelden's own history, not the inherited
+ *       Studio issuer feed a version-6 save would keep showing.
+ *   8 — organisations carry capabilities and members, and the platform's
+ *       own people (root, platform admins, Bank of Bhutan's owner) exist. A
+ *       version-7 organisation has no capabilities, and every nav rule
+ *       reading them would treat Pelden as having no wallet.
  */
-const SEED_VERSION = 6;
+const SEED_VERSION = 8;
 
 /**
  * Appends one audit row, carrying the hash chain forward.
@@ -462,6 +473,22 @@ interface DemoActions {
   /** Leaves the first-run state for the story's lived-in one (acts 2–6). */
   restoreStoryState: () => void;
 
+  /* ---- The platform's own setup ----
+     Root invites platform admins; organisations ask for access and admins
+     decide. Every decision is the store's, standing in for the server —
+     screens render the answer, they do not make it. */
+
+  /** The Entity Wallet's day zero: before any admin, before any business. */
+  startDayZero: () => void;
+  /** Root, having signed up with the seeded address, takes up the account. */
+  claimRootAccount: () => void;
+  /** Root invites one of NDI's staff to administer the platform (kind A). */
+  invitePlatformAdmin: (personId: string) => { ok: true; id: string } | { ok: false; error: "not_root" | "already" };
+  /** An organisation's owner asks NDI for an Entity Wallet. */
+  applyForEntityWallet: (note: string) => string;
+  /** A platform admin decides a request. Approving a wallet sends kind W. */
+  decideAccessRequest: (id: string, approve: boolean, reason?: string) => void;
+
   /* ---- Demo harness ----
      Not product surface. These drive the persona switcher, the story runner
      and the state switcher, which are what make the demo runnable by someone
@@ -476,6 +503,8 @@ interface DemoActions {
   setStateOverride: (screen: string, state: string | null) => void;
   /** The deployment's self-service sign-up setting, switched for the demo. */
   setSelfServiceSignup: (on: boolean) => void;
+  /** Move the guided demo to a step, or stop it with null. */
+  setGuideStep: (step: number | null) => void;
   clearStateOverrides: () => void;
 
   resetDemo: () => void;
@@ -678,6 +707,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           website,
           location,
           visibility,
+          capabilities: [],
+          memberIds: [],
         };
         /* A newly created organization becomes the one you are working in —
            anything else means creating it and then having to go and find it. */
@@ -1131,7 +1162,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           /* Every Pattern B credential traces back to a controllership
              relation. The owner's root authority is what these are issued
              out of, so that is the relation recorded on them. */
-          relationId: SEED.relations.find((r) => r.isRootAuthority)?.id ?? "rel-root",
+          relationId: SEED.relations.filter(inOrg(PELDEN)).find((r) => r.isRootAuthority)?.id ?? "rel-root",
           taskScopes: input.taskScopes,
           valueCap: input.valueCap,
           counterparties: input.counterparties,
@@ -1337,7 +1368,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
              person at a time, and a half-finished session for a different
              address is exactly what "change the address" throws away. The
              return path survives, because an invitee who corrects their
-             address is still on their way back to the invitation. */
+             address is still on their way back to the invitation. A
+             finished sign-up's return path is spent, though: carried over,
+             it sent the next person in this browser to someone else's
+             invitation. */
           signup: {
             email,
             stage: "check_email",
@@ -1345,7 +1379,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             linkUsed: false,
             name: "",
             memberships: [],
-            returnTo: s.signup?.returnTo ?? null,
+            returnTo: s.signup && s.signup.stage !== "done" ? s.signup.returnTo : null,
             createdAt: null,
           },
         })),
@@ -1580,9 +1614,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         }
         const inviter = s0.people.find((p) => p.id === inv.invitedBy);
         const inviterStillMay =
-          inv.kind === "O"
-            ? Boolean(inviter)
-            : inviter?.memberRole === "Owner" || inviter?.memberRole === "Admin";
+          inv.kind === "A"
+            ? inviter?.platformRole === "root"
+            : inv.kind === "W"
+              ? isPlatformAdmin(inviter)
+              : inv.kind === "O"
+                ? Boolean(inviter)
+                : inviter?.memberRole === "Owner" || inviter?.memberRole === "Admin";
         if (!inviterStillMay || inv.state === "VOID") {
           setState((s) => ({
             ...s,
@@ -1591,7 +1629,29 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           return { ok: false, error: "E6" };
         }
         const account = s0.signup;
-        const name = account?.name || "New member";
+        const invitee = s0.people.find((p) => p.email.toLowerCase() === inv.email.toLowerCase());
+        const name = account?.name || invitee?.name || "New member";
+        if (inv.kind === "A" || inv.kind === "W") {
+          setState((s) => ({
+            ...s,
+            orgInvitations: s.orgInvitations.map((i) =>
+              i.id === id ? { ...i, state: "ACCEPTED" as const, decidedAt: today(), acceptedName: name } : i,
+            ),
+            /* A: the person becomes an administrator, and now has the account
+               they made on the way here. W: nothing yet — the wallet exists
+               only once the register has confirmed them (Flow 2). */
+            people:
+              inv.kind === "A"
+                ? s.people.map((p) =>
+                    p.email.toLowerCase() === inv.email.toLowerCase()
+                      ? { ...p, platformRole: "admin" as const, hasAccount: true }
+                      : p,
+                  )
+                : s.people,
+          }));
+          log(`Invitation accepted by ${name}`);
+          return { ok: true };
+        }
         setState((s) => {
           const next = {
             ...s,
@@ -1724,6 +1784,39 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         })),
 
       completeOrgOnboarding: () => {
+        const s0 = stateRef.current;
+        const inv = s0.orgInvitations.find((i) => i.id === s0.orgOnboarding?.invitationId);
+        if (inv?.kind === "W" && inv.orgId) {
+          /* An organisation already on NDI gains an Entity Wallet: the
+             holder capability, its registration in its own wallet, and the
+             person who accepted as its root authority. Its issuing and
+             verifying are untouched. */
+          const orgId = inv.orgId;
+          const personId = s0.people.find((p) => p.email.toLowerCase() === inv.email.toLowerCase())?.id ?? "yeshey";
+          const seedCred = SEED.heldCredentials.find((c) => c.orgId === orgId && c.isFoundational);
+          const seedRel = SEED.relations.find((r) => r.orgId === orgId && r.isRootAuthority);
+          const now = today();
+          setState((s) => ({
+            ...s,
+            organizations: s.organizations.map((o) =>
+              o.id === orgId && !o.capabilities.includes("holder")
+                ? { ...o, capabilities: [...o.capabilities, "holder" as const] }
+                : o,
+            ),
+            heldCredentials: seedCred
+              ? [...s.heldCredentials.filter((c) => c.id !== seedCred.id), { ...seedCred, receivedAt: now }]
+              : s.heldCredentials,
+            relations: seedRel
+              ? [
+                  ...s.relations.filter((r) => r.id !== seedRel.id),
+                  { ...seedRel, personId, createdAt: now, acceptedAt: now, activatedAt: now, scope: { ...seedRel.scope, validFrom: now } },
+                ]
+              : s.relations,
+            orgOnboarding: s.orgOnboarding ? { ...s.orgOnboarding, completed: true } : s.orgOnboarding,
+            activeOrgId: orgId,
+          }));
+          return;
+        }
         /* Lands on Pelden's first day, not on the story's three-months-in
            seed — see firstRunState. Nothing is logged to the activity feed
            for the same reason: nothing has been done in the console yet. */
@@ -1752,18 +1845,177 @@ export function DemoProvider({ children }: { children: ReactNode }) {
             orgOnboarding: s.orgOnboarding,
             manualReviews: s.manualReviews,
             orgInvitations: [...s.orgInvitations.filter((i) => !seeded.has(i.id)), ...SEED.orgInvitations],
+            accessRequests: [
+              ...s.accessRequests.filter((a) => !SEED.accessRequests.some((x) => x.id === a.id)),
+              ...SEED.accessRequests,
+            ],
             harness: s.harness,
             firstRun: false,
           };
         }),
 
+      startDayZero: () => setState((s) => ({ ...dayZeroState(SEED), harness: { ...SEED.harness, persona: "yeshey", guideStep: s.harness.guideStep } })),
+
+      claimRootAccount: () =>
+        setState((s) => ({
+          ...s,
+          people: s.people.map((p) => (p.platformRole === "root" ? { ...p, hasAccount: true } : p)),
+          harness: { ...s.harness, persona: ROOT_ADMIN },
+        })),
+
+      invitePlatformAdmin: (personId) => {
+        const s0 = stateRef.current;
+        const me = s0.people.find((p) => p.id === s0.harness.persona);
+        /* Only root may make an administrator — refused here, not merely
+           hidden on the screen, because the screen is not the boundary. */
+        if (me?.platformRole !== "root") return { ok: false, error: "not_root" };
+        const person = s0.people.find((p) => p.id === personId);
+        if (!person) return { ok: false, error: "already" };
+        if (
+          isPlatformAdmin(person) ||
+          s0.orgInvitations.some((i) => i.kind === "A" && i.email === person.email && i.state === "PENDING")
+        ) {
+          return { ok: false, error: "already" };
+        }
+        const id = rid("inv");
+        setState((s) => ({
+          ...s,
+          orgInvitations: [
+            {
+              id,
+              kind: "A",
+              email: person.email,
+              orgId: null,
+              role: null,
+              legalName: null,
+              legalIdentity: null,
+              purpose: "Platform administrator",
+              needsSecondApproval: false,
+              invitedBy: s.harness.persona,
+              approvedBy: null,
+              createdAt: today(),
+              sentAt: today(),
+              expiresAt: inDays(INVITATION_DAYS.O),
+              state: "PENDING",
+              delivery: "delivered",
+              decidedAt: null,
+              acceptedName: null,
+            },
+            ...s.orgInvitations,
+          ],
+        }));
+        log(`${person.name} invited as a platform administrator`);
+        return { ok: true, id };
+      },
+
+      applyForEntityWallet: (note) => {
+        const id = rid("ar");
+        setState((s) => {
+          const me = s.people.find((p) => p.id === s.harness.persona);
+          return {
+            ...s,
+            accessRequests: [
+              {
+                id,
+                orgId: s.activeOrgId,
+                capability: "holder",
+                requestedBy: s.harness.persona,
+                requesterName: me?.name ?? "Unknown",
+                requesterEmail: me?.email ?? "",
+                note,
+                submittedAt: today(),
+                state: "PENDING",
+                decidedBy: null,
+                decidedAt: null,
+                reason: null,
+                invitationId: null,
+              },
+              ...s.accessRequests,
+            ],
+          };
+        });
+        return id;
+      },
+
+      decideAccessRequest: (id, approve, reason) =>
+        setState((s) => {
+          const req = s.accessRequests.find((a) => a.id === id);
+          const me = s.people.find((p) => p.id === s.harness.persona);
+          if (!req || req.state !== "PENDING" || !isPlatformAdmin(me)) return s;
+          const org = s.organizations.find((o) => o.id === req.orgId);
+          const decided = { decidedBy: s.harness.persona, decidedAt: today() };
+          if (!approve) {
+            return {
+              ...s,
+              accessRequests: s.accessRequests.map((a) =>
+                a.id === id ? { ...a, ...decided, state: "DECLINED" as const, reason: reason ?? null } : a,
+              ),
+            };
+          }
+          if (req.capability === "holder") {
+            /* Approving a wallet does not grant it. It invites the owner, who
+               still has to prove who they are and be confirmed by the
+               register — an admin's yes is not the trust decision either. */
+            const invId = rid("inv");
+            return {
+              ...s,
+              orgInvitations: [
+                {
+                  id: invId,
+                  kind: "W",
+                  email: req.requesterEmail,
+                  orgId: req.orgId,
+                  role: null,
+                  legalName: org?.legalName ?? org?.name ?? null,
+                  legalIdentity: null,
+                  purpose: "Entity Wallet for an organisation already issuing and verifying on NDI.",
+                  needsSecondApproval: false,
+                  invitedBy: s.harness.persona,
+                  approvedBy: null,
+                  createdAt: today(),
+                  sentAt: today(),
+                  expiresAt: inDays(INVITATION_DAYS.O),
+                  state: "PENDING",
+                  delivery: "delivered",
+                  decidedAt: null,
+                  acceptedName: null,
+                },
+                ...s.orgInvitations,
+              ],
+              accessRequests: s.accessRequests.map((a) =>
+                a.id === id ? { ...a, ...decided, state: "APPROVED" as const, invitationId: invId } : a,
+              ),
+            };
+          }
+          return {
+            ...s,
+            organizations: s.organizations.map((o) =>
+              o.id === req.orgId && !o.capabilities.includes(req.capability)
+                ? { ...o, capabilities: [...o.capabilities, req.capability] }
+                : o,
+            ),
+            accessRequests: s.accessRequests.map((a) =>
+              a.id === id ? { ...a, ...decided, state: "APPROVED" as const } : a,
+            ),
+          };
+        }),
+
       setPersona: (persona) =>
-        setState((s) => ({ ...s, harness: { ...s.harness, persona } })),
+        setState((s) => {
+          /* Driving as someone puts you in their organisation — Yeshey's
+             console is Bank of Bhutan's, never Pelden's. Administrators
+             belong to none, so the workspace stays where it was. */
+          const home = s.organizations.find((o) => o.memberIds.includes(persona));
+          return { ...s, activeOrgId: home?.id ?? s.activeOrgId, harness: { ...s.harness, persona } };
+        }),
 
       setAct: (act) => setState((s) => ({ ...s, harness: { ...s.harness, act } })),
 
       setRunnerOpen: (runnerOpen) =>
         setState((s) => ({ ...s, harness: { ...s.harness, runnerOpen } })),
+
+      setGuideStep: (guideStep) =>
+        setState((s) => ({ ...s, harness: { ...s.harness, guideStep } })),
 
       setSelfServiceSignup: (selfServiceSignup) =>
         setState((s) => ({ ...s, harness: { ...s.harness, selfServiceSignup } })),

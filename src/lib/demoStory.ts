@@ -108,9 +108,12 @@ export interface FlowEntry {
   persona: PersonaId | null;
   route: string;
   selfService?: boolean;
+  /** Start from the platform's day zero — before any admin or business. */
+  dayZero?: boolean;
 }
 
 export const FLOW_ENTRIES: FlowEntry[] = [
+  { flow: 1, label: "Root sets up the platform", persona: null, route: "/sign-up", dayZero: true },
   { flow: 1, label: "Create an account", persona: null, route: "/sign-up", selfService: true },
   { flow: 1, label: "Invite a member", persona: "dorji", route: "/members/invite" },
   { flow: 1, label: "Invite an agency", persona: "tshering", route: "/admin/invitations/new" },

@@ -73,6 +73,12 @@ self-service sign-up is off — with NDI manual review when the register
 can't match). Demo controls
 → **Walk a flow** starts each one as the right person.
 
+**New to it? Press Guided demo** (bottom-left of any screen): it walks the
+whole story on screen and tells you what to press at each step — starting
+with NDI's root administrator setting up the platform, then Bank of Bhutan
+(already an issuer and verifier) being invited to an Entity Wallet, then
+Pelden Trading signing up for one.
+
 **Presenting it? Read [`docs/running-the-demo.md`](docs/running-the-demo.md)** —
 what is built, the act-by-act script, the Gate 2 flow walks, and what to say
 when someone asks whether any of it is real.
@@ -121,9 +127,13 @@ trust argument.
 ### Navigation
 
 The sidebar is hard-coded in `src/components/layout/Sidebar.tsx` (there is no
-`constants/data.ts` here). The entity-wallet groups — Wallet, Approvals,
-Controllership, Delegated authority, Appeals — sit directly under Dashboard,
-above the existing issuer/verifier items.
+`constants/data.ts` here). It carries the Entity Wallet and nothing else —
+Dashboard, Wallet, Approvals, Members, Controllership, Delegated authority,
+Appeals, and NDI administration for the platform's administrators. The
+inherited Studio issuer/verifier items (Users, Connections, Credentials,
+Schemas, Trust, Ecosystems, Billing, invitations, developer settings) are no
+longer in the nav; their routes still exist but nothing in the demo links to
+them.
 
 Which rows exist depends on who the demo is being driven as: they are
 **absent** for a persona who may not use them, never disabled. A Controller

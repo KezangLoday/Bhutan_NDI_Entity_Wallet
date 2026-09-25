@@ -9,6 +9,7 @@ import { useDemo } from "@/lib/demoStore";
 import { ACTS, FLOW_ENTRIES, actByNumber } from "@/lib/demoStory";
 import { PERSONAS } from "@/lib/demoData";
 
+import { GuideCard } from "./GuideCard";
 import { useScreenRegistry } from "./screenState";
 
 /**
@@ -37,8 +38,21 @@ export function DemoHarness() {
     resetDemo,
     restoreStoryState,
     setSelfServiceSignup,
+    setGuideStep,
+    startDayZero,
     hydrated,
   } = useDemo();
+
+  /* The guided demo always starts from the platform's day zero: it begins
+     before any business, with root setting NDI up, and a demo someone else
+     half-ran would contradict the first thing it says. */
+  const startGuide = () => {
+    resetDemo();
+    startDayZero();
+    setGuideStep(0);
+    setOpen(false);
+  };
+  const guiding = (harness.guideStep ?? null) !== null;
   const { registered } = useScreenRegistry();
   const [open, setOpen] = useState(false);
 
@@ -61,7 +75,9 @@ export function DemoHarness() {
    *  alongside so the switcher passes a PersonaId rather than a bare string. */
   const personas = PERSONAS.flatMap((id) => {
     const person = people.find((p) => p.id === id);
-    return person ? [{ id, person }] : [];
+    /* Nobody without an account can be driven as: on the platform's day
+       zero that is almost everyone, and they appear as they sign up. */
+    return person && person.hasAccount !== false ? [{ id, person }] : [];
   });
 
   const act = actByNumber(harness.act);
@@ -98,8 +114,27 @@ export function DemoHarness() {
        rule keys off the shell's own presence in the document rather than a
        list of routes that would rot. */
     <div className="ndi-demo-harness pointer-events-none fixed inset-x-0 bottom-0 z-[70] flex flex-col items-start gap-2 p-3 min-[641px]:p-4">
+      <GuideCard />
       {open && hydrated ? (
-        <div className="pointer-events-auto w-full max-w-[560px] rounded-2xl border border-grid bg-[var(--chrome-fill-strong)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur-[20px] backdrop-saturate-[140%]">
+        <div className="pointer-events-auto max-h-[calc(100dvh-80px)] w-full max-w-[560px] overflow-y-auto rounded-2xl border border-grid bg-[var(--chrome-fill-strong)] p-3.5 shadow-[var(--shadow-card)] backdrop-blur-[20px] backdrop-saturate-[140%]">
+          {/* ---- Guided demo ---- */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-grid px-3.5 py-3" style={{ background: "var(--ndi-mint-08)" }}>
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <p className="font-display text-[13.5px] font-semibold text-body">New to the demo?</p>
+              <p className="text-[12.5px] leading-[1.5] text-muted">
+                The guided demo walks the whole story and tells you what to press.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={startGuide}
+              className="inline-flex h-9 flex-none items-center gap-1.5 rounded-[10px] px-3.5 font-display text-[13px] font-semibold"
+              style={{ background: "var(--grad-mint)", color: "var(--text-on-mint)" }}
+            >
+              {guiding ? "Restart the guide" : "Start the guide"}
+            </button>
+          </div>
+
           {/* ---- Story runner ---- */}
           <div className="flex items-baseline justify-between gap-3">
             <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-faint">
@@ -178,6 +213,10 @@ export function DemoHarness() {
                     key={f.route}
                     type="button"
                     onClick={() => {
+                      if (f.dayZero) {
+                        resetDemo();
+                        startDayZero();
+                      }
                       if (f.persona) setPersona(f.persona);
                       if (f.selfService !== undefined) setSelfServiceSignup(f.selfService);
                       setOpen(false);
@@ -325,6 +364,23 @@ export function DemoHarness() {
           </span>
           <Icon name="arrowRight" size={11} strokeWidth={2.2} className="flex-none opacity-60" />
         </Link>
+
+        {/* The way in for someone who has never seen the demo: one obvious
+            button, beside the controls rather than inside them. Hidden
+            while the guide runs — its own card is the control then. */}
+        {hydrated && !guiding ? (
+          <button
+            type="button"
+            onClick={startGuide}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 font-display text-[12px] font-semibold"
+            style={{ background: "var(--grad-mint)", color: "var(--text-on-mint)" }}
+          >
+            <svg aria-hidden="true" viewBox="0 0 10 10" className="h-2.5 w-2.5" style={{ fill: "currentColor" }}>
+              <path d="M2 1l7 4-7 4z" />
+            </svg>
+            Guided demo
+          </button>
+        ) : null}
 
         <button
           type="button"

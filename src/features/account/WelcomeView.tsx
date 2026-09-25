@@ -35,11 +35,12 @@ export const ADD_ORGANISATION_ROUTE = "/onboarding";
  */
 export function WelcomeView() {
   const router = useRouter();
-  const { signup, organizations, setPersona, setActiveOrg, hydrated } = useDemo();
+  const { signup, organizations, people, setPersona, setActiveOrg, claimRootAccount, hydrated } = useDemo();
 
   const forced = useScreenState("SCR-ONB-05", [
     "live",
     "loading",
+    "root",
     "empty",
     "populated",
     "error",
@@ -52,6 +53,13 @@ export function WelcomeView() {
     .map((m) => ({ ...m, org: organizations.find((o) => o.id === m.orgId) }))
     .filter((r) => r.org);
 
+  /* The root administrator is recognised by address: the deployment seeds
+     it once, so signing up with it is taking up an account that was always
+     going to be root. There is no organisation to add — root administers
+     the platform, it does not act for a business. */
+  const rootEmail = people.find((p) => p.platformRole === "root")?.email.toLowerCase();
+  const isRoot = Boolean(account && rootEmail && account.email.toLowerCase() === rootEmail);
+
   const state =
     forced !== "live"
       ? forced
@@ -59,9 +67,11 @@ export function WelcomeView() {
         ? "loading"
         : !account
           ? "no_account"
-          : rows.length === 0
-            ? "empty"
-            : "populated";
+          : isRoot
+            ? "root"
+            : rows.length === 0
+              ? "empty"
+              : "populated";
 
   /* The populated face needs a row to show even when forced from an empty
      account, or the state switcher would review an empty list. */
@@ -103,6 +113,36 @@ export function WelcomeView() {
               <Link href="/sign-in">
                 <HairlineButton>Sign in</HairlineButton>
               </Link>
+            </div>
+          </div>
+        </Panel>
+      ) : null}
+
+      {state === "root" ? (
+        <Panel>
+          <div className="relative z-[4] flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent">Bhutan NDI</p>
+              <h1 className="font-display text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-strong">
+                You&rsquo;re the platform&rsquo;s root administrator
+              </h1>
+              <p className="max-w-[58ch] text-[14.5px] leading-[1.65] text-body">
+                This address was set up as NDI&rsquo;s root when the platform was deployed, so
+                there&rsquo;s no organisation to add. You hold every administrative permission —
+                and the first thing to do with it is invite the people who will run the
+                platform day to day.
+              </p>
+            </div>
+            <div>
+              <GradientButton
+                onClick={() => {
+                  claimRootAccount();
+                  router.push("/admin/team");
+                }}
+              >
+                <Icon name="shieldCheck" size={15} strokeWidth={2} />
+                Open NDI administration
+              </GradientButton>
             </div>
           </div>
         </Panel>
