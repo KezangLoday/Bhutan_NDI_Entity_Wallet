@@ -1216,11 +1216,16 @@ export const SEED: DemoState = {
       status: "active",
     },
   ],
+  /* Pelden's recent history, newest first, drawn from the same events as the
+     audit trail below so the two never disagree. It used to be the inherited
+     Studio's issuer feed — credentials offered to graduates, a bulk upload —
+     which read as this trading company running a university's issuance. */
   activity: [
-    { id: "a-1", text: "Credential offered to Karma Yangchen", at: "2026-07-09" },
-    { id: "a-2", text: "Presentation verified for Sonam Wangchuk", at: "2026-07-21" },
-    { id: "a-3", text: "Bulk upload graduates-2026-batch-2.csv completed", at: "2026-08-06" },
-    { id: "a-4", text: "Deki Yangzom invited as Verifier", at: "2026-08-05" },
+    { id: "a-1", text: "Pema Choden accepted Declaration authority", at: day(-1) },
+    { id: "a-2", text: "Declaration authority issued to Pema Choden", at: day(-2) },
+    { id: "a-3", text: "Business Registration presented to Bhutan National Single Window", at: day(-14) },
+    { id: "a-4", text: "Karma Wangmo's controllership ended", at: day(-40) },
+    { id: "a-5", text: "Rinzin Dema accepted the duties of a controller", at: day(-102) },
   ],
 
   /* ================================================================ */

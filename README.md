@@ -121,9 +121,13 @@ trust argument.
 ### Navigation
 
 The sidebar is hard-coded in `src/components/layout/Sidebar.tsx` (there is no
-`constants/data.ts` here). The entity-wallet groups — Wallet, Approvals,
-Controllership, Delegated authority, Appeals — sit directly under Dashboard,
-above the existing issuer/verifier items.
+`constants/data.ts` here). It carries the Entity Wallet and nothing else —
+Dashboard, Wallet, Approvals, Members, Controllership, Delegated authority,
+Appeals, and NDI administration for the platform's administrators. The
+inherited Studio issuer/verifier items (Users, Connections, Credentials,
+Schemas, Trust, Ecosystems, Billing, invitations, developer settings) are no
+longer in the nav; their routes still exist but nothing in the demo links to
+them.
 
 Which rows exist depends on who the demo is being driven as: they are
 **absent** for a persona who may not use them, never disabled. A Controller

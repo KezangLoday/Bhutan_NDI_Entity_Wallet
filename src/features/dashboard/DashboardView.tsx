@@ -7,7 +7,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { HairlineButton } from "@/components/ui/HairlineButton";
 import { Panel } from "@/components/ui/Panel";
-import { StatCard } from "@/components/ui/StatCard";
 import { WaveBanner } from "@/components/ui/WaveBanner";
 import { Icon } from "@/components/ui/icons";
 import { NeedsAttention } from "@/features/wallet/NeedsAttention";
@@ -16,15 +15,16 @@ import { useDemo } from "@/lib/demoStore";
 /**
  * B1 — the landing surface.
  *
- * Two products share this screen, and the order matters. The entity-wallet
- * tasks come first because they are what somebody signing in has come to do;
- * the issuer/verifier panels below are the surrounding product and belong to
- * the owner. A Controller sees only the first part — not a dimmed version of
- * the second, which would advertise capabilities they do not have.
+ * The entity wallet's screen and nothing else. It used to share the page
+ * with the inherited Studio issuer panels — schema, credential-definition
+ * and issued-credential counts under an "Issue credential" button — which
+ * told the room this organisation issues credentials. It doesn't: it holds
+ * and presents them, and issuing is reached only through endorsement
+ * (Flow 4). So the page is what needs you, what you may do, and — for the
+ * owner — what has happened.
  */
 export function DashboardView({ firstName }: { firstName?: string } = {}) {
-  const { organizations, schemas, credDefs, credentials, activity, currentPerson, harness, firstRun } =
-    useDemo();
+  const { organizations, activity, currentPerson, harness, firstRun } = useDemo();
 
   /* The suspended face is a §9 global rather than a fixture state: a
      controller whose authority is pulled mid-session must hit an explained
@@ -51,10 +51,10 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
           lead={
             firstRun
               ? `${organizations[0]?.name ?? "Your organisation"} is verified and holds its registration. Nothing has happened here yet.`
-              : "Issue and verify credentials on the Bhutan NDI network."
+              : `${organizations[0]?.name ?? "The organisation"}'s wallet — what needs you, and what you may do for it.`
           }
           action={
-            firstRun && isOwner ? (
+            isOwner ? (
               <Link href="/controllership/relations/new">
                 <GradientButton>
                   <Icon name="userCheck" size={16} strokeWidth={2} />
@@ -62,10 +62,10 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
                 </GradientButton>
               </Link>
             ) : (
-              <Link href="/credentials/issue">
+              <Link href="/wallet/authority">
                 <GradientButton>
-                  <Icon name="issue" size={16} strokeWidth={2} />
-                  Issue credential
+                  <Icon name="lockRounded" size={16} strokeWidth={2} />
+                  See my authority
                 </GradientButton>
               </Link>
             )
@@ -112,72 +112,11 @@ export function DashboardView({ firstName }: { firstName?: string } = {}) {
           <NeedsAttention key={screenState} allClear={screenState === "all_clear"} />
         )}
 
-        {/* The surrounding issuer/verifier product, owner only. A controller
-            shown a dimmed version of this has been told about capabilities
-            they do not have. */}
+        {/* What has happened, for the owner. Others see their own tasks and
+            authority above; the organisation's history is not theirs to
+            browse. */}
         {!isOwner ? null : (
         <>
-        {/* Column count follows the space the cards actually have, not the
-            viewport. A viewport breakpoint got this backwards: at 900px the
-            drawer is closed and the full width goes to one stretched card,
-            then at 901px the sidebar claims 248px and the same content has to
-            fit two. Letting the track size drive it also fills a wide display
-            with four across instead of two and a lake of empty space. */}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
-          <StatCard
-            title="Schemas"
-            count={schemas.length}
-            hint="A schema names the attributes a credential carries — it is the shape, not the data."
-            emptyIcon="fileText"
-            emptyMessage="You have no schemas created."
-          >
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {schemas.slice(0, 3).map((s) => (
-                <li key={s.id} className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[13.5px] text-body">{s.name}</span>
-                  <span className="flex-none font-mono text-[11px] text-faint">v{s.version}</span>
-                </li>
-              ))}
-            </ul>
-          </StatCard>
-
-          <StatCard
-            title="Credential definitions"
-            count={credDefs.length}
-            hint="A credential definition binds one schema to one issuing organization, ready to issue against."
-            emptyIcon="credentials"
-            emptyMessage="You have no credential definitions created."
-          >
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {credDefs.slice(0, 3).map((d) => (
-                <li key={d.id} className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[13.5px] text-body">{d.tag}</span>
-                  <span className="flex-none text-[12px] text-faint">
-                    {d.revocable ? "Revocable" : "Fixed"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </StatCard>
-
-          <StatCard
-            title="Credentials issued"
-            count={credentials.length}
-            hint="Every credential this organization has offered, and what became of it."
-            emptyIcon="issue"
-            emptyMessage="You have not issued any credentials yet."
-          >
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {credentials.slice(0, 3).map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[13.5px] text-body">{c.holder}</span>
-                  <span className="flex-none text-[12px] capitalize text-faint">{c.state}</span>
-                </li>
-              ))}
-            </ul>
-          </StatCard>
-        </div>
-
         <Panel>
           <div className="relative z-[4] flex flex-col gap-4">
             <h2 className="m-0 font-display text-[17px] font-semibold leading-[1.25] tracking-[-0.01em] text-strong">

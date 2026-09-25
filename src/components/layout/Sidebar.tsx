@@ -116,46 +116,14 @@ const PRIMARY: NavItem[] = [
   /* Pema's only reason to open the console at all. */
   { label: "Appeals", icon: "shieldAlert", href: "/appeals", personas: PELDEN },
 
-  /* ---- The existing issuer / verifier product -------------------------- */
-  { label: "Users", icon: "users", href: "/users", personas: OWNER },
-  { label: "Connections", icon: "connections", href: "/connections", personas: OWNER },
-  {
-    label: "Credentials",
-    icon: "credentials",
-    personas: OWNER,
-    children: [
-      { label: "All credentials", href: "/credentials", icon: "credentials" },
-      { label: "Issue", href: "/credentials/issue", icon: "issue" },
-      { label: "Verify", href: "/verification", icon: "verify" },
-    ],
-  },
-  { label: "Schemas", icon: "layers", href: "/schemas", personas: OWNER },
-  {
-    /* DIDs and x509 are both answers to "what does a relying party trust
-       here", so they group rather than sitting as two loose rows. */
-    label: "Trust",
-    icon: "shieldCheck",
-    personas: OWNER,
-    children: [
-      { label: "DIDs", href: "/did-details", icon: "fingerprint" },
-      { label: "x509", href: "/x509-certificate", icon: "certificate" },
-    ],
-  },
-  { label: "Ecosystems", icon: "ecosystems", href: "/ecosystems", personas: OWNER },
-  { label: "Billing", icon: "creditCard", href: "/organizations/billing", personas: OWNER },
-];
-
-/**
- * Yours rather than the organization's: something waiting for you, and the
- * keys you work with. They sit in their own block between the workspace and
- * the off-app links, which is where they were before Profile moved to the
- * account menu. Developer settings is in that menu too — reached both ways on
- * purpose, since it belongs to the person signed in but is somewhere you go
- * to work.
- */
-const ACCOUNT: NavItem[] = [
-  { label: "Invitations", icon: "mail", href: "/invitations", personas: OWNER },
-  { label: "Developer settings", icon: "key", href: "/developers-setting", personas: OWNER },
+  /* The inherited Studio issuer/verifier items (Users, Connections,
+     Credentials, Schemas, Trust, Ecosystems, Billing) used to follow here,
+     with the Studio's own invitations and developer settings in a block
+     below. They are gone from the nav because this console is one
+     organisation's Entity Wallet: issuing and verifying on the network is a
+     different product, and an entity only reaches it through endorsement
+     (Flow 4), which is not in this demo. The routes still exist for anyone
+     who types them; nothing in the story links there. */
 ];
 
 const SECONDARY: NavItem[] = [
@@ -274,29 +242,6 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               );
             }
 
-            const href = item.href ?? "#";
-            return (
-              <Link
-                key={item.label}
-                href={href}
-                onClick={onClose}
-                aria-current={isCurrent(href) ? "page" : undefined}
-                className="ndi-navrow flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 font-display text-[13.5px] font-medium"
-                data-active={isCurrent(href) ? "1" : "0"}
-              >
-                <Icon name={item.icon} size={18} strokeWidth={1.7} className="flex-none" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {visible(ACCOUNT).length > 0 ? (
-          <div className="my-4 h-px bg-[var(--border-subtle)]" />
-        ) : null}
-
-        <nav aria-label="Account" className="flex flex-col gap-0.5">
-          {visible(ACCOUNT).map((item) => {
             const href = item.href ?? "#";
             return (
               <Link

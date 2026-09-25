@@ -73,8 +73,10 @@ const STORAGE_KEY = "ndi-studio-demo";
  *       new screen into a state it does not have.
  *   6 — one organisation. A version-5 save would bring back the inherited
  *       Bhutan NDI and Royal University rows the seed no longer has.
+ *   7 — the activity feed is Pelden's own history, not the inherited
+ *       Studio issuer feed a version-6 save would keep showing.
  */
-const SEED_VERSION = 6;
+const SEED_VERSION = 7;
 
 /**
  * Appends one audit row, carrying the hash chain forward.
