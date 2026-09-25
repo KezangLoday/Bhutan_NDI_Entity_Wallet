@@ -5,6 +5,24 @@ presenting, not for whoever is building.
 
 ---
 
+## The easiest way: the guided demo
+
+Press **Guided demo** — the green button at the bottom-left of every screen.
+It resets the demo and walks the whole story, one step at a time, in a panel
+on the right: what is happening on this screen, exactly what to press, and
+sometimes a line worth saying. You do the clicking; the guide keeps up, and
+switches you to the right person when the story changes hands. **Next** and
+**Back** move between steps (and take you to the right screen), **Take me
+there** brings you back if you wander off, and the chevron minimises it.
+
+Nine chapters, about 28 steps: create an account, register the organisation,
+give someone authority, a controller's working day, authority in a person's
+wallet, checked where it's used, recourse, and where to go next. The rest of
+this document is the long version — the same story with more to say at each
+point, plus the Gate 2 flows the guide doesn't cover.
+
+---
+
 ## Before you start
 
 ```bash

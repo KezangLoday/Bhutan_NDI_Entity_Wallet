@@ -822,6 +822,12 @@ export interface HarnessState {
    * something any user of the product could change.
    */
   selfServiceSignup: boolean;
+  /**
+   * Where the guided demo is, as an index into GUIDE_STEPS; null when it is
+   * not running. Optional so a save from before the guide existed still
+   * loads — its harness simply has no guide running.
+   */
+  guideStep?: number | null;
 }
 
 export interface DemoState {
@@ -2285,6 +2291,7 @@ export const SEED: DemoState = {
     runnerOpen: false,
     stateOverrides: {},
     selfServiceSignup: SELF_SERVICE_SIGNUP_ENABLED,
+    guideStep: null,
   },
 };
 

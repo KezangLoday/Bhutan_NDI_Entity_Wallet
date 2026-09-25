@@ -73,6 +73,9 @@ self-service sign-up is off — with NDI manual review when the register
 can't match). Demo controls
 → **Walk a flow** starts each one as the right person.
 
+**New to it? Press Guided demo** (bottom-left of any screen): it walks the
+whole story on screen and tells you what to press at each step.
+
 **Presenting it? Read [`docs/running-the-demo.md`](docs/running-the-demo.md)** —
 what is built, the act-by-act script, the Gate 2 flow walks, and what to say
 when someone asks whether any of it is real.
